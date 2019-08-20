@@ -34,8 +34,12 @@ class Cal_Item:
 firstrun = True
 #Connect to or create the database file
 def connect():
-    global conn, c, firstrun
-    conn = sqlite3.connect('calibrations.db')
+    global conn, c, firstrun, dbDir
+    if firstrun == True:
+        directory = '\\\\artemis\\Hardware Development Projects\\Manufacturing Engineering\\Test Equipment\\calibrations.db'
+    else:
+        directory = dbDir
+    conn = sqlite3.connect(directory)
     if firstrun == True:
         firstrun = False
     c = conn.cursor()
@@ -78,7 +82,8 @@ def create_tables():
                     id INTEGER PRIMARY KEY NOT NULL,
                     calListDir TEXT DEFAULT '\\\\artemis\\Hardware Development Projects\\Manufacturing Engineering\\Test Equipment',
                     tempFilesDir TEXT DEFAULT 'C:\\Users\\grobinson\\Documents\\Calibrations',
-                    calScansDir TEXT DEFAULT '\\\\artemis\\Hardware Development Projects\\Manufacturing Engineering\\Test Equipment\\Calibration Scans'
+                    calScansDir TEXT DEFAULT '\\\\artemis\\Hardware Development Projects\\Manufacturing Engineering\\Test Equipment\\Calibration Scans',
+                    dbDir TEXT DEFAULT '\\\\artemis\\Hardware Development Projects\\Manufacturing Engineering\\Test Equipment\\calibrations.db'
                     )""")
     c.execute("""INSERT OR IGNORE INTO directories (id)
                  VALUES (?)""",(1,))
@@ -142,7 +147,7 @@ def migrate():
 
 #Load latest data from DB
 def load():
-    global calListDir, tempFilesDir, calScansDir
+    global calListDir, tempFilesDir, calScansDir, dbDir
     connect()
     #Directory Data
     c.execute("SELECT * FROM directories WHERE id = 1")
@@ -150,11 +155,12 @@ def load():
     calListDir = directories[1]
     tempFilesDir = directories[2]
     calScansDir = directories[3]
+    dbDir = directories[4]
     disconnect()
 
 #Change set directories
 def changedir(choice):
-    global calListDir, tempFilesDir, calScansDir
+    global calListDir, tempFilesDir, calScansDir, dbDir
     root = Tk()
     root.withdraw()
     direc = filedialog.askdirectory()
@@ -515,6 +521,9 @@ class MainWindow(QMainWindow):
         self.settings.scansDirecEdit = QLineEdit(self)
         self.settings.scansDirecBtn = QPushButton('Browse')
         self.settings.scansDirecBtn.clicked.connect(self.scansDirecClick)
+        self.settings.dbDirEdit = QLineEdit(self)
+        self.settings.dbDirBtn = QPushButton('Browse')
+        self.settings.dbDirBtn.clicked.connect(self.dbDirClick)
 
         self.settings.okBtn = QPushButton('OK')
         self.settings.okBtn.clicked.connect(self.settingsOk)
@@ -524,11 +533,18 @@ class MainWindow(QMainWindow):
         self.settings.form_layout.addRow('Cal-PM List Directory',self.settings.calDirecEdit)
         self.settings.form_layout.addRow('',self.settings.calDirecBtn)
         self.settings.form_layout.addRow('',self.settings.blankSpace)
+
         self.settings.form_layout.addRow('Template Files Directory',self.settings.tempDirecEdit)
         self.settings.form_layout.addRow('',self.settings.tempDirecBtn)
         self.settings.form_layout.addRow('',self.settings.blankSpace)
+
         self.settings.form_layout.addRow('Calibration Scans Directory',self.settings.scansDirecEdit)
         self.settings.form_layout.addRow('',self.settings.scansDirecBtn)
+        self.settings.form_layout.addRow('',self.settings.blankSpace)
+
+        self.settings.form_layout.addRow('Database Directory',self.settings.dbDirEdit)
+        self.settings.form_layour.addRow('',self.settings.dbDirBtn)
+
         self.settings.layout.addLayout(self.settings.form_layout)
         self.settings.layout.addStretch(1)
         self.settings.bottomButtons.addWidget(self.settings.okBtn)
@@ -581,6 +597,7 @@ class MainWindow(QMainWindow):
     @Slot()
     def settingsClick(self):
         #Display current set directories
+        self.settings.dbDirChanged = False
         self.settings.calDirecEdit.setText(calListDir)
         self.settings.tempDirecEdit.setText(tempFilesDir)
         self.settings.scansDirecEdit.setText(calScansDir)
@@ -619,6 +636,15 @@ class MainWindow(QMainWindow):
         if directory != None:
             calScansDir = directory
             self.settings.scansDirecEdit.setText(directory)
+
+    @Slot()
+    def dbDirClick(self):
+        global dbDir
+        directory = changedir(4)
+        if directory != None:
+            dbDir = directory
+            self.settings.dbDirEdit.setText(directory)
+
     @Slot()
     def settingsCancel(self):
         self.settings.hide()
@@ -628,6 +654,10 @@ class MainWindow(QMainWindow):
         c.execute("UPDATE directories SET calListDir = ? WHERE id = 1",(calListDir,))
         c.execute("UPDATE directories SET tempFilesDir = ? WHERE id = 1",(tempFilesDir,))
         c.execute("UPDATE directories SET calScansDir = ? WHERE id = 1",(calScansDir,))
+        c.execute("UPDATE directories SET dbDir = ? WHERE id = 1",(dbDir,))
+        if self.settings.dbDirChanged == True:
+            #Functionality for merging databases when directory is changed. For now, program will use whatever is in new directory, or create.
+            pass
         disconnect()
 
         self.settings.hide()
