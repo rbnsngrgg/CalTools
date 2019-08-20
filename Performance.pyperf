@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<ProfilingTarget xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <ProjectTarget>
+    <TargetProject>0a69caef-1c36-473e-9453-b6cc5a5a0cd4</TargetProject>
+    <FriendlyName>CalTools-Console</FriendlyName>
+  </ProjectTarget>
+</ProfilingTarget>

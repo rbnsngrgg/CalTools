@@ -1,0 +1,16 @@
+0: serial_number
+1: location
+2: interval
+3: cal_vendor
+4: manufacturer
+5: lastcal
+6: nextcal
+7: calasneeded
+8: directory
+9: description
+10: inservice
+11: inservicedate
+12: outofservicedate
+13: caldue
+14: model
+15: comments

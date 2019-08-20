@@ -1,0 +1,60 @@
+Planned features
+-Receiving folder that automatically places files where they need to be.
+-Include timestamps on changes?
+-Password?
+-Clean up imports
+-Add date selection after clicking "New Report" button.
+-Add more details, such as certificate number, for items that are used to calibrate other items. Also add boolean attribute to identify these items.
+-Add function to move items from production equipment to engineering equipment, and vice versa.
+-Decide on what to do with PM-Cal List spreadsheet...
+	|-Use until CalTools can be used as a total replacement.
+-Update code to follow PEP 8 and PEP 20?
+-Create labels automatically. Create template in Excel. Will have to cut manually.
+	Menu bar - Tools -> Create Cal Labels
+-Implement functionality for database to be stored on the network instead of local directory.
+-Reinstate the functionality of the "Remove Item" button.
+-Notification feature for when items are nearing due, or on a time interval.
+
+Changes
+--0.2.1:
+	Increased date range for out of cal items from 14 days to 30 days
+
+--0.3.0:
+	Added backwards-compatible functionality to keep track of what items are in service, when items are put in service, and when cal is due from those dates.
+	Fixed and simplified the handling of datetime objects, using relativedelta, when adding a specified number of months to the date.
+	Added more search options.
+	Change in how items are marked for due calibration, to allow searching for them within the app.
+	Added persistence in selected item when changes are saved.
+
+--0.3.1:
+	Fix for creation of out of cal reports to include model in a separate column.
+	Changed the calibration report form to an Excel spreadsheet for more automation. Now, the in-service date and location is included.
+
+--1.0.0:
+	Changed storage of information from Pickle files to sqlite3 database. Updated all relevant functions.
+		The function that checks and updates information has been re-written, shortened.
+		Removed Cal_Item class.
+	Added section for comments on each item.
+		Also a search mode that includes all items with comment sections that are not blank.
+	Added more search functionality using keywords (or, and, not) in double quotation marks. Search is no longer case-sensitive.
+		You can search for things such as:
+											this ""not"" that
+											""not"" this
+											this ""and"" that
+											this ""or"" that
+		Or combine the keywords like so:
+											this ""or"" that ""not"" something
+											""not"" this ""not"" that ""not"" ever
+	Fixed items not being re-selected properly after saving edits.
+	Removed dictionaries for manufacturers, cal vendors, and locations.
+		The combo boxes now allow editing, and will auto-complete based on the locations that are currently being used.
+		The combo box items are updated every time an item is selected, to get the latest location data.
+	Added Button for migrating data from pickles: menubar -> tools.
+
+--1.0.1:
+	If an item's last cal date is blank, it will be marked as due.
+	Items can now be saved if lastcal and in service date are blank.
+
+--1.0.2:
+	Fixed items not saving properly when unchecking the "In Service" box.
+	Fixed "Out of cal" search option.
