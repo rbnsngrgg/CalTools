@@ -56,5 +56,10 @@ Changes
 	Items can now be saved if lastcal and in service date are blank.
 
 --1.0.2:
-	Fixed items not saving properly when unchecking the "In Service" box.
-	Fixed "Out of cal" search option.
+	Fix items not saving properly when unchecking the "In Service" box.
+	Fix "Out of cal" search option.
+	Add versioning to the calibrations.db
+	Add option to select the location of the calibrations.db
+	Remove item button hidden.
+	Fix handling of directories when settings window is canceled
+	Add timestamps to calibration item saves
