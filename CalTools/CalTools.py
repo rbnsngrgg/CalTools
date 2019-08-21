@@ -1,4 +1,4 @@
-import pickle, sys, openpyxl, sqlite3, listSearch
+import pickle, sys, openpyxl, sqlite3, listSearch, time
 from os import remove, path, startfile, listdir, unlink # was import os
 from shutil import copyfile, move, rmtree # was import shutil
 from tkinter import filedialog, Tk # Tk was import tkinter as tk
@@ -32,17 +32,27 @@ class Cal_Item:
 
 
 firstrun = True
+dbDir = ''
+newdbDir = ''
 #Connect to or create the database file
-def connect():
+def connect(override = ''):
     global conn, c, firstrun, dbDir
     if firstrun == True:
-        directory = '\\\\artemis\\Hardware Development Projects\\Manufacturing Engineering\\Test Equipment\\calibrations.db'
-    else:
-        directory = dbDir
-    conn = sqlite3.connect(directory)
-    if firstrun == True:
+        if path.isfile('\\\\artemis\\Hardware Development Projects\\Manufacturing Engineering\\Test Equipment\\calibrations.db'):
+            directory = '\\\\artemis\\Hardware Development Projects\\Manufacturing Engineering\\Test Equipment\\calibrations.db'
+        else:
+            directory = 'calibrations.db'
         firstrun = False
+    elif dbDir != '':
+        directory = dbDir
+    else:
+        directory = '\\\\artemis\\Hardware Development Projects\\Manufacturing Engineering\\Test Equipment\\calibrations.db'
+        dbDir = directory
+    if override != '':
+        directory = override
+    conn = sqlite3.connect(directory)
     c = conn.cursor()
+    #print('Connected to db: {0}'.format(directory))
     return conn, c
 
 #Save changes and close connection
@@ -58,8 +68,11 @@ def allItems():
     return all_items
 
 #Create the default tables for the file
-def create_tables():
-    connect()
+def create_tables(override = ''):
+    if override != '':
+        connect(override)
+    else:
+        connect()
     c.execute("""CREATE TABLE IF NOT EXISTS calibration_items (
                     serial_number TEXT PRIMARY KEY,
                     location TEXT DEFAULT '',
@@ -82,14 +95,20 @@ def create_tables():
                     id INTEGER PRIMARY KEY NOT NULL,
                     calListDir TEXT DEFAULT '\\\\artemis\\Hardware Development Projects\\Manufacturing Engineering\\Test Equipment',
                     tempFilesDir TEXT DEFAULT 'C:\\Users\\grobinson\\Documents\\Calibrations',
-                    calScansDir TEXT DEFAULT '\\\\artemis\\Hardware Development Projects\\Manufacturing Engineering\\Test Equipment\\Calibration Scans',
-                    dbDir TEXT DEFAULT '\\\\artemis\\Hardware Development Projects\\Manufacturing Engineering\\Test Equipment\\calibrations.db'
+                    calScansDir TEXT DEFAULT '\\\\artemis\\Hardware Development Projects\\Manufacturing Engineering\\Test Equipment\\Calibration Scans'
                     )""")
     c.execute("""INSERT OR IGNORE INTO directories (id)
                  VALUES (?)""",(1,))
-    conn.commit()
-    conn.close()
-
+    
+    c.execute("""PRAGMA user_version""")
+    version = c.fetchone()[0]
+    if str(version) == '0':
+        c.execute("""ALTER TABLE directories ADD dbDir TEXT DEFAULT '\\\\artemis\\Hardware Development Projects\\Manufacturing Engineering\\Test Equipment\\calibrations.db'""")
+        c.execute("""ALTER TABLE calibration_items ADD timestamp TEXT DEFAULT ''""")
+        c.execute("""PRAGMA user_version = 1""")
+        c.execute("""PRAGMA user_version""")
+        version = c.fetchone()[0]
+    disconnect()
 #Transfer the data from previous pickle file to the new database
 @Slot()
 def migrate():
@@ -147,7 +166,7 @@ def migrate():
 
 #Load latest data from DB
 def load():
-    global calListDir, tempFilesDir, calScansDir, dbDir
+    global calListDir, tempFilesDir, calScansDir, dbDir, firstrun
     connect()
     #Directory Data
     c.execute("SELECT * FROM directories WHERE id = 1")
@@ -493,7 +512,8 @@ class MainWindow(QMainWindow):
         self.bottomrow.setColumnStretch(2,1)
         self.bottomrow.addWidget(self.newreportbtn,0,3)
         self.bottomrow.setColumnStretch(3,1)
-        self.bottomrow.addWidget(self.removebtn,0,4)
+        #Hidden until functionality properly implemented
+        #self.bottomrow.addWidget(self.removebtn,0,4)
         self.bottomrow.setColumnStretch(4,1)
         #Add the sublayouts to the main layout
         self.layout.addLayout(self.toprow)
@@ -543,7 +563,7 @@ class MainWindow(QMainWindow):
         self.settings.form_layout.addRow('',self.settings.blankSpace)
 
         self.settings.form_layout.addRow('Database Directory',self.settings.dbDirEdit)
-        self.settings.form_layour.addRow('',self.settings.dbDirBtn)
+        self.settings.form_layout.addRow('',self.settings.dbDirBtn)
 
         self.settings.layout.addLayout(self.settings.form_layout)
         self.settings.layout.addStretch(1)
@@ -601,6 +621,7 @@ class MainWindow(QMainWindow):
         self.settings.calDirecEdit.setText(calListDir)
         self.settings.tempDirecEdit.setText(tempFilesDir)
         self.settings.scansDirecEdit.setText(calScansDir)
+        self.settings.dbDirEdit.setText(dbDir)
 
         self.settings.setWindowModality(Qt.ApplicationModal)
         self.settings.show()
@@ -639,27 +660,41 @@ class MainWindow(QMainWindow):
 
     @Slot()
     def dbDirClick(self):
-        global dbDir
+        global dbDir, newdbDir
         directory = changedir(4)
         if directory != None:
-            dbDir = directory
             self.settings.dbDirEdit.setText(directory)
+            self.settings.dbDirChanged = True
+            newdbDir = directory
 
     @Slot()
     def settingsCancel(self):
+        global newdbDir
+        if self.settings.dbDirChanged == True:
+            self.settings.dbDirChanged = False
+            newdbDir = ''
+        load()
+        print(dbDir)
         self.settings.hide()
     @Slot()
     def settingsOk(self):
+        global newdbDir,dbDir
+        if self.settings.dbDirChanged == True:
+            try:
+                move(dbDir,newdbDir)
+            except:
+                pass
+            dbDir = newdbDir + '\\calibrations.db'
         connect()
         c.execute("UPDATE directories SET calListDir = ? WHERE id = 1",(calListDir,))
         c.execute("UPDATE directories SET tempFilesDir = ? WHERE id = 1",(tempFilesDir,))
         c.execute("UPDATE directories SET calScansDir = ? WHERE id = 1",(calScansDir,))
-        c.execute("UPDATE directories SET dbDir = ? WHERE id = 1",(dbDir,))
         if self.settings.dbDirChanged == True:
-            #Functionality for merging databases when directory is changed. For now, program will use whatever is in new directory, or create.
-            pass
+            c.execute("UPDATE directories SET dbDir = ? WHERE id = 1",(dbDir,))
         disconnect()
-
+        newdbDir = ''
+        load()
+        #print(dbDir)
         self.settings.hide()
 
     #Item Removal Button Slots
@@ -882,8 +917,11 @@ class MainWindow(QMainWindow):
                             inservicedate = ''
                             nextcal = ''
                         selecteditem = self.itemslist.currentItem().text(0)
-                        sql = """UPDATE calibration_items SET serial_number='{}',model='{}',description='{}',location='{}',manufacturer='{}',cal_vendor='{}',interval={},calasneeded={},inservice={},inservicedate='{}',
-                                nextcal='{}',outofservicedate='{}',comment='{}' WHERE serial_number=?""".format(sn,model,description,location,manufacturer,cal_vendor,interval,calasneeded,inservice,inservicedate,nextcal,outofservicedate,comment)
+                        timestamp = datetime.utcnow().strftime('%Y-%m-%d-%H-%M-%S-%f')
+                        sql = """
+                                UPDATE calibration_items SET serial_number='{}',model='{}',description='{}',location='{}',manufacturer='{}',cal_vendor='{}',interval={},calasneeded={},inservice={},inservicedate='{}',
+                                nextcal='{}',outofservicedate='{}',comment='{}',timestamp='{}' WHERE serial_number=?
+                                """.format(sn,model,description,location,manufacturer,cal_vendor,interval,calasneeded,inservice,inservicedate,nextcal,outofservicedate,comment,timestamp)
                         c.execute(sql,(sn,))
                         disconnect()
                         if self.findentry.text() != '' or self.searchoptions.currentIndex() == 6 or self.searchoptions.currentIndex() == 2:
@@ -1014,6 +1052,8 @@ class MainWindow(QMainWindow):
 
 
     def run(self):
+        connect()
+        disconnect()
         create_tables()
         load()
         updateitems()
