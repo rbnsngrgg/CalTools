@@ -674,7 +674,7 @@ class MainWindow(QMainWindow):
             self.settings.dbDirChanged = False
             newdbDir = ''
         load()
-        print(dbDir)
+        #print(dbDir)
         self.settings.hide()
     @Slot()
     def settingsOk(self):
