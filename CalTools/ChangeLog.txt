@@ -63,3 +63,7 @@ Changes
 	Remove item button hidden.
 	Fix handling of directories when settings window is canceled
 	Add timestamps to calibration item saves
+
+--1.1.0
+	Add functionality for Quality Equipment items.
+	Fix item removal functions

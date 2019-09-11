@@ -59,8 +59,6 @@ def connect(override = ''):
 def disconnect(save = True):
     if save == True:
         conn.commit()
-    else:
-        pass
     conn.close()
 
 def allItems():
@@ -363,7 +361,9 @@ def updateitems():
         for folder in listdir(current):
             namereader(folder = current+'\\'+folder,all = True,option = current)
     return
-
+#Removes an item from the database
+def removeFromDB(sn):
+    c.execute("DELETE FROM calibration_items WHERE serial_number = ?",(sn,))
 #GUI-----------------------------------------------------------------------------------------------------
 qt_app = QApplication(sys.argv)
 
@@ -427,7 +427,9 @@ class MainWindow(QMainWindow):
         self.topitems.append(QTreeWidgetItem(self.itemslist))
         self.topitems[1].setText(0,'Engineering Equipment')
         self.topitems.append(QTreeWidgetItem(self.itemslist))
-        self.topitems[2].setText(0,'Other Items')
+        self.topitems[2].setText(0,'Quality Items')
+        self.topitems.append(QTreeWidgetItem(self.itemslist))
+        self.topitems[3].setText(0,'Other Items')
         self.itemslist.addTopLevelItems(self.topitems)
         self.details = QFormLayout()
 
@@ -512,8 +514,7 @@ class MainWindow(QMainWindow):
         self.bottomrow.setColumnStretch(2,1)
         self.bottomrow.addWidget(self.newreportbtn,0,3)
         self.bottomrow.setColumnStretch(3,1)
-        #Hidden until functionality properly implemented
-        #self.bottomrow.addWidget(self.removebtn,0,4)
+        self.bottomrow.addWidget(self.removebtn,0,4)
         self.bottomrow.setColumnStretch(4,1)
         #Add the sublayouts to the main layout
         self.layout.addLayout(self.toprow)
@@ -584,7 +585,7 @@ class MainWindow(QMainWindow):
         self.remove.removeBtn.clicked.connect(self.removeClick)
         self.remove.referenceBtn = QPushButton('Reference')
         self.remove.referenceBtn.clicked.connect(self.referenceClick)
-        self.remove.deleteBtn = QPushButton('Delete')
+        self.remove.deleteBtn = QPushButton('DELETE')
         self.remove.deleteBtn.clicked.connect(self.deleteClick)
         self.remove.cancelBtn = QPushButton('Cancel')
         self.remove.cancelBtn.clicked.connect(self.removeCancel)
@@ -699,40 +700,43 @@ class MainWindow(QMainWindow):
 
     #Item Removal Button Slots
     @Slot()
-    def removeClick(self):
-        for item in calitemslist:
-            if self.itemslist.currentItem().text(0) == item.sn:
+    def removeClick(self): #Remove an item from service, moving its documents to the "Removed from Service" folder.
+        connect()
+        for item in allItems():
+            if self.itemslist.currentItem().text(0) == item[0]:
                 try:
-                    move(item.direc,'{}\\Removed from Service'.format(calScansDir))
+                    move(item[8],'{}\\Calibration Items\\Removed from Service'.format(calScansDir))
+                    removeFromDB(item[0])
                 except FileNotFoundError:
                     pass
-                calitemslist.remove(item)
-                self.updateTree()
-                save()
                 self.remove.hide()
+        disconnect()
+        self.updateTree()
+
     @Slot()
-    def referenceClick(self):
-        for item in calitemslist:
-            if self.itemslist.currentItem().text(0) == item.sn:
+    def referenceClick(self): #Put an item in the "Reference only" folder, update the directory in the DB
+        connect()
+        for item in allItems():
+            if self.itemslist.currentItem().text(0) == item[0]:
                 try:
-                    move(item.direc,'{}\\Ref Only'.format(calScansDir))
+                    newDirec = '{}\\Calibration Items\\Ref Only'.format(calScansDir)
+                    move(item[8],newDirec)
+                    c.execute("UPDATE directory={} WHERE serial_number = ?".format(newDirec),(item[0],))
+                    #removeFromDB(item[0])
                 except FileNotFoundError:
                     pass
-                calitemslist.remove(item)
-                self.updateTree()
-                save()
                 self.remove.hide()   
+        disconnect()
+        self.updateTree()
     @Slot()
     def deleteClick(self):
-        for item in calitemslist:
-            if self.itemslist.currentItem().text(0) == item.sn:
+        for item in allItems():
+            if self.itemslist.currentItem().text(0) == item[0]:
                 #try:
                 #    rmtree(item.direc)
                 #except FileNotFoundError:
                 #    pass
-                calitemslist.remove(item)
                 self.updateTree()
-                save()
                 self.remove.hide()
     @Slot()
     def removeCancel(self):
@@ -938,6 +942,10 @@ class MainWindow(QMainWindow):
                                 if item.text(0) == selecteditem:
                                     self.itemslist.setCurrentItem(item)
                                     break
+                            for item in self.qualityItems:
+                                if item.text(0) == selecteditem:
+                                    self.itemslist.setCurrentItem(item)
+                                    break
                             for item in self.otherItems:
                                 if item.text(0) == selecteditem:
                                     self.itemslist.setCurrentItem(item)
@@ -985,8 +993,10 @@ class MainWindow(QMainWindow):
         self.topitems[0].takeChildren()
         self.topitems[1].takeChildren()
         self.topitems[2].takeChildren()
+        self.topitems[3].takeChildren()
         self.productionItems = []
         self.engineeringItems = []
+        self.qualityItems = []
         self.otherItems = []
         connect()
         all_items = allItems()
@@ -1024,21 +1034,38 @@ class MainWindow(QMainWindow):
                             if item[15] != '':
                                 self.productionItems.append(QTreeWidgetItem(self.topitems[0]))
                                 self.productionItems[-1].setText(0, item[0])
+                elif 'QUALITY ITEMS' in item[8]:
+                    if search == False:
+                        self.qualityItems.append(QTreeWidgetItem(self.topitems[2]))
+                        self.qualityItems[-1].setText(0, item[0])
+                    else:
+                        if item in searchItems and mode != 13 and mode != 15:
+                            self.qualityItems.append(QTreeWidgetItem(self.topitems[2]))
+                            self.qualityItems[-1].setText(0, item[0])
+                        elif mode == 13:
+                            if item[13] != 0:
+                                self.qualityItems.append(QTreeWidgetItem(self.topitems[2]))
+                                self.qualityItems[-1].setText(0, item[0])
+                        elif mode == 15:
+                            if item[15] != '':
+                                self.qualityItems.append(QTreeWidgetItem(self.topitems[2]))
+                                self.qualityItems[-1].setText(0, item[0])
+
             else:
                 if search == False:
-                    self.otherItems.append(QTreeWidgetItem(self.topitems[2]))
+                    self.otherItems.append(QTreeWidgetItem(self.topitems[3]))
                     self.otherItems[-1].setText(0, item[0])
                 else:
                     if item in searchItems and mode != 13 and mode != 15:
-                        self.otherItems.append(QTreeWidgetItem(self.topitems[2]))
+                        self.otherItems.append(QTreeWidgetItem(self.topitems[3]))
                         self.otherItems[-1].setText(0, item[0])
                     elif mode == 13:
                         if item[13] != 0:
-                            self.otherItems.append(QTreeWidgetItem(self.topitems[2]))
+                            self.otherItems.append(QTreeWidgetItem(self.topitems[3]))
                             self.otherItems[-1].setText(0, item[0])
                     elif mode == 15:
                         if item[15] != '':
-                                self.otherItems.append(QTreeWidgetItem(self.topitems[2]))
+                                self.otherItems.append(QTreeWidgetItem(self.topitems[3]))
                                 self.otherItems[-1].setText(0, item[0])
         disconnect(save = False)
 
@@ -1046,8 +1073,10 @@ class MainWindow(QMainWindow):
         self.topitems[0].sortChildren(0,Qt.AscendingOrder)
         self.topitems[1].addChildren(self.engineeringItems)
         self.topitems[1].sortChildren(0,Qt.AscendingOrder)
-        self.topitems[2].addChildren(self.otherItems)
+        self.topitems[2].addChildren(self.qualityItems)
         self.topitems[2].sortChildren(0,Qt.AscendingOrder)
+        self.topitems[3].addChildren(self.otherItems)
+        self.topitems[3].sortChildren(0,Qt.AscendingOrder)
         return
 
 
