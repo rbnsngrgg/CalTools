@@ -1,13 +1,44 @@
 import pickle, sys, openpyxl, sqlite3, listSearch, time
-from os import remove, path, startfile, listdir, unlink # was import os
-from shutil import copyfile, move, rmtree # was import shutil
-from tkinter import filedialog, Tk # Tk was import tkinter as tk
-from datetime import date, datetime #was import datetime
+from os import remove, path, startfile, listdir, unlink, mkdir
+from shutil import copyfile, move, rmtree
+from tkinter import filedialog, Tk
+from datetime import date, datetime
 from PySide2.QtCore import *
 from PySide2.QtGui import *
 from PySide2.QtWidgets import *
 from dateutil.relativedelta import relativedelta
 from win10toast import ToastNotifier
+from importlib import reload
+from importlib.machinery import SourceFileLoader
+try:
+    config = SourceFileLoader('config','./config.py').load_module()
+except FileNotFoundError:
+    with open('config.py','wt',encoding = "UTF-8") as cfg:
+        lines = [
+                    "\n",
+                    "folders  = [\"PRODUCTION EQUIPMENT\",\"ENGINEERING EQUIPMENT\",\"QUALITY EQUIPMENT\", \"Ref Only\"]\n",
+                    "\n",
+                    "#Prefix directory strings with r\n",
+                    "\n",
+                    "#Database name\n",
+                    'dbName = r"Test Equipment Calibration List.db"\n',
+                    '\n',
+                    '#Location of Database\n',
+                    'calListDir = r"\\\\artemis\Hardware Development Projects\Manufacturing Engineering\Test Equipment"\n',
+                    '\n',
+                    '#Location of template files\n',
+                    'tempFilesDir = r"\\\\artemis\Hardware Development Projects\Manufacturing Engineering\Test Equipment\Template Files"\n',
+                    '\n',
+                    '#Folder that includes "Calibration Items" folder\n',
+                    'calScansDir = r"\\\\artemis\Hardware Development Projects\Manufacturing Engineering\Test Equipment\Calibration Scans"\n',
+                    '\n',
+                    'firstRun = True'
+                ]
+        for line in lines:
+            cfg.write(line)
+    config = SourceFileLoader('config','config.py').load_module()
+
+majorVersion = '2'
 
 class Cal_Item:
     def __init__(self, sn):
@@ -30,19 +61,18 @@ class Cal_Item:
         self.ooc = ''
         self.model = '' 
 
-
 firstrun = True
-dbDir = ''
+dbDir = config.calListDir + '\\' + config.dbName
 newdbDir = ''
 #Connect to or create the database file
 def connect(override = ''):
     global conn, c, firstrun, dbDir
-    if firstrun == True:
-        if path.isfile('\\\\artemis\\Hardware Development Projects\\Manufacturing Engineering\\Test Equipment\\calibrations.db'):
-            directory = '\\\\artemis\\Hardware Development Projects\\Manufacturing Engineering\\Test Equipment\\calibrations.db'
+    if config.firstRun == True:
+        if path.isfile(dbDir):
+            directory = dbDir
         else:
-            directory = 'calibrations.db'
-        firstrun = False
+            directory = config.dbName
+        config.firstRun = False
     elif dbDir != '':
         directory = dbDir
     else:
@@ -50,9 +80,12 @@ def connect(override = ''):
         dbDir = directory
     if override != '':
         directory = override
-    conn = sqlite3.connect(directory)
-    c = conn.cursor()
-    #print('Connected to db: {0}'.format(directory))
+    try:
+        conn = sqlite3.connect(directory)
+        c = conn.cursor()
+    except Exception as e:
+        errorMessage('Error!', str(e))
+        return
     return conn, c
 
 #Save changes and close connection
@@ -89,24 +122,25 @@ def create_tables(override = ''):
                     model TEXT DEFAULT '',
                     comment TEXT DEFAULT ''
                     )""")
-    c.execute("""CREATE TABLE IF NOT EXISTS directories (
-                    id INTEGER PRIMARY KEY NOT NULL,
-                    calListDir TEXT DEFAULT '\\\\artemis\\Hardware Development Projects\\Manufacturing Engineering\\Test Equipment',
-                    tempFilesDir TEXT DEFAULT 'C:\\Users\\grobinson\\Documents\\Calibrations',
-                    calScansDir TEXT DEFAULT '\\\\artemis\\Hardware Development Projects\\Manufacturing Engineering\\Test Equipment\\Calibration Scans'
-                    )""")
-    c.execute("""INSERT OR IGNORE INTO directories (id)
-                 VALUES (?)""",(1,))
+
+    c.execute("""DROP TABLE IF EXISTS directories""")
     
     c.execute("""PRAGMA user_version""")
     version = c.fetchone()[0]
-    if str(version) == '0':
-        c.execute("""ALTER TABLE directories ADD dbDir TEXT DEFAULT '\\\\artemis\\Hardware Development Projects\\Manufacturing Engineering\\Test Equipment\\calibrations.db'""")
-        c.execute("""ALTER TABLE calibration_items ADD timestamp TEXT DEFAULT ''""")
-        c.execute("""PRAGMA user_version = 1""")
-        c.execute("""PRAGMA user_version""")
-        version = c.fetchone()[0]
+
+    if int(version) < int(majorVersion):
+        if str(version) == '0':
+            c.execute("""ALTER TABLE calibration_items ADD timestamp TEXT DEFAULT ''""")
+            c.execute("""PRAGMA user_version = 1""")
+            c.execute("""PRAGMA user_version""")
+            version = c.fetchone()[0]
+        elif str(version) == '1':
+            c.execute("""PRAGMA user_version = 2""")
+    elif int(version) > int(majorVersion):
+        errorMessage('Version Error','This version of CalTools is {}, the latest major version is {}. Update to use CalTools with the selected database.'.format(majorVersion, version))
+        sys.exit(0)
     disconnect()
+
 #Transfer the data from previous pickle file to the new database
 @Slot()
 def migrate():
@@ -129,7 +163,7 @@ def migrate():
         message.setWindowTitle('Error')
         message.setText('{}'.format(e))
         message.exec_()
-
+        return
     for item in items:
         if item.calasneeded == True:
             current_calasneeded = 1
@@ -161,19 +195,14 @@ def migrate():
     message.setText('Data migration complete')
     message.exec_()
 
-
-#Load latest data from DB
+#Load directory data from config
 def load():
-    global calListDir, tempFilesDir, calScansDir, dbDir, firstrun
-    connect()
+    global calListDir, tempFilesDir, calScansDir, dbDir
     #Directory Data
-    c.execute("SELECT * FROM directories WHERE id = 1")
-    directories = c.fetchone()
-    calListDir = directories[1]
-    tempFilesDir = directories[2]
-    calScansDir = directories[3]
-    dbDir = directories[4]
-    disconnect()
+    calListDir = config.calListDir
+    tempFilesDir = config.tempFilesDir
+    calScansDir = config.calScansDir
+    dbDir = config.calListDir + '\\' + config.dbName
 
 #Change set directories
 def changedir(choice):
@@ -250,12 +279,16 @@ def report_OOC():
         if item[13] == 1:
             if item[1] == 'At calibration':
                 continue
+            elif 'Ref Only' in item[8]:
+                continue
             else:
                 items_to_add.append(item)
     today = datetime.strptime(str(datetime.today().date()),'%Y-%m-%d').date()
-    copyfile('{}\\Out of Cal Report.xlsx'.format(tempFilesDir),'{0}\\Reports\\{1}_Out of Cal Report.xlsx'.format(tempFilesDir,today))
-    report = openpyxl.load_workbook('{0}\\Reports\\{1}_Out of Cal Report.xlsx'.format(tempFilesDir,today))
-    name = '{0}\\Reports\\{1}_Out of Cal Report.xlsx'.format(tempFilesDir,today)
+    if not path.isdir('{0}\\Calibration Items\\Snapshot Reports'.format(calScansDir)):
+        mkdir('{0}\\Calibration Items\\Snapshot Reports'.format(calScansDir))
+    copyfile('{}\\Out of Cal Report.xlsx'.format(tempFilesDir),'{0}\\Calibration Items\\Snapshot Reports\\{1}_Out of Cal Report.xlsx'.format(calScansDir,today))
+    report = openpyxl.load_workbook('{0}\\Calibration Items\\Snapshot Reports\\{1}_Out of Cal Report.xlsx'.format(calScansDir,today))
+    name = '{0}\\Calibration Items\\Snapshot Reports\\{1}_Out of Cal Report.xlsx'.format(calScansDir,today)
     row = 4
     ws = report.active
     #Columns A-F, SN, Description, Location, Manufacturer, Cal Vendor, Last cal, Next cal
@@ -286,7 +319,12 @@ def report_OOC():
 def namereader(file='',folder='', all = False, option = None):
     #Folder will be "ENGINEERING" or "PRODUCTION" EQUIPMENT folder 
     if folder != '' and all == True:
-        if 'PRODUCTION' not in folder and 'ENGINEERING' not in folder:
+        cont = False
+
+        for upperFolder in config.folders:
+            if upperFolder in folder:
+                cont = True
+        if not cont:
             return
         elif path.isdir(folder) == False:
             return
@@ -350,6 +388,11 @@ def namereader(file='',folder='', all = False, option = None):
             if lastcal == '':
                 caldue = 1
             directory = r"{}\{}".format(folder, itemFolder)
+            if 'Ref Only' in directory:
+                lastcal = ''
+                nextcal = ''
+                interval = 0
+                caldue = 0
             sql = "UPDATE calibration_items SET interval={},lastcal='{}',nextcal='{}',directory='{}',inservicedate='{}',caldue={} WHERE {}=?".format(interval,lastcal,nextcal,directory,inservicedate,caldue,'serial_number')
             c.execute(sql,(sn,))
 
@@ -359,19 +402,21 @@ def updateitems():
     for dirs in listdir(calScansDir):
         current = calScansDir+'\\'+dirs
         for folder in listdir(current):
+            if folder not in config.folders:
+                continue
             namereader(folder = current+'\\'+folder,all = True,option = current)
     return
 #Removes an item from the database
 def removeFromDB(sn):
     c.execute("DELETE FROM calibration_items WHERE serial_number = ?",(sn,))
-#GUI-----------------------------------------------------------------------------------------------------
+#GUI & Button functions-----------------------------------------------------------------------------------------------------
 qt_app = QApplication(sys.argv)
 
 class MainWindow(QMainWindow):
     def __init__(self):
         #Initialize the parent class, then set title and min window size
         QMainWindow.__init__(self)
-        self.setWindowTitle('CalTools v1.0.2')
+        self.setWindowTitle('CalTools 2.0.0')
         self.setMinimumSize(800,600)
 
         #Icon
@@ -392,6 +437,7 @@ class MainWindow(QMainWindow):
         self.menubar = self.menuBar()
 
         exitaction = QAction("Exit",self)
+        exitaction.triggered.connect(sys.exit)
         migration = QAction("Migrate Data", self)
         migration.triggered.connect(migrate)
         filemenu = self.menubar.addMenu("&File")
@@ -427,9 +473,9 @@ class MainWindow(QMainWindow):
         self.topitems.append(QTreeWidgetItem(self.itemslist))
         self.topitems[1].setText(0,'Engineering Equipment')
         self.topitems.append(QTreeWidgetItem(self.itemslist))
-        self.topitems[2].setText(0,'Quality Items')
+        self.topitems[2].setText(0,'Quality Equipment')
         self.topitems.append(QTreeWidgetItem(self.itemslist))
-        self.topitems[3].setText(0,'Other Items')
+        self.topitems[3].setText(0,'Reference Equipment')
         self.itemslist.addTopLevelItems(self.topitems)
         self.details = QFormLayout()
 
@@ -497,12 +543,14 @@ class MainWindow(QMainWindow):
         self.openfolderbtn = QPushButton('Open Folder')
         self.newreportbtn = QPushButton('New Report')
         self.removebtn = QPushButton('Remove Item')
+        self.movebtn = QPushButton('Move Item')
         self.findentry = QLineEdit(self)
 
         self.editItemBtn.clicked.connect(self.editClick)
         self.openfolderbtn.clicked.connect(self.openFolderClick)
         self.newreportbtn.clicked.connect(self.newReportClick)
         self.removebtn.clicked.connect(self.removeItemClick)
+        self.movebtn.clicked.connect(self.moveItemClick)
         self.findentry.textChanged.connect(self.find)
         self.findentry.setPlaceholderText('Search')
 
@@ -516,6 +564,9 @@ class MainWindow(QMainWindow):
         self.bottomrow.setColumnStretch(3,1)
         self.bottomrow.addWidget(self.removebtn,0,4)
         self.bottomrow.setColumnStretch(4,1)
+        self.bottomrow.addWidget(self.movebtn,0,5)
+        self.bottomrow.setColumnStretch(5,1)
+
         #Add the sublayouts to the main layout
         self.layout.addLayout(self.toprow)
         self.layout.addLayout(self.focus_layout)
@@ -542,9 +593,6 @@ class MainWindow(QMainWindow):
         self.settings.scansDirecEdit = QLineEdit(self)
         self.settings.scansDirecBtn = QPushButton('Browse')
         self.settings.scansDirecBtn.clicked.connect(self.scansDirecClick)
-        self.settings.dbDirEdit = QLineEdit(self)
-        self.settings.dbDirBtn = QPushButton('Browse')
-        self.settings.dbDirBtn.clicked.connect(self.dbDirClick)
 
         self.settings.okBtn = QPushButton('OK')
         self.settings.okBtn.clicked.connect(self.settingsOk)
@@ -562,9 +610,6 @@ class MainWindow(QMainWindow):
         self.settings.form_layout.addRow('Calibration Scans Directory',self.settings.scansDirecEdit)
         self.settings.form_layout.addRow('',self.settings.scansDirecBtn)
         self.settings.form_layout.addRow('',self.settings.blankSpace)
-
-        self.settings.form_layout.addRow('Database Directory',self.settings.dbDirEdit)
-        self.settings.form_layout.addRow('',self.settings.dbDirBtn)
 
         self.settings.layout.addLayout(self.settings.form_layout)
         self.settings.layout.addStretch(1)
@@ -598,6 +643,32 @@ class MainWindow(QMainWindow):
         self.remove.layout.addLayout(self.remove.bottomButtons)
         self.remove.setLayout(self.remove.layout)
 
+    def moveBox(self):
+        self.moveWidget = QWidget()
+        self.moveWidget.setFixedSize(350,100)
+        self.moveWidget.setWindowTitle('Move Item')
+        self.moveWidget.layout = QVBoxLayout()
+        self.moveWidget.bottomButtons = QHBoxLayout()
+
+        self.moveWidget.mainText = QLabel('Move item to Production, Engineering, or Quality?')
+
+        self.moveWidget.productionButton = QPushButton("Production")
+        self.moveWidget.productionButton.clicked.connect(self.moveProd)
+        self.moveWidget.engButton = QPushButton("Engineering")
+        self.moveWidget.engButton.clicked.connect(self.moveEng)
+        self.moveWidget.qualityButton = QPushButton("Quality")
+        self.moveWidget.qualityButton.clicked.connect(self.moveQuality)
+        self.moveWidget.cancelBtn = QPushButton('Cancel')
+        self.moveWidget.cancelBtn.clicked.connect(self.moveCancel)
+
+        self.moveWidget.bottomButtons.addWidget(self.moveWidget.cancelBtn)
+        self.moveWidget.bottomButtons.addWidget(self.moveWidget.productionButton)
+        self.moveWidget.bottomButtons.addWidget(self.moveWidget.engButton)
+        self.moveWidget.bottomButtons.addWidget(self.moveWidget.qualityButton)
+        self.moveWidget.layout.addWidget(self.moveWidget.mainText)
+        self.moveWidget.layout.addLayout(self.moveWidget.bottomButtons)
+        self.moveWidget.setLayout(self.moveWidget.layout)
+
     #Slots for buttons---------------------
     @Slot()
     def calListClick(self):
@@ -618,12 +689,9 @@ class MainWindow(QMainWindow):
     @Slot()
     def settingsClick(self):
         #Display current set directories
-        self.settings.dbDirChanged = False
         self.settings.calDirecEdit.setText(calListDir)
         self.settings.tempDirecEdit.setText(tempFilesDir)
         self.settings.scansDirecEdit.setText(calScansDir)
-        self.settings.dbDirEdit.setText(dbDir)
-
         self.settings.setWindowModality(Qt.ApplicationModal)
         self.settings.show()
     @Slot()
@@ -635,7 +703,18 @@ class MainWindow(QMainWindow):
                 self.remove.setWindowModality(Qt.ApplicationModal)
                 self.remove.show()
                 self.remove.raise_()
-
+    @Slot()
+    def moveItemClick(self):
+        connect()
+        for item in allItems():
+            if item[0] == self.itemslist.currentItem().text(0):
+                self.moveWidget.mainText.setText('Move {} to Production, Engineering, or Quality?'.format(item[0]))
+                self.moveWidget.mainText.setAlignment(Qt.AlignHCenter)
+                self.moveWidget.setWindowModality(Qt.ApplicationModal)
+                disconnect()
+                self.moveWidget.show()
+                self.moveWidget.raise_()
+                break
     #Settings button slots
     @Slot()
     def calDirecClick(self):
@@ -660,59 +739,55 @@ class MainWindow(QMainWindow):
             self.settings.scansDirecEdit.setText(directory)
 
     @Slot()
-    def dbDirClick(self):
-        global dbDir, newdbDir
-        directory = changedir(4)
-        if directory != None:
-            self.settings.dbDirEdit.setText(directory)
-            self.settings.dbDirChanged = True
-            newdbDir = directory
-
-    @Slot()
     def settingsCancel(self):
         global newdbDir
-        if self.settings.dbDirChanged == True:
-            self.settings.dbDirChanged = False
-            newdbDir = ''
         load()
-        #print(dbDir)
-        self.settings.hide()
-    @Slot()
-    def settingsOk(self):
-        global newdbDir,dbDir
-        if self.settings.dbDirChanged == True:
-            try:
-                move(dbDir,newdbDir)
-            except:
-                pass
-            dbDir = newdbDir + '\\calibrations.db'
-        connect()
-        c.execute("UPDATE directories SET calListDir = ? WHERE id = 1",(calListDir,))
-        c.execute("UPDATE directories SET tempFilesDir = ? WHERE id = 1",(tempFilesDir,))
-        c.execute("UPDATE directories SET calScansDir = ? WHERE id = 1",(calScansDir,))
-        if self.settings.dbDirChanged == True:
-            c.execute("UPDATE directories SET dbDir = ? WHERE id = 1",(dbDir,))
-        disconnect()
-        newdbDir = ''
-        load()
-        #print(dbDir)
         self.settings.hide()
 
-    #Item Removal Button Slots
+    @Slot()
+    def settingsOk(self):
+        global dbDir, config
+        if calListDir not in dbDir:
+            try:
+                copyfile(dbDir,calListDir)
+            except Exception as e:
+                errorMessage('Error!', str(e))
+
+        dbDir = calListDir + '\\calibrations.db'
+        lines = []
+        with open('config.py','rt') as cfg:
+            for line in cfg:
+                lines.append(line)
+        with open('config.py','wt',encoding = "UTF-8") as cfg:
+            for line in lines:
+                if "calListDir" in line:
+                    line = 'calListDir = r"{}"\n'.format(calListDir)
+                elif "tempFilesDir" in line:
+                    line = 'tempFilesDir = r"{}"\n'.format(tempFilesDir)
+                elif "calScansDir" in line:
+                    line = 'calScansDir = r"{}"\n'.format(calScansDir)
+                cfg.write(line)
+        #reload(config)
+        config = SourceFileLoader('config','config.py').load_module()
+        load()
+        self.settings.hide()
+
+
+    #Item Removal Button Slots------------------------------------------------------------------------------------------------------------
     @Slot()
     def removeClick(self): #Remove an item from service, moving its documents to the "Removed from Service" folder.
         connect()
         for item in allItems():
             if self.itemslist.currentItem().text(0) == item[0]:
                 try:
-                    move(item[8],'{}\\Calibration Items\\Removed from Service'.format(calScansDir))
-                    removeFromDB(item[0])
+                    newDirec = '{}\\Calibration Items\\Removed from Service'.format(calScansDir)
+                    move(item[8],newDirec)
+                    c.execute("UPDATE calibration_items SET directory='{}' WHERE serial_number=?".format(newDirec),(item[0],))
                 except FileNotFoundError:
                     pass
                 self.remove.hide()
         disconnect()
         self.updateTree()
-
     @Slot()
     def referenceClick(self): #Put an item in the "Reference only" folder, update the directory in the DB
         connect()
@@ -721,7 +796,7 @@ class MainWindow(QMainWindow):
                 try:
                     newDirec = '{}\\Calibration Items\\Ref Only'.format(calScansDir)
                     move(item[8],newDirec)
-                    c.execute("UPDATE directory={} WHERE serial_number = ?".format(newDirec),(item[0],))
+                    c.execute("UPDATE calibration_items SET directory='{}' WHERE serial_number=?".format(newDirec),(item[0],))
                     #removeFromDB(item[0])
                 except FileNotFoundError:
                     pass
@@ -730,17 +805,74 @@ class MainWindow(QMainWindow):
         self.updateTree()
     @Slot()
     def deleteClick(self):
+        connect()
         for item in allItems():
             if self.itemslist.currentItem().text(0) == item[0]:
-                #try:
-                #    rmtree(item.direc)
-                #except FileNotFoundError:
-                #    pass
-                self.updateTree()
-                self.remove.hide()
+                warningMessage = QMessageBox()
+                warningMessage.setWindowTitle('Delete "{}"?'.format(item[0]))
+                warningMessage.setText('This function will DELETE "{}" from the database, and delete the folder from the directory. Continue?'.format(item[0]))
+                okButton = warningMessage.addButton(QMessageBox.Ok)
+                cancelButton = warningMessage.addButton(QMessageBox.Cancel)
+                warningMessage.exec_()
+                if warningMessage.clickedButton() == cancelButton:
+                    self.remove.hide()
+                    disconnect()
+                    return
+                elif warningMessage.clickedButton() == okButton:
+                    try:
+                        rmtree(item[8])
+                    except Exception as e:
+                        errorMessage('Error!', str(e))
+                        pass
+                    try:
+                        removeFromDB(item[0])
+                    except Exception as e:
+                        errorMessage('Error!',str(e))
+                break
+        disconnect()
+        self.updateTree()
+        self.remove.hide()
     @Slot()
     def removeCancel(self):
         self.remove.hide()
+
+    #Move item slots----------------------------------------------------------------------------------------------------------------
+    @Slot()
+    def moveItem(self,selection):
+        if selection == 0:
+            folder = "PRODUCTION EQUIPMENT"
+        elif selection == 1:
+            folder = "ENGINEERING EQUIPMENT"
+        elif selection == 2:
+            folder = "QUALITY EQUIPMENT"
+        newDirec = '{}\\Calibration Items\\{}'.format(calScansDir,folder)
+
+        connect()
+        for item in allItems():
+            if self.itemslist.currentItem().text(0) == item[0]:
+                try:
+                    move(item[8],newDirec)
+                    c.execute("UPDATE calibration_items SET directory='{}' WHERE serial_number=?".format(newDirec),(item[0],))
+                except Exception as e:
+                    errorMessage('Error!',str(e))
+                    disconnect()
+                    return
+        disconnect()
+        self.updateTree()
+        self.moveWidget.hide()
+
+    @Slot()
+    def moveProd(self):
+        self.moveItem(0)
+    @Slot()
+    def moveEng(self):
+        self.moveItem(1)
+    @Slot()
+    def moveQuality(self):
+        self.moveItem(2)
+    @Slot()
+    def moveCancel(self):
+        self.moveWidget.hide()
 
     #Slots for item details
     @Slot()
@@ -816,6 +948,7 @@ class MainWindow(QMainWindow):
     def find(self):
         self.topitems[0].setExpanded(True)
         self.topitems[1].setExpanded(True)
+        self.topitems[2].setExpanded(True)
 
         #Calls the update method to search for items when text is changed
         searchmode = self.searchoptionsdict[self.searchoptions.currentText()]
@@ -946,7 +1079,7 @@ class MainWindow(QMainWindow):
                                 if item.text(0) == selecteditem:
                                     self.itemslist.setCurrentItem(item)
                                     break
-                            for item in self.otherItems:
+                            for item in self.refItems:
                                 if item.text(0) == selecteditem:
                                     self.itemslist.setCurrentItem(item)
                                     break
@@ -977,7 +1110,8 @@ class MainWindow(QMainWindow):
             self.snEdit.setReadOnly(True)
             self.descEdit.setReadOnly(True)
             return
-    #--------------------------------------
+
+    #Updates the list of items in the tree----------------------------------------------------------------------------------------------------
     def updateTree(self,search = False, text = None, mode = 0):
         if self.findentry.text() != '':
             search = True
@@ -997,7 +1131,7 @@ class MainWindow(QMainWindow):
         self.productionItems = []
         self.engineeringItems = []
         self.qualityItems = []
-        self.otherItems = []
+        self.refItems = []
         connect()
         all_items = allItems()
         for item in all_items:
@@ -1034,7 +1168,7 @@ class MainWindow(QMainWindow):
                             if item[15] != '':
                                 self.productionItems.append(QTreeWidgetItem(self.topitems[0]))
                                 self.productionItems[-1].setText(0, item[0])
-                elif 'QUALITY ITEMS' in item[8]:
+                elif 'QUALITY EQUIPMENT' in item[8]:
                     if search == False:
                         self.qualityItems.append(QTreeWidgetItem(self.topitems[2]))
                         self.qualityItems[-1].setText(0, item[0])
@@ -1051,22 +1185,22 @@ class MainWindow(QMainWindow):
                                 self.qualityItems.append(QTreeWidgetItem(self.topitems[2]))
                                 self.qualityItems[-1].setText(0, item[0])
 
-            else:
-                if search == False:
-                    self.otherItems.append(QTreeWidgetItem(self.topitems[3]))
-                    self.otherItems[-1].setText(0, item[0])
-                else:
-                    if item in searchItems and mode != 13 and mode != 15:
-                        self.otherItems.append(QTreeWidgetItem(self.topitems[3]))
-                        self.otherItems[-1].setText(0, item[0])
-                    elif mode == 13:
-                        if item[13] != 0:
-                            self.otherItems.append(QTreeWidgetItem(self.topitems[3]))
-                            self.otherItems[-1].setText(0, item[0])
-                    elif mode == 15:
-                        if item[15] != '':
-                                self.otherItems.append(QTreeWidgetItem(self.topitems[3]))
-                                self.otherItems[-1].setText(0, item[0])
+                elif 'Ref Only' in item[8]:
+                    if search == False:
+                        self.refItems.append(QTreeWidgetItem(self.topitems[3]))
+                        self.refItems[-1].setText(0, item[0])
+                    else:
+                        if item in searchItems and mode != 13 and mode != 15:
+                            self.refItems.append(QTreeWidgetItem(self.topitems[3]))
+                            self.refItems[-1].setText(0, item[0])
+                        elif mode == 13:
+                            if item[13] != 0:
+                                self.refItems.append(QTreeWidgetItem(self.topitems[3]))
+                                self.refItems[-1].setText(0, item[0])
+                        elif mode == 15:
+                            if item[15] != '':
+                                    self.refItems.append(QTreeWidgetItem(self.topitems[3]))
+                                    self.refItems[-1].setText(0, item[0])
         disconnect(save = False)
 
         self.topitems[0].addChildren(self.productionItems)
@@ -1075,23 +1209,65 @@ class MainWindow(QMainWindow):
         self.topitems[1].sortChildren(0,Qt.AscendingOrder)
         self.topitems[2].addChildren(self.qualityItems)
         self.topitems[2].sortChildren(0,Qt.AscendingOrder)
-        self.topitems[3].addChildren(self.otherItems)
+        self.topitems[3].addChildren(self.refItems)
         self.topitems[3].sortChildren(0,Qt.AscendingOrder)
         return
 
+    def checkFirstRun(self):
+        global config
+        if config.firstRun == True:
+            successMessage('First start up', """
+It appears that this is the first time CalTools has been run here. 
+Please check the directories in settings to make sure they're correct.
+Alternatively, the config.py text file bundled with this executable can be edited directly.
+            """)
+        lines = []
+        if path.isfile('config.py'):
+            with open('config.py','rt') as cfg:
+                for line in cfg:
+                    lines.append(line)
+            with open('config.py','wt',encoding = "UTF-8") as cfg:
+                for line in lines:
+                    if "firstRun" in line:
+                        line = 'firstRun = False'
+                    cfg.write(line)
+        #reload(config)
+        config = SourceFileLoader('config','config.py').load_module()
 
     def run(self):
-        connect()
+        
+        self.checkFirstRun()
+        try:
+            connect()
+        except Exception as e:
+            errorMessage('Error!', str(e))
         disconnect()
         create_tables()
         load()
         updateitems()
         self.settingsWindow()
         self.removeBox()
+        self.moveBox()
         self.updateTree()
         self.show()
         qt_app.exec_()
 
+#Generic message boxes-----------------------------------------------------------------------------------------------------
+def errorMessage(title = '', text = ''):
+    message = QMessageBox()
+    message.setIcon(QMessageBox.Critical)
+    message.setWindowTitle(title)
+    message.setText(text)
+    message.exec_()
+
+def successMessage(title = '', text = ''):
+    message = QMessageBox()
+    message.setIcon(QMessageBox.Information)
+    message.setWindowTitle(title)
+    message.setText(text)
+    message.exec_()
+
+#Run-----------------------------------------------------------------------------------------------------
 if __name__ == '__main__':
     app = MainWindow()
     app.run()
