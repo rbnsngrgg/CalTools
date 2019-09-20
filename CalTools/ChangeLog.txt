@@ -63,3 +63,14 @@ Changes
 	Remove item button hidden.
 	Fix handling of directories when settings window is canceled
 	Add timestamps to calibration item saves
+
+--2.0.0
+	Add functionality for Quality Equipment items.
+	Fix item removal functions, add function to move items to different categories.
+	Add config file, and generation of config file if one is not present, with notification if it is the first run.
+	Remove directories table from database.
+	Database no longer has separate directory.
+	Config option for database name.
+	Config option for list of folders to include in searching.
+	CalTools checks version against db version.
+	File->Exit button fixed.

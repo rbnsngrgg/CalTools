@@ -25,8 +25,11 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CalTools.py" />
+    <Compile Include="config.py" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="CalToolsIcon.ico" />
+    <Content Include="CalToolsIcon.png" />
     <Content Include="ChangeLog.txt" />
     <Content Include="DB Columns.txt" />
   </ItemGroup>
