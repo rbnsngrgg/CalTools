@@ -4,13 +4,13 @@ folders  = ["PRODUCTION EQUIPMENT","ENGINEERING EQUIPMENT","QUALITY EQUIPMENT", 
 #Prefix directory strings with r
 
 #Database name
-dbName = r"Test Equipment Calibration List.db"
+dbName = r"testingTest Equipment Calibration List.db"
 
 #Location of Database
 calListDir = r"\\artemis\Hardware Development Projects\Manufacturing Engineering\Test Equipment"
 
 #Location of template files
-tempFilesDir = r"C:\Users\grobinson\Documents\Calibrations\Template Files"
+tempFilesDir = r"\\artemis\Hardware Development Projects\Manufacturing Engineering\Test Equipment\Template Files"
 
 #Folder that includes "Calibration Items" folder
 calScansDir = r"\\artemis\Hardware Development Projects\Manufacturing Engineering\Test Equipment\Calibration Scans"
