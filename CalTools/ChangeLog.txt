@@ -1,19 +1,14 @@
 Planned features
 -Receiving folder that automatically places files where they need to be.
--Include timestamps on changes?
 -Password?
 -Clean up imports
 -Add date selection after clicking "New Report" button.
 -Add more details, such as certificate number, for items that are used to calibrate other items. Also add boolean attribute to identify these items.
--Add function to move items from production equipment to engineering equipment, and vice versa.
 -Decide on what to do with PM-Cal List spreadsheet...
 	|-Use until CalTools can be used as a total replacement.
 -Update code to follow PEP 8 and PEP 20?
 -Create labels automatically. Create template in Excel. Will have to cut manually.
 	Menu bar - Tools -> Create Cal Labels
--Implement functionality for database to be stored on the network instead of local directory.
--Reinstate the functionality of the "Remove Item" button.
--Notification feature for when items are nearing due, or on a time interval.
 
 Changes
 --0.2.1:
@@ -82,3 +77,6 @@ Changes
 
 --2.1.1
 	Fix bug that caused config.firstRun to be marked False before dialog box showed.
+
+--2.1.2
+	Fix bug when saving items that are removed from service and do not have a "last cal" date set (i.e. "Ref Only" items)

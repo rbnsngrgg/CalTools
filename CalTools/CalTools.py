@@ -559,7 +559,7 @@ class MainWindow(QMainWindow):
         global centralwidget, calendarWidget
         #Initialize the parent class, then set title and min window size
         QMainWindow.__init__(self)
-        self.setWindowTitle('CalTools 2.1.1')
+        self.setWindowTitle('CalTools 2.1.2')
         self.setMinimumSize(1000,600)
 
         #Icons
@@ -1673,10 +1673,16 @@ class MainWindow(QMainWindow):
                             inservice = 0
                             outofservicedate = datetime.strftime(datetime.today().date(),'%Y-%m-%d')
                             inservicedate = ''
-                            nextcal = str(datetime.strptime(item[5],'%Y-%m-%d').date() + relativedelta(months = interval))
+                            if item[5] != '':
+                                nextcal = str(datetime.strptime(item[5],'%Y-%m-%d').date() + relativedelta(months = interval))
+                            else:
+                                nextcal = ''
                         else:
                             inservice = 0
-                            nextcal = str(datetime.strptime(item[5],'%Y-%m-%d').date() + relativedelta(months = interval))
+                            if item[5] != '':
+                                nextcal = str(datetime.strptime(item[5],'%Y-%m-%d').date() + relativedelta(months = interval))
+                            else:
+                                nextcal = ''
                             inservicedate = ''
                             outofservicedate = item[12]
                         selecteditem = self.itemslist.currentItem().text(0)
