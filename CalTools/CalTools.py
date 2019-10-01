@@ -559,7 +559,7 @@ class MainWindow(QMainWindow):
         global centralwidget, calendarWidget
         #Initialize the parent class, then set title and min window size
         QMainWindow.__init__(self)
-        self.setWindowTitle('CalTools 2.1.0')
+        self.setWindowTitle('CalTools 2.1.1')
         self.setMinimumSize(1000,600)
 
         #Icons
