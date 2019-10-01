@@ -73,7 +73,6 @@ def connect(override = ''):
             directory = dbDir
         else:
             directory = config.dbName
-        config.firstRun = False
     elif dbDir != '':
         directory = dbDir
     else:

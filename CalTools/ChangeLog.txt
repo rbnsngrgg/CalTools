@@ -74,3 +74,11 @@ Changes
 	Config option for list of folders to include in searching.
 	CalTools checks version against db version.
 	File->Exit button fixed.
+
+--2.1.0
+	Various bug fixes
+	Calendar and item group functions to help with scheduling/tracking items.
+	Delete function now only deletes an item from the db, no longer deletes folders.
+
+--2.1.1
+	Fix bug that caused config.firstRun to be marked False before dialog box showed.
