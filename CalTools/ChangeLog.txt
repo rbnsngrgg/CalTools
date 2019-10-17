@@ -80,3 +80,9 @@ Changes
 
 --2.1.2
 	Fix bug when saving items that are removed from service and do not have a "last cal" date set (i.e. "Ref Only" items)
+
+--2.2.0
+	Fix bug that caused some items to not show any actions in calendar mode.
+	Fix model line being editable when CalTools is not in edit mode.
+	Add item group and actions to the out-of-cal reports.
+	Add option when right-clicking a weekly to-do item to create a cal report with only items for that week.

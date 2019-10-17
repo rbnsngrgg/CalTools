@@ -1,6 +1,6 @@
 import pickle, sys, openpyxl, sqlite3, listSearch, time, json
 from os import remove, path, startfile, listdir, unlink, mkdir
-from shutil import copyfile, move, rmtree
+from shutil import copyfile, move, rmtree, copy, copytree
 from tkinter import filedialog, Tk
 from datetime import date, datetime
 from PySide2.QtCore import *
@@ -40,32 +40,10 @@ except FileNotFoundError:
 
 dbVersion = '2'
 
-class Cal_Item:
-    def __init__(self, sn):
-        self.sn = sn
-        self.location = ''
-        self.sublocation = ''
-        self.interval = 12
-        self.cal_vendor = ''
-        self.manufacturer = ''
-        self.lastcal = ''
-        self.nextcal = ''
-        self.calasneeded = False
-        self.direc = ''
-        self.code = ''
-        self.description = ''
-        self.inservice = True
-        self.inservicedate = ''
-        self.outofservicedate = ''
-        self.caldue = False
-        self.ooc = ''
-        self.model = '' 
-
-
 firstrun = True
 dbDir = config.calListDir + '\\' + config.dbName
 newdbDir = ''
-#Connect to or create the database file
+#Connect to or create the database file----------------------------------------------------------------------------------------------------
 def connect(override = ''):
     global conn, c, firstrun, dbDir
     if config.firstRun == True:
@@ -76,7 +54,7 @@ def connect(override = ''):
     elif dbDir != '':
         directory = dbDir
     else:
-        directory = '\\\\artemis\\Hardware Development Projects\\Manufacturing Engineering\\Test Equipment\\calibrations.db'
+        directory = '\\\\artemis\\Hardware Development Projects\\Manufacturing Engineering\\Test Equipment\\{}'.format(config.dbName)
         dbDir = directory
     if override != '':
         directory = override
@@ -88,7 +66,7 @@ def connect(override = ''):
         return
     return conn, c
 
-#Save changes and close connection
+#Save changes and close connection---------------------------------------------------------------------------------------------------------
 def disconnect(save = True):
     if save == True:
         conn.commit()
@@ -99,7 +77,7 @@ def allItems():
     all_items = allItemsC.execute("SELECT * FROM calibration_items")
     return all_items
 
-#Create the default tables for the file
+#Create the default tables for the file----------------------------------------------------------------------------------------------------
 def create_tables(override = ''):
     while True:
         if override != '':
@@ -142,7 +120,6 @@ def create_tables(override = ''):
                                 include_all_model INTEGER DEFAULT 0
                                 )""")
                 c.execute("""PRAGMA user_version = 2""")
-
         elif int(version) > int(dbVersion):
             errorMessage('Version Error','The db version for this CalTools version is {}, the latest db version is {}. Update CalTools to work with the selected database.'.format(dbVersion, version))
             sys.exit(0)
@@ -151,7 +128,7 @@ def create_tables(override = ''):
             break
         disconnect()
 
-#Transfer the data from previous pickle file to the new database
+#Transfer the data from previous pickle file to the new database---------------------------------------------------------------------------
 @Slot()
 def migrate():
     warningMessage = QMessageBox()
@@ -205,7 +182,7 @@ def migrate():
     message.setText('Data migration complete')
     message.exec_()
 
-#Load directory data from config
+#Load directory data from config-----------------------------------------------------------------------------------------------------------
 def load():
     global calListDir, tempFilesDir, calScansDir, dbDir
     #Directory Data
@@ -214,7 +191,7 @@ def load():
     calScansDir = config.calScansDir
     dbDir = config.calListDir + '\\' + config.dbName
 
-#Change set directories
+#Change set directories--------------------------------------------------------------------------------------------------------------------
 def changedir(choice):
     global calListDir, tempFilesDir, calScansDir, dbDir
     root = Tk()
@@ -225,12 +202,12 @@ def changedir(choice):
         return directory
     root.destroy()
 
-#Opens the Cal-PM List
+#Opens the Cal-PM List---------------------------------------------------------------------------------------------------------------------
 def calList():
     file = calListDir + '\\Test Equipment Cal-PM List.xlsx'
     startfile(file)
 
-#Creates a new, blank, Excel report for today's date
+#Creates a new, blank, Excel report for today's date---------------------------------------------------------------------------------------
 def newReport(sn):
     updateitems()
     connect()
@@ -279,34 +256,48 @@ def newReport(sn):
                     startfile('{0}/{1}_{2}.xlsx'.format(direc,today,item[0]))
     disconnect()
     updateitems()
-#Generates an Excel spreadsheet with info on every item that is out of cal (OOC) or is within 30 days of its next cal date
-def report_OOC():
+#Generates an Excel spreadsheet with info on every item that is out of cal (OOC) or is within 30 days of its next cal date-----------------
+def report_OOC(mode = '', items = [], weekOf = ''):
     items_to_add = []
     connect()
     all_items = allItems()
-    for item in all_items:
-        #if (item.nextcal - datetime.today().date()).days <= 30:
-        if item[13] == 1:
-            if item[1] == 'At calibration':
-                continue
-            elif 'Ref Only' in item[8]:
-                continue
-            else:
-                
+    if mode != 'calendar':
+        for item in all_items:
+            #if (item.nextcal - datetime.today().date()).days <= 30:
+            if item[13] == 1:
+                if item[1] == 'At calibration':
+                    continue
+                elif 'Ref Only' in item[8]:
+                    continue
+                else:
+                    items_to_add.append(item)
+    else:
+        for item in all_items:
+            if item[0] in items:
                 items_to_add.append(item)
     today = datetime.strptime(str(datetime.today().date()),'%Y-%m-%d').date()
     if not path.isdir('{0}\\Calibration Items\\Snapshot Reports'.format(calScansDir)):
         mkdir('{0}\\Calibration Items\\Snapshot Reports'.format(calScansDir))
     copyfile('{}\\Out of Cal Report.xlsx'.format(tempFilesDir),'{0}\\Calibration Items\\Snapshot Reports\\{1}_Out of Cal Report.xlsx'.format(calScansDir,today))
     report = openpyxl.load_workbook('{0}\\Calibration Items\\Snapshot Reports\\{1}_Out of Cal Report.xlsx'.format(calScansDir,today))
-    name = '{0}\\Calibration Items\\Snapshot Reports\\{1}_Out of Cal Report.xlsx'.format(calScansDir,today)
+    if mode != 'calendar':
+        name = '{0}\\Calibration Items\\Snapshot Reports\\{1}_Out of Cal Report.xlsx'.format(calScansDir,today)
+    else:
+        name = f'{calScansDir}\\Calibration Items\\Snapshot Reports\\Week-{weekOf}_Cal Report.xlsx'
     row = 4
     ws = report.active
     #Columns A-F, SN, Description, Location, Manufacturer, Cal Vendor, Last cal, Next cal
-    ws['A2'] = str(today)
+    if mode != 'calendar':
+        ws['A2'] = str(today)
+    else:
+        ws['A2'] = f'Week of {weekOf}'
     for item in items_to_add:
-        if item[7] == 1:
+        if item[7] == 1 and item[10] == 1:
             ws['A{}'.format(row)] = '*{}'.format(item[0])
+        elif item[7] == 0 and item[10] == 0:
+            ws['A{}'.format(row)] = '**{}'.format(item[0])
+        elif item[7] == 1 and item[10] == 0:
+            ws['A{}'.format(row)] = '***{}'.format(item[0])
         else:
             ws['A{}'.format(row)] = item[0]
         ws['B{}'.format(row)] = item[14]
@@ -317,7 +308,7 @@ def report_OOC():
         ws['G{}'.format(row)] = item[5]
         ws['H{}'.format(row)] = item[6]
         ws['I{}'.format(row)] = item[17]
-        #ws['J{}'.format(row)] = 
+        ws['J{}'.format(row)] = checkReplacements(item)
         ws['K{}'.format(row)] = item[15]
         row += 1
     report.save(name)
@@ -329,7 +320,7 @@ def report_OOC():
         message.setWindowTitle('Error')
         message.setText('The file could not be opened.')
         message.exec_()
-#Updates calitemslist
+#Updates calitemslist----------------------------------------------------------------------------------------------------------------------
 def namereader(file='',folder='', all = False, option = None):
     #Folder will be "ENGINEERING" or "PRODUCTION" EQUIPMENT folder 
     if folder != '' and all == True:
@@ -415,16 +406,122 @@ def namereader(file='',folder='', all = False, option = None):
             c.execute(sql,(sn,))
 
         disconnect()
-#Checks all folders in cal scans directory
+#Checks all folders in cal scans directory-------------------------------------------------------------------------------------------------
 def updateitems():
     for dirs in listdir(calScansDir):
         current = calScansDir+'\\'+dirs
+        if not path.isdir(current):
+            continue
         for folder in listdir(current):
             if folder not in config.folders:
                 continue
             namereader(folder = current+'\\'+folder,all = True,option = current)
     return
-#Removes an item from the database
+
+#Global so that each iteration of verifyFiles has access without having to create them each time
+previousStruct = None
+currentStruct = None
+
+#Verify the integrity of the calibration files, to see if any files have been deleted since last backup------------------------------------
+@Slot()
+def verifyFiles(root = True, cFolder = r"['root']", pFolder = r"['root']"):
+    global previousStruct, currentStruct
+    missing = []
+    #Set initial conditions for iterating through the top layer of the structure tree
+    if root:
+        connect()
+        verifyC = conn.cursor()
+        previous = verifyC.execute("SELECT * FROM backup_log where ROWID IN ( SELECT max ( ROWID ) FROM backup_log )")
+        for struct in previous:
+            previousStruct = json.loads(struct[2])
+        disconnect()
+        currentStruct = backup(verifyOnly = True)
+
+    #For folder/file in "root"
+    for key in eval(fr'previousStruct{pFolder}'.encode('unicode_escape')):
+        #if it's a file
+        if not isinstance(eval(f"previousStruct{pFolder}['{key}']".encode('unicode_escape')),dict):
+            #If it's also in the current structure
+            if key in eval(fr"currentStruct{cFolder}.keys()".encode('unicode_escape')):
+                pass
+            else:
+                #Add to list of missing items
+                missing.append(eval(f"previousStruct{pFolder}['{key}']".encode('unicode_escape')))
+        #Else it's a folder
+        else:
+            #If it's not in the current structure, add the folder to list of missing items
+            if key not in eval(fr"currentStruct{cFolder}.keys()".encode('unicode_escape')):
+                missing.append(key)
+            #Whether folder is missing or not, get all of the file names and paths for a complete list of missing items through recursion,
+            #appending the key of the next folder to iterate through
+            subMissing = verifyFiles(root = False, cFolder = fr"{cFolder}['{key}']",pFolder = fr"{pFolder}['{key}']")
+            missing = missing + subMissing
+
+    #Return to parent if not root
+    if not root:
+        return missing
+    #Will return list to be displayed in a window
+    else:
+        return missing
+#Backup files------------------------------------------------------------------------------------------------------------------------------
+#cFolder is not the full path, just the folder name
+@Slot()
+def backup(complete = False,verifyOnly = False, cFolder = '', root = True):
+    structure = {}
+    if root:
+        if complete:
+            action = 'full backup'
+            copytree(config.calScansDir,config.backupDir)
+        elif not complete and not verifyOnly:
+            action = 'backup'
+        else:
+            action = 'verification'
+        connect()
+        updateC = conn.cursor()
+        rootStruct = {}
+        currentDirec = config.calScansDir
+        backupDirec = config.backupDir
+    else:
+        currentDirec = config.calScansDir + cFolder
+        backupDirec = config.backupDir + cFolder
+    for item in listdir(currentDirec):
+        #If file
+        if not path.isdir(currentDirec + '\\' + item):
+            if item in listdir(backupDirec):
+                pass
+            else:
+                if not verifyOnly:
+                    copy(currentDirec + '\\' + item, backupDirec)
+            if root:
+                rootStruct[item] = currentDirec + '\\' + item
+            else:
+                structure[item] = currentDirec + '\\' + item
+		#else folder
+        else:
+            if item in listdir(backupDirec):
+                pass
+            else:
+                if not verifyOnly:
+                    copytree(currentDirec + '\\' + item, backupDirec + '\\' + item)
+            newFolder = currentDirec+'\\'+item
+            folderStruct = backup(complete = False, cFolder = cFolder + '\\' + item, root = False)
+            if root:
+                rootStruct[newFolder] = folderStruct
+            else:
+                structure[newFolder] = folderStruct
+    if root:
+        finalStruct = {'root':rootStruct}
+        timestamp = datetime.utcnow().strftime('%Y-%m-%d-%H-%M-%S-%f')
+        jsonStructure = json.dumps(finalStruct)
+        if not verifyOnly:
+            updateC.execute("""INSERT OR IGNORE INTO backup_log (timestamp, location, structure, action) VALUES (?,?,?,?)""",(timestamp,backupDirec,jsonStructure,action))
+        disconnect()
+        if verifyOnly:
+            return finalStruct
+    else:
+        return structure
+
+#Removes an item from the database---------------------------------------------------------------------------------------------------------
 def removeFromDB(sn):
     c.execute("DELETE FROM calibration_items WHERE serial_number = ?",(sn,))
     removeFromGroups(sn)
@@ -438,6 +535,8 @@ def removeFromGroups(sn):
             removeFromGroupsC.execute("UPDATE item_groups SET items='{}' WHERE name=?".format(newItems),(group[0],))
 #Functions dealing with groups-------------------------------------------------------------------------------------------------------------
 def checkReplacements(item):
+    toRemove = []
+    message = 'Replace or calibrate by {}.'.format(item[6])
     if item[17] != '':
         for group in allGroups():
             if group[0] == item[17]:
@@ -447,13 +546,15 @@ def checkReplacements(item):
                     for sn in groupItems:
                         for snItem in allItems():
                             if snItem[0] == sn:
-                                if 'Production' in snItem[1]:
-                                    groupItems.remove(item[0])
-                    message = 'Prepare one of the following items to replace {} by {}: {}'.format(item[0],item[6],groupItems)
+                                if 'Production' in snItem[1] and snItem[0] in groupItems:
+                                    toRemove.append(snItem[0])
+                    for removal in toRemove:
+                        if removal in groupItems:
+                            groupItems.remove(removal)
+                    message = 'Calibrate or prepare one of the following items to replace {} by {}: {}'.format(item[0],item[6],groupItems)
                 break
-
     else:
-        message = 'No group assigned. Replace or calibrate by {}.'.format(item[6])
+        message = 'Replace or calibrate by {}.'.format(item[6])
     return message
 def allGroups():
     allGroupsC = conn.cursor()
@@ -461,7 +562,7 @@ def allGroups():
     return groups
 
 def addToGroup(sn,group):
-    #Return an int: 0 = success, 1 = item already in group list, 2 = item or group does not exist, 3 = sql error
+    #Return an int: 0 = success, 1 = item already in group list, 2 = item or group does not exist, 3 = sql error---------------------------
     selectedItem = None
     selectedGroup = None
     addToGroupC = conn.cursor()
@@ -509,7 +610,7 @@ def addToGroup(sn,group):
         errorMessage('Error adding item to group!', str(e))
         return 3
 
-#GUI & Button functions-----------------------------------------------------------------------------------------------------
+#GUI & Button functions--------------------------------------------------------------------------------------------------------------------
 qt_app = QApplication(sys.argv)
 centralwidget = QWidget()
 calendarWidget = QWidget()
@@ -559,7 +660,7 @@ class MainWindow(QMainWindow):
         global centralwidget, calendarWidget
         #Initialize the parent class, then set title and min window size
         QMainWindow.__init__(self)
-        self.setWindowTitle('CalTools 2.1.2')
+        self.setWindowTitle('CalTools 2.2.0')
         self.setMinimumSize(1000,600)
 
         #Icons
@@ -572,8 +673,7 @@ class MainWindow(QMainWindow):
         #self.centralwidget = QWidget()
         self.setCentralWidget(centralwidget)
 
-        #Calendar view
-        #self.calendarWidget = QWidget()
+        #Calendar view---------------------------------------------------------------------------------------------------------------------
         self.calendarLayout = QVBoxLayout()
         self.calendarTopRow = QHBoxLayout()
         self.calendarCenter = QHBoxLayout()
@@ -608,11 +708,13 @@ class MainWindow(QMainWindow):
         self.dayGoToItem = QAction("Go to item")
         self.dayGoToItem.triggered.connect(self.dayGoTo)
         self.weekGoToItem = QAction("Go to item")
+        self.weekReport = QAction("Weekly Report")
         self.weekGoToItem.triggered.connect(self.weekGoTo)
+        self.weekReport.triggered.connect(lambda x: self.calendarSelection(report = True))
         self.calendarWeekMenu.addAction(self.weekGoToItem)
+        self.calendarWeekMenu.addAction(self.weekReport)
         self.calendarDayMenu.addAction(self.dayGoToItem)
         
-
         #Create the layouts
         self.layout = QVBoxLayout()
         self.toprow = QHBoxLayout()
@@ -628,6 +730,8 @@ class MainWindow(QMainWindow):
         migration.triggered.connect(migrate)
         groups = QAction("Edit Item Groups", self)
         groups.triggered.connect(self.groupBoxShow)
+        backupAction = QAction("Backup files",self)
+        backupAction.triggered.connect(self.backupBoxShow)
         filemenu = self.menubar.addMenu("&File")
         filemenu.addAction(exitaction)
         toolsmenu = self.menubar.addMenu("&Tools")
@@ -684,6 +788,7 @@ class MainWindow(QMainWindow):
 
         #Calendar bottom row buttons
         self.calendarInServiceCheck = QCheckBox('Show only "In Service" items')
+        self.calendarInServiceCheck.setChecked(True)
         self.calendarInServiceCheck.stateChanged.connect(self.calendarShowItems)
         self.calendarShowOnly = QComboBox(self)
         self.calendarOptions = {'Show All':0,'Production Equipment':1,'Quality Equipment':2,'Engineering Equipment':3}
@@ -695,6 +800,7 @@ class MainWindow(QMainWindow):
         self.itemslist = QTreeWidget()
         self.itemslist.setHeaderLabel('Calibration Items')
         self.itemslist.itemSelectionChanged.connect(self.showDetails)
+        self.itemslist.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.topitems = []
         self.topitems.append(QTreeWidgetItem(self.itemslist))
         self.topitems[0].setText(0,'Production Equipment')
@@ -756,15 +862,13 @@ class MainWindow(QMainWindow):
         self.details.addRow('In Service: ',self.inServiceEdit)
         self.details.addRow('Item Group: ', self.groupEdit)
         self.details.addRow('Comments: ',self.commentEdit)
-        #---------------------------
+        #----------------------------------------------------------------------------------------------------------------------------------
         self.searchoptions = QComboBox(self)
         self.searchoptionsdict = {'Serial Number':0,'Model':14,'Description':9,'Location':1,'Manufacturer':4,'Cal Vendor':3,'Out of Cal':13, 'Has Comment':15}
         self.searchoptions.addItems(sorted(list(self.searchoptionsdict.keys())))
         self.searchoptions.setCurrentIndex(7)
         self.searchoptions.currentIndexChanged.connect(self.indexCheck)
-
-        #---------------------------
-
+        #----------------------------------------------------------------------------------------------------------------------------------
         self.focus_layout.addWidget(self.itemslist,0,0)
         self.focus_layout.addWidget(self.searchoptions,1,0)
         self.focus_layout.addLayout(self.details,0,1)
@@ -824,6 +928,7 @@ class MainWindow(QMainWindow):
 
         centralwidget.setLayout(self.layout)
         self.editable = False
+    #--------------------------------------------------------------------------------------------------------------------------------------
     def settingsWindow(self):
         self.settings = QWidget()
         self.settings.setMinimumSize(600,300)
@@ -868,6 +973,7 @@ class MainWindow(QMainWindow):
         self.settings.bottomButtons.addWidget(self.settings.cancelBtn)
         self.settings.layout.addLayout(self.settings.bottomButtons)
         self.settings.setLayout(self.settings.layout)
+    #--------------------------------------------------------------------------------------------------------------------------------------
     def removeBox(self):
         self.remove = QWidget()
         self.remove.setFixedSize(350,100)
@@ -893,6 +999,7 @@ class MainWindow(QMainWindow):
         self.remove.layout.addWidget(self.remove.mainText)
         self.remove.layout.addLayout(self.remove.bottomButtons)
         self.remove.setLayout(self.remove.layout)
+    #--------------------------------------------------------------------------------------------------------------------------------------
     def moveBox(self):
         self.moveWidget = QWidget()
         self.moveWidget.setFixedSize(350,100)
@@ -919,6 +1026,51 @@ class MainWindow(QMainWindow):
         self.moveWidget.layout.addWidget(self.moveWidget.mainText)
         self.moveWidget.layout.addLayout(self.moveWidget.bottomButtons)
         self.moveWidget.setLayout(self.moveWidget.layout)
+    #--------------------------------------------------------------------------------------------------------------------------------------
+    def backupBox(self):
+        self.backupWidget = QWidget()
+        self.backupWidget.setFixedSize(400,400)
+        self.backupWidget.setWindowTitle('Backup Files')
+        self.backupWidget.setWindowIcon(self.icon)
+        self.backupWidget.layout = QVBoxLayout()
+
+        self.backupWidget.fullBackup = QPushButton('Full backup')
+        self.backupWidget.fullBackup.clicked.connect(lambda x: backup(complete = True))
+        self.backupWidget.verificationBackup = QPushButton('Backup and verify')
+        self.backupWidget.verificationBackup.clicked.connect(lambda x: backup())
+        self.backupWidget.verification = QPushButton('Verification')
+        self.backupWidget.verification.clicked.connect(verifyFiles)
+        self.backupWidget.cancel = QPushButton('Cancel')
+        self.backupWidget.cancel.clicked.connect(self.backupCancel)
+
+        self.backupWidget.layout.addWidget(self.backupWidget.fullBackup)
+        self.backupWidget.layout.addWidget(self.backupWidget.verificationBackup)
+        self.backupWidget.layout.addWidget(self.backupWidget.verification)
+        self.backupWidget.layout.addWidget(self.backupWidget.cancel)
+        self.backupWidget.setLayout(self.backupWidget.layout)
+    #--------------------------------------------------------------------------------------------------------------------------------------
+    @Slot()
+    def editSelectedBox(self):
+        self.editBox = QWidget()
+        self.editBox.setFixedSize(400,400)
+        self.editBox.setWindowTitle('Edit selected items')
+        self.editBox.setWindowIcon(self.icon)
+        self.editBox.layout = QVBoxLayout()
+        self.editBox.sublayout = QFormLayout()
+
+        self.editBox.optionsList = QComboBox()
+        self.editBox.optionsList.addItems(sorted(['Model','Description','Location','Manufacturer','Cal Vendor','Cal Interval', 'Cal As Needed','In Service','Group','Comment']))
+        self.editBox.model = QLineEdit()
+        self.editBox.description = QLineEdit()
+        self.editBox.location = QComboBox()
+        self.editBox.manufacturer = QComboBox()
+        self.editBox.calVendor = QComboBox()
+        self.editBox.calInterval = QSpinBox()
+        self.editBox.asNeeded = QCheckBox()
+        self.editBox.inService = QCheckBox()
+        self.editBox.group = QComboBox()
+        self.editBox.comment = QLineEdit()
+    #--------------------------------------------------------------------------------------------------------------------------------------
     def groupBox(self):
         self.groupWidget = QWidget()
         self.groupWidget.setFixedSize(700,400)
@@ -979,7 +1131,7 @@ class MainWindow(QMainWindow):
         row = self.groupWidget.groupDetails.itemList.currentRow()
         self.groupWidget.currentGroupItems.remove(item)
         self.groupWidget.groupDetails.itemList.takeItem(row)
-    #Slots for buttons-------------------------------------------------------------------------------------------------------------
+    #Slots for buttons---------------------------------------------------------------------------------------------------------------------
     @Slot()
     def calListClick(self):
         calList()
@@ -992,11 +1144,12 @@ class MainWindow(QMainWindow):
     @Slot()
     def updateClick(self):
         updateitems()
-        currentItem = self.itemslist.currentItem().text(0)
-        searchmode = self.searchoptionsdict[self.searchoptions.currentText()]
-        text = self.findentry.text()
-        self.updateTree(search = True, text = text, mode = searchmode)
-        self.goToListItem(currentItem)
+        if self.itemslist.currentItem() is not None:
+            currentItem = self.itemslist.currentItem().text(0)
+            searchmode = self.searchoptionsdict[self.searchoptions.currentText()]
+            text = self.findentry.text()
+            self.updateTree(search = True, text = text, mode = searchmode)
+            self.goToListItem(currentItem)
     @Slot()
     def calFolderClick(self):
         startfile(calScansDir)
@@ -1033,6 +1186,10 @@ class MainWindow(QMainWindow):
         except AttributeError:
             disconnect(save = False)
             return
+    #Edit all selected items
+    @Slot()
+    def editSelected(self):
+        pass
     #Calendar slots------------------------------------------------------------------------------------------------------------------------
     @Slot()
     def switchView(self):
@@ -1052,12 +1209,13 @@ class MainWindow(QMainWindow):
         self.calendar.updateCells()
         self.calendarSelection()
     @Slot()
-    def calendarSelection(self):
+    def calendarSelection(self, report = False):
         index = self.calendarShowOnly.currentIndex()
         selectedDate = self.calendar.selectedDate()
         date = '{}-{}-{}'.format(selectedDate.year(),selectedDate.month(),selectedDate.day())
         weekOf = ''
         weekStart = QDate(selectedDate.year(),selectedDate.month(),selectedDate.day())
+        weekItems = []
         while weekStart.dayOfWeek() != 7:
             weekStart = weekStart.addDays(-1)
         self.calendarWeekLabel.setText('To-do during week of {}:'.format(weekStart.toString(Qt.ISODate)))
@@ -1097,9 +1255,11 @@ class MainWindow(QMainWindow):
                 dayRow += 1
             
             #Week items
-            if item[6] == '' or item[3] == 'Perceptron':
+            if 'Ref Only' in item[8]:
                 continue
-            if (datetime.strptime(item[6],'%Y-%m-%d').date() - datetime.strptime(weekStart.toString(Qt.ISODate),'%Y-%m-%d').date()).days <= 60:
+            if (item[6] == '' or (datetime.strptime(item[6],'%Y-%m-%d').date() - datetime.strptime(weekStart.toString(Qt.ISODate),'%Y-%m-%d').date()).days <= 60 
+                or (datetime.strptime(item[6],'%Y-%m-%d').date() < datetime.strptime(weekStart.toString(Qt.ISODate),'%Y-%m-%d').date())):
+                weekItems.append(item[0])
                 if item[7] == 0:
                     self.calendarWeekDetails.insertRow(weekRow)
                     self.calendarWeekDetails.setItem(weekRow,0,QTableWidgetItem(item[0]))
@@ -1110,6 +1270,8 @@ class MainWindow(QMainWindow):
                     self.calendarWeekDetails.setItem(weekRow,5,QTableWidgetItem(item[6]))
                     weekRow += 1
         disconnect()
+        if report == True:
+            report_OOC(mode = 'calendar',items = weekItems, weekOf = weekStart.toString(Qt.ISODate))
     @Slot()
     def updateCalendarAction(self):
         self.calendarActionText.clear()
@@ -1146,7 +1308,7 @@ class MainWindow(QMainWindow):
         sn = self.calendarWeekDetails.selectedItems()[0].text()
         self.switchView()
         self.goToListItem(sn)
-    #Settings button slots
+    #Settings button slots-----------------------------------------------------------------------------------------------------------------
     @Slot()
     def calDirecClick(self):
         global calListDir
@@ -1203,7 +1365,6 @@ class MainWindow(QMainWindow):
         load()
         self.settings.hide()
 
-
     #Item Removal Button Slots-------------------------------------------------------------------------------------------------------------
     @Slot()
     def removeClick(self): #Remove an item from service, moving its documents to the "Removed from Service" folder.
@@ -1218,7 +1379,7 @@ class MainWindow(QMainWindow):
                         return
                     else:
                         move(item[8],newDirec)
-                        c.execute("UPDATE calibration_items SET directory='{}' WHERE serial_number=?".format(newDirec),(item[0],))
+                        c.execute("UPDATE calibration_items SET directory='{}' WHERE serial_number=?".format(newDirec + '\\' + item[0]),(item[0],))
                 except FileNotFoundError:
                     pass
                 removeFromGroups(item[0])
@@ -1238,7 +1399,7 @@ class MainWindow(QMainWindow):
                         return
                     else:
                         move(item[8],newDirec)
-                        c.execute("UPDATE calibration_items SET directory='{}' WHERE serial_number=?".format(newDirec),(item[0],))
+                        c.execute("UPDATE calibration_items SET directory='{}' WHERE serial_number=?".format(newDirec + '\\' + item[0]),(item[0],))
                 except FileNotFoundError:
                     pass
                 removeFromGroups(item[0])
@@ -1262,15 +1423,9 @@ class MainWindow(QMainWindow):
                     return
                 elif warningMessage.clickedButton() == okButton:
                     try:
-                        #rmtree(item[8])
                         removeFromDB(item[0])
                     except Exception as e:
-                        errorMessage('Error!', str(e))
-                        pass
-                    try:
-                        removeFromDB(item[0])
-                    except Exception as e:
-                        errorMessage('Error!',str(e))
+                        errorMessage('Error deleting item!', str(e))
                 break
         disconnect()
         self.updateGroupList()
@@ -1290,7 +1445,6 @@ class MainWindow(QMainWindow):
         elif selection == 2:
             folder = "QUALITY EQUIPMENT"
         newDirec = '{}\\Calibration Items\\{}'.format(calScansDir,folder)
-
         connect()
         for item in allItems():
             if self.itemslist.currentItem().text(0) == item[0]:
@@ -1301,7 +1455,7 @@ class MainWindow(QMainWindow):
                         return
                     else:
                         move(item[8],newDirec)
-                        c.execute("UPDATE calibration_items SET directory='{}' WHERE serial_number=?".format(newDirec),(item[0],))
+                        c.execute("UPDATE calibration_items SET directory='{}' WHERE serial_number=?".format(newDirec + '\\' + item[0]),(item[0],))
                 except Exception as e:
                     errorMessage('Error!',str(e))
                     disconnect()
@@ -1323,7 +1477,7 @@ class MainWindow(QMainWindow):
     def moveCancel(self):
         self.moveWidget.hide()
 
-    #Group box slots/methods-----------------------------------------------------------------------------------------------------------------------
+    #Group box slots/methods---------------------------------------------------------------------------------------------------------------
     @Slot()
     def groupBoxShow(self):
         self.updateGroupList()
@@ -1396,6 +1550,14 @@ class MainWindow(QMainWindow):
             self.groupWidget.groupDetails.includeSameModel.setChecked(True)
         self.groupWidget.groupDetails.itemList.addItems(sorted(json.loads(g[1])))
         self.groupWidget.currentGroupItems = json.loads(g[1])
+
+    #Backup box slots----------------------------------------------------------------------------------------------------------------------
+    def backupBoxShow(self):
+        self.backupWidget.show()
+
+    def backupCancel(self):
+        self.backupWidget.hide()
+
     #--------------------------------------------------------------------------------------------------------------------------------------
     def goToListItem(self,sn):
         for item in self.productionItems:
@@ -1525,6 +1687,8 @@ class MainWindow(QMainWindow):
                     self.inServiceEdit.setEnabled(False)
                     #self.editClick(toggle = True)
             disconnect(save = False)
+        except AttributeError:
+            pass
         except Exception as e:
             errorMessage('Error showing item details',str(e))
            
@@ -1705,8 +1869,6 @@ class MainWindow(QMainWindow):
             self.manufacturerEdit.setEnabled(False)
             self.vendorEdit.setEnabled(False)
             self.intervalEdit.setEnabled(False)
-            #self.lastEdit.setReadOnly(True)
-            #self.nextEdit.setReadOnly(True)
             self.inServiceEdit.setEnabled(False)
             self.inServiceDateEdit.setReadOnly(True)
             self.commentEdit.setReadOnly(True)
@@ -1714,10 +1876,6 @@ class MainWindow(QMainWindow):
             self.groupEdit.setEnabled(False)
             self.editable = False
             #Handles updating of placeholder text
-            #if toggle == False:
-                #self.snEdit.setPlaceholderText(self.snEdit.text())
-                #self.modelEdit.setPlaceholderText(self.modelEdit.text())
-                #self.descEdit.setPlaceholderText(self.descEdit.text())
             if len(self.snEdit.placeholderText()) == 0:
                 self.snEdit.setPlaceholderText(self.itemslist.currentItem().text(0))
             self.snEdit.clear()
@@ -1725,10 +1883,11 @@ class MainWindow(QMainWindow):
             self.descEdit.clear()
             self.commentEdit.clear()
             self.snEdit.setReadOnly(True)
+            self.modelEdit.setReadOnly(True)
             self.descEdit.setReadOnly(True)
             return
 
-    #Updates the list of items in the tree----------------------------------------------------------------------------------------------------
+    #Updates the list of items in the tree-------------------------------------------------------------------------------------------------
     def updateTree(self,search = False, text = None, mode = 0):
         if self.findentry.text() != '':
             search = True
@@ -1830,47 +1989,19 @@ class MainWindow(QMainWindow):
         self.topitems[3].sortChildren(0,Qt.AscendingOrder)
         return
 
-    def checkFirstRun(self):
-        global config
-        if config.firstRun == True:
-            successMessage('First start up', """
-It appears that this is the first time CalTools has been run here. 
-Please check the directories in settings to make sure they're correct.
-Alternatively, the config.py text file bundled with this executable can be edited directly.
-            """)
-        lines = []
-        if path.isfile('config.py'):
-            with open('config.py','rt') as cfg:
-                for line in cfg:
-                    lines.append(line)
-            with open('config.py','wt',encoding = "UTF-8") as cfg:
-                for line in lines:
-                    if "firstRun" in line:
-                        line = 'firstRun = False'
-                    cfg.write(line)
-        #reload(config)
-        config = SourceFileLoader('config','config.py').load_module()
-
     def run(self):
-        
-        self.checkFirstRun()
-        try:
-            connect()
-        except Exception as e:
-            errorMessage('Error!', str(e))
-        disconnect()
-        create_tables()
         load()
         updateitems()
         self.settingsWindow()
         self.removeBox()
         self.moveBox()
         self.groupBox()
+        self.backupBox()
         self.updateTree()
         self.show()
         qt_app.exec_()
 
-#Generic message boxes-----------------------------------------------------------------------------------------------------
+#Generic message boxes---------------------------------------------------------------------------------------------------------------------
 def errorMessage(title = '', text = ''):
     message = QMessageBox()
     message.setIcon(QMessageBox.Critical)
@@ -1885,7 +2016,35 @@ def successMessage(title = '', text = ''):
     message.setText(text)
     message.exec_()
 
-#Run-----------------------------------------------------------------------------------------------------
+#Run---------------------------------------------------------------------------------------------------------------------------------------
+def checkFirstRun():
+    global config
+    if config.firstRun == True:
+        successMessage('First start up', """
+It appears that this is the first time CalTools has been run here. 
+Please check the directories in settings to make sure they're correct.
+Alternatively, the config.py text file bundled with this executable can be edited directly.
+        """)
+    lines = []
+    if path.isfile('config.py'):
+        with open('config.py','rt') as cfg:
+            for line in cfg:
+                lines.append(line)
+        with open('config.py','wt',encoding = "UTF-8") as cfg:
+            for line in lines:
+                if "firstRun" in line:
+                    line = 'firstRun = False'
+                cfg.write(line)
+    #reload(config)
+    config = SourceFileLoader('config','config.py').load_module()
+
 if __name__ == '__main__':
+    checkFirstRun()
+    try:
+        connect()
+    except Exception as e:
+        errorMessage('Error!', str(e))
+    disconnect()
+    create_tables()
     app = MainWindow()
     app.run()
