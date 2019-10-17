@@ -25,7 +25,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CalTools.py" />
-    <Compile Include="config.py" />
+    <Compile Include="config_orig.py" />
     <Compile Include="listSearch.py" />
   </ItemGroup>
   <ItemGroup>
