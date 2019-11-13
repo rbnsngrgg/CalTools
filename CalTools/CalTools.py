@@ -10,6 +10,10 @@ from dateutil.relativedelta import relativedelta
 from win10toast import ToastNotifier
 from importlib import reload
 from importlib.machinery import SourceFileLoader
+
+toaster = ToastNotifier()
+#toaster.show_toast('CalTools 3','CalTools is starting.',threaded = True)
+
 try:
     config = SourceFileLoader('config','./config.py').load_module()
 except FileNotFoundError:
@@ -38,11 +42,18 @@ except FileNotFoundError:
             cfg.write(line)
     config = SourceFileLoader('config','config.py').load_module()
 
-dbVersion = '2'
+dbVersion = '3'
 
 firstrun = True
 dbDir = config.calListDir + '\\' + config.dbName
 newdbDir = ''
+
+#Function for images included in pyinstaller .exe
+def resource_path(relative_path):
+    if hasattr(sys, '_MEIPASS'):
+        return path.join(sys._MEIPASS, relative_path)
+    return path.join(path.abspath("."), relative_path)
+
 #Connect to or create the database file----------------------------------------------------------------------------------------------------
 def connect(override = ''):
     global conn, c, firstrun, dbDir
@@ -92,7 +103,7 @@ def create_tables(override = ''):
                         manufacturer TEXT DEFAULT '',
                         lastcal DEFAULT '',
                         nextcal DEFAULT '',
-                        calasneeded INTEGER DEFAULT 0,
+                        mandatory INTEGER DEFAULT 1,
                         directory TEXT DEFAULT '',
                         description TEXT DEFAULT '',
                         inservice INTEGER DEFAULT 1,
@@ -100,18 +111,28 @@ def create_tables(override = ''):
                         outofservicedate DEFAULT '',
                         caldue INTEGER DEFAULT 0,
                         model TEXT DEFAULT '',
-                        comment TEXT DEFAULT ''
-                        )""")
-
+                        comment TEXT DEFAULT '',
+                        timestamp TEXT DEFAULT '',
+                        item_group TEXT DEFAULT '',
+                        calibration_tool TEXT DEFAULT '',
+                        verify_or_calibrate TEXT DEFAULT 'CALIBRATE'
+                    )""")
+        c.execute("""CREATE TABLE IF NOT EXISTS item_groups (
+                        name TEXT PRIMARY KEY,
+                        items TEXT DEFAULT '[]',
+                        include_all_model INTEGER DEFAULT 0
+                    )""")
         c.execute("""DROP TABLE IF EXISTS directories""")
     
         c.execute("""PRAGMA user_version""")
         version = c.fetchone()[0]
 
         if int(version) < int(dbVersion):
+            #Timestamps
             if str(version) == '0':
                 c.execute("""ALTER TABLE calibration_items ADD timestamp TEXT DEFAULT ''""")
                 c.execute("""PRAGMA user_version = 1""")
+            #Item groups
             elif str(version) == '1':
                 c.execute("""ALTER TABLE calibration_items ADD item_group TEXT DEFAULT ''""")
                 c.execute("""CREATE TABLE IF NOT EXISTS item_groups (
@@ -120,6 +141,44 @@ def create_tables(override = ''):
                                 include_all_model INTEGER DEFAULT 0
                                 )""")
                 c.execute("""PRAGMA user_version = 2""")
+            #Calibration tool & Verification/Cal
+            elif str(version) == '2':
+                c.execute("""ALTER TABLE calibration_items ADD verify_or_calibrate TEXT DEFAULT 'CALIBRATE'""")
+                c.execute("""ALTER TABLE calibration_items RENAME TO calibration_items_old""")
+                c.execute("""CREATE TABLE calibration_items (
+                                serial_number TEXT PRIMARY KEY,
+                                location TEXT DEFAULT '',
+                                interval INTEGER DEFAULT 12,
+                                cal_vendor TEXT DEFAULT '',
+                                manufacturer TEXT DEFAULT '',
+                                lastcal DEFAULT '',
+                                nextcal DEFAULT '',
+                                mandatory INTEGER DEFAULT 1,
+                                directory TEXT DEFAULT '',
+                                description TEXT DEFAULT '',
+                                inservice INTEGER DEFAULT 1,
+                                inservicedate DEFAULT '',
+                                outofservicedate DEFAULT '',
+                                caldue INTEGER DEFAULT 0,
+                                model TEXT DEFAULT '',
+                                comment TEXT DEFAULT '',
+                                timestamp TEXT DEFAULT '',
+                                item_group TEXT DEFAULT '',
+                                verify_or_calibrate TEXT DEFAULT 'CALIBRATE'
+                            )""")
+                c.execute("""INSERT INTO calibration_items (serial_number,location,interval,cal_vendor,manufacturer,lastcal,nextcal,mandatory,directory,description,
+                inservice,inservicedate,outofservicedate,caldue,model,comment,timestamp,item_group) SELECT serial_number,location,interval,cal_vendor,
+                manufacturer,lastcal,nextcal,calasneeded,directory,description,inservice,inservicedate,outofservicedate,caldue,model,comment,timestamp,item_group FROM calibration_items_old""")
+                
+                for item in allItems():
+                    if item[7] == 0:
+                        mandatory = 1
+                    else:
+                        mandatory = 0
+                    c.execute("""UPDATE calibration_items SET mandatory = '{}' WHERE serial_number = ?""".format(mandatory),(item[0],))
+                c.execute("""DROP TABLE calibration_items_old""")
+                c.execute("""PRAGMA user_version = 3""")
+                
         elif int(version) > int(dbVersion):
             errorMessage('Version Error','The db version for this CalTools version is {}, the latest db version is {}. Update CalTools to work with the selected database.'.format(dbVersion, version))
             sys.exit(0)
@@ -153,9 +212,9 @@ def migrate():
         return
     for item in items:
         if item.calasneeded == True:
-            current_calasneeded = 1
+            current_mandatory = 0
         else:
-            current_calasneeded = 0
+            current_mandatory = 1
         if item.inservice == True:
             current_inservice = 1
         else:
@@ -168,11 +227,11 @@ def migrate():
             current_location = '{}-{}'.format(item.location,item.sublocation)
         else:
             current_location = item.location
-        c.execute("""INSERT OR REPLACE INTO calibration_items (serial_number, location, interval, cal_vendor, manufacturer, lastcal, nextcal, calasneeded, 
+        c.execute("""INSERT OR REPLACE INTO calibration_items (serial_number, location, interval, cal_vendor, manufacturer, lastcal, nextcal, mandatory, 
                     directory, description, inservice, inservicedate, outofservicedate, caldue, model)
                     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""", 
                     (item.sn, current_location, item.interval, item.cal_vendor, item.manufacturer, str(item.lastcal), str(item.nextcal),
-                            current_calasneeded, item.direc, item.description, current_inservice, str(item.inservicedate), str(item.outofservicedate),
+                            current_mandatory, item.direc, item.description, current_inservice, str(item.inservicedate), str(item.outofservicedate),
                             current_caldue, item.model,))
     conn.commit()
     conn.close()
@@ -660,13 +719,20 @@ class MainWindow(QMainWindow):
         global centralwidget, calendarWidget
         #Initialize the parent class, then set title and min window size
         QMainWindow.__init__(self)
-        self.setWindowTitle('CalTools 2.2.0')
+        self.setWindowTitle('CalTools 3')
         self.setMinimumSize(1000,600)
 
         #Icons
-        self.icon = QIcon('CalToolsIcon.png')
-        self.calendarIcon = QIcon('calendar.png')
-        self.toolsIcon = QIcon('CalToolsIcon.png')
+        self.icon = QIcon(resource_path('images\\CalToolsIcon.png'))
+        self.calendarIcon = QIcon(resource_path('images\\calendar.png'))
+        self.toolsIcon = QIcon(resource_path('images\\CalToolsIcon.png'))
+        self.editIcon = QIcon(resource_path('images\\edit.png'))
+        self.saveIcon = QIcon(resource_path('images\\save.png'))
+        self.folderIcon = QIcon(resource_path('images\\folder.png'))
+        self.reportIcon = QIcon(resource_path('images\\report.png'))
+        self.removeIcon  = QIcon(resource_path('images\\delete.png'))
+        self.moveIcon = QIcon(resource_path('images\\move.png'))
+
         self.setWindowIcon(self.icon)
 
         #Set QWidget as central for the QMainWindow, QWidget will hold layouts
@@ -739,9 +805,10 @@ class MainWindow(QMainWindow):
         toolsmenu.addAction(groups)
         #Create the top row buttons to go into the sublayout (which is then in the main layout)
         self.calendarButton = QPushButton('')
-        self.calendarButton.setFixedSize(25,25)
+        self.calendarButton.setToolTip('Calendar')
+        self.calendarButton.setFixedSize(35,35)
         self.calendarButton.setIcon(self.calendarIcon)
-        self.calendarButton.setIconSize(QSize(21,21))
+        self.calendarButton.setIconSize(QSize(31,31))
         self.calendarButton.clicked.connect(self.switchView)
         self.btn0 = QPushButton('Open Cal List')
         self.btn0.clicked.connect(self.calListClick)
@@ -755,9 +822,10 @@ class MainWindow(QMainWindow):
         self.btn5.clicked.connect(self.settingsClick)
         #Calendar top row buttons
         self.itemsButton = QPushButton('')
-        self.itemsButton.setFixedSize(25,25)
+        self.itemsButton.setToolTip('Item List')
+        self.itemsButton.setFixedSize(35,35)
         self.itemsButton.setIcon(self.toolsIcon)
-        self.itemsButton.setIconSize(QSize(20,20))
+        self.itemsButton.setIconSize(QSize(30,30))
         self.itemsButton.clicked.connect(self.switchView)
         self.calendarBtn0 = QPushButton('Open Cal List')
         self.calendarBtn0.clicked.connect(self.calListClick)
@@ -787,7 +855,7 @@ class MainWindow(QMainWindow):
         self.calendarTopRow.addWidget(self.calendarBtn5)
 
         #Calendar bottom row buttons
-        self.calendarInServiceCheck = QCheckBox('Show only "In Service" items')
+        self.calendarInServiceCheck = QCheckBox('Show only mandatory, in service items')
         self.calendarInServiceCheck.setChecked(True)
         self.calendarInServiceCheck.stateChanged.connect(self.calendarShowItems)
         self.calendarShowOnly = QComboBox(self)
@@ -802,18 +870,14 @@ class MainWindow(QMainWindow):
         self.itemslist.itemSelectionChanged.connect(self.showDetails)
         self.itemslist.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.topitems = []
-        self.topitems.append(QTreeWidgetItem(self.itemslist))
-        self.topitems[0].setText(0,'Production Equipment')
-        self.topitems.append(QTreeWidgetItem(self.itemslist))
-        self.topitems[1].setText(0,'Engineering Equipment')
-        self.topitems.append(QTreeWidgetItem(self.itemslist))
-        self.topitems[2].setText(0,'Quality Equipment')
-        self.topitems.append(QTreeWidgetItem(self.itemslist))
-        self.topitems[3].setText(0,'Reference Equipment')
+        for folder in config.folders:
+            self.topitems.append(QTreeWidgetItem(self.itemslist))
+            self.topitems[-1].setText(0, folder)
         self.itemslist.addTopLevelItems(self.topitems)
         self.details = QFormLayout()
 
         #Items in the details form
+        self.detailsGroup = QGroupBox("Item Details",self)
         self.snEdit = QLineEdit(self)
         self.snEdit.setReadOnly(True)
         self.modelEdit = QLineEdit(self)
@@ -827,6 +891,8 @@ class MainWindow(QMainWindow):
         self.manufacturerEdit = QComboBox(self)
         self.manufacturerEdit.setEnabled(False)
         self.manufacturerEdit.setEditable(True)
+        self.calOrVerify = QComboBox(self)
+        self.calOrVerify.setEnabled(False)
         self.vendorEdit = QComboBox(self)
         self.vendorEdit.setEnabled(False)
         self.vendorEdit.setEditable(True)
@@ -836,8 +902,8 @@ class MainWindow(QMainWindow):
         self.lastEdit.setReadOnly(True)
         self.nextEdit = QLineEdit(self)
         self.nextEdit.setReadOnly(True)
-        self.asNeededEdit = QCheckBox(self)
-        self.asNeededEdit.setEnabled(False)
+        self.mandatoryEdit = QCheckBox(self)
+        self.mandatoryEdit.setEnabled(False)
         self.inServiceEdit = QCheckBox(self)
         self.inServiceEdit.setEnabled(False)
         self.inServiceDateEdit = QLineEdit(self)
@@ -853,54 +919,87 @@ class MainWindow(QMainWindow):
         self.details.addRow('Description:',self.descEdit)
         self.details.addRow('Location:',self.locationEdit)
         self.details.addRow('Manufacturer:',self.manufacturerEdit)
+        self.details.addRow('Action: ', self.calOrVerify)
         self.details.addRow('Cal vendor:',self.vendorEdit)
         self.details.addRow('Cal interval:',self.intervalEdit)
         self.details.addRow('Last calibration:',self.lastEdit)
         self.details.addRow('In Service Date (YYYY-MM-DD): ',self.inServiceDateEdit)
         self.details.addRow('Next calibration:',self.nextEdit)
-        self.details.addRow('Cal as needed:',self.asNeededEdit)
+        self.details.addRow('Mandatory calibration:',self.mandatoryEdit)
         self.details.addRow('In Service: ',self.inServiceEdit)
         self.details.addRow('Item Group: ', self.groupEdit)
         self.details.addRow('Comments: ',self.commentEdit)
+        self.detailsGroup.setLayout(self.details)
         #----------------------------------------------------------------------------------------------------------------------------------
         self.searchoptions = QComboBox(self)
-        self.searchoptionsdict = {'Serial Number':0,'Model':14,'Description':9,'Location':1,'Manufacturer':4,'Cal Vendor':3,'Out of Cal':13, 'Has Comment':15}
+        self.searchoptionsdict = {'Serial Number':0,'Model':14,'Description':9,'Location':1,'Manufacturer':4,'Cal Vendor':3,'Out of Cal':13, 'Has Comment':15, 'Action':19}
         self.searchoptions.addItems(sorted(list(self.searchoptionsdict.keys())))
-        self.searchoptions.setCurrentIndex(7)
+        self.searchoptions.setCurrentIndex(8)
         self.searchoptions.currentIndexChanged.connect(self.indexCheck)
         #----------------------------------------------------------------------------------------------------------------------------------
-        self.focus_layout.addWidget(self.itemslist,0,0)
-        self.focus_layout.addWidget(self.searchoptions,1,0)
-        self.focus_layout.addLayout(self.details,0,1)
-        self.focus_layout.setColumnStretch(1,1)
+        self.focus_layout.addWidget(self.itemslist,0,1)
+        self.focus_layout.addWidget(self.searchoptions,1,1)
+        self.focus_layout.addWidget(self.detailsGroup,0,2)
+        self.focus_layout.setColumnStretch(2,1)
         #Layout for bottom row buttons
-        self.editItemBtn = QPushButton('Edit Item')
-        self.openfolderbtn = QPushButton('Open Folder')
-        self.newreportbtn = QPushButton('New Report')
-        self.removebtn = QPushButton('Remove Item')
-        self.movebtn = QPushButton('Move Item')
+        self.editItemBtn = QPushButton('')
+        self.editItemBtn.setToolTip('Edit Item')
+        self.editItemBtn.setFixedSize(35,35)
+        self.editItemBtn.setIcon(self.editIcon)
+        self.editItemBtn.setIconSize(QSize(31,31))
+
+        self.openfolderbtn = QPushButton('')
+        self.openfolderbtn.setToolTip('Open Folder')
+        self.openfolderbtn.setFixedSize(35,35)
+        self.openfolderbtn.setIcon(self.folderIcon)
+        self.openfolderbtn.setIconSize(QSize(31,31))
+
+        self.newreportbtn = QPushButton('')
+        self.newreportbtn.setToolTip('New Report')
+        self.newreportbtn.setFixedSize(35,35)
+        self.newreportbtn.setIcon(self.reportIcon)
+        self.newreportbtn.setIconSize(QSize(31,31))
+
+        self.removebtn = QPushButton('')
+        self.removebtn.setToolTip('Remove Item')
+        self.removebtn.setFixedSize(35,35)
+        self.removebtn.setIcon(self.removeIcon)
+        self.removebtn.setIconSize(QSize(31,31))
+
+        self.movebtn = QPushButton('')
+        self.movebtn.setToolTip('Move Item')
+        self.movebtn.setFixedSize(35,35)
+        self.movebtn.setIcon(self.moveIcon)
+        self.movebtn.setIconSize(QSize(31,31))
+
         self.findentry = QLineEdit(self)
 
         self.editItemBtn.clicked.connect(self.editClick)
         self.openfolderbtn.clicked.connect(self.openFolderClick)
         self.newreportbtn.clicked.connect(self.newReportClick)
-        self.removebtn.clicked.connect(self.removeItemClick)
+        self.removebtn.clicked.connect(self.deleteClick)
         self.movebtn.clicked.connect(self.moveItemClick)
         self.findentry.textChanged.connect(self.find)
         self.findentry.setPlaceholderText('Search')
 
-        self.bottomrow.addWidget(self.findentry,0,0,)
-        self.bottomrow.setColumnMinimumWidth(0,256)
-        self.bottomrow.addWidget(self.editItemBtn,0,1)
-        self.bottomrow.setColumnStretch(1,1)
-        self.bottomrow.addWidget(self.openfolderbtn,0,2)
-        self.bottomrow.setColumnStretch(2,1)
-        self.bottomrow.addWidget(self.newreportbtn,0,3)
-        self.bottomrow.setColumnStretch(3,1)
-        self.bottomrow.addWidget(self.removebtn,0,4)
-        self.bottomrow.setColumnStretch(4,1)
-        self.bottomrow.addWidget(self.movebtn,0,5)
-        self.bottomrow.setColumnStretch(5,1)
+        #self.bottomrow.addWidget(self.findentry,0,0,)
+        #self.bottomrow.setColumnMinimumWidth(0,256)
+        self.bottomrow.addWidget(self.editItemBtn,0,0)
+        #self.bottomrow.setColumnStretch(1,1)
+        self.bottomrow.addWidget(self.openfolderbtn,1,0)
+        #self.bottomrow.setColumnStretch(2,1)
+        self.bottomrow.addWidget(self.newreportbtn,2,0)
+        #self.bottomrow.setColumnStretch(3,1)
+        self.bottomrow.addWidget(self.removebtn,3,0)
+        #self.bottomrow.setColumnStretch(4,1)
+        self.bottomrow.addWidget(self.movebtn,4,0)
+        #self.bottomrow.setColumnStretch(5,1)
+        self.bottomrow.addItem(QSpacerItem(25,25,QSizePolicy.Minimum,QSizePolicy.Expanding),5,0)
+
+        
+        self.bottomrow.setMargin(0)
+        self.bottomrow.setSpacing(0)
+        self.focus_layout.addWidget(self.findentry,2,1)
 
         #Add the sublayouts to the main layout and calendar layout
         self.calendarLayout.addLayout(self.calendarTopRow)
@@ -923,8 +1022,9 @@ class MainWindow(QMainWindow):
         calendarWidget.setHidden(True)
 
         self.layout.addLayout(self.toprow)
+        self.focus_layout.addLayout(self.bottomrow,0,0)
         self.layout.addLayout(self.focus_layout)
-        self.layout.addLayout(self.bottomrow)
+        #self.layout.addLayout(self.bottomrow)
 
         centralwidget.setLayout(self.layout)
         self.editable = False
@@ -974,55 +1074,29 @@ class MainWindow(QMainWindow):
         self.settings.layout.addLayout(self.settings.bottomButtons)
         self.settings.setLayout(self.settings.layout)
     #--------------------------------------------------------------------------------------------------------------------------------------
-    def removeBox(self):
-        self.remove = QWidget()
-        self.remove.setFixedSize(350,100)
-        self.remove.setWindowTitle('Remove Item')
-        self.remove.layout = QVBoxLayout()
-        self.remove.bottomButtons = QHBoxLayout()
-        self.remove.setWindowIcon(self.icon)
-        self.remove.mainText = QLabel('')
-
-        self.remove.removeBtn = QPushButton('Remove')
-        self.remove.removeBtn.clicked.connect(self.removeClick)
-        self.remove.referenceBtn = QPushButton('Reference')
-        self.remove.referenceBtn.clicked.connect(self.referenceClick)
-        self.remove.deleteBtn = QPushButton('DELETE')
-        self.remove.deleteBtn.clicked.connect(self.deleteClick)
-        self.remove.cancelBtn = QPushButton('Cancel')
-        self.remove.cancelBtn.clicked.connect(self.removeCancel)
-
-        self.remove.bottomButtons.addWidget(self.remove.cancelBtn)
-        self.remove.bottomButtons.addWidget(self.remove.removeBtn)
-        self.remove.bottomButtons.addWidget(self.remove.referenceBtn)
-        self.remove.bottomButtons.addWidget(self.remove.deleteBtn)
-        self.remove.layout.addWidget(self.remove.mainText)
-        self.remove.layout.addLayout(self.remove.bottomButtons)
-        self.remove.setLayout(self.remove.layout)
-    #--------------------------------------------------------------------------------------------------------------------------------------
     def moveBox(self):
         self.moveWidget = QWidget()
-        self.moveWidget.setFixedSize(350,100)
+        self.moveWidget.setFixedWidth(250)
         self.moveWidget.setWindowTitle('Move Item')
         self.moveWidget.layout = QVBoxLayout()
-        self.moveWidget.bottomButtons = QHBoxLayout()
+        self.moveWidget.bottomButtons = QVBoxLayout()
         self.moveWidget.setWindowIcon(self.icon)
 
-        self.moveWidget.mainText = QLabel('Move item to Production, Engineering, or Quality?')
+        self.moveWidget.mainText = QLabel('Move item to: ')
+        self.moveWidget.selector = QComboBox()
+        self.moveWidget.selector.setEnabled(True)
+        self.moveWidget.selector.setEditable(False)
+        self.moveWidget.selector.addItems(config.folders)
 
-        self.moveWidget.productionButton = QPushButton("Production")
-        self.moveWidget.productionButton.clicked.connect(self.moveProd)
-        self.moveWidget.engButton = QPushButton("Engineering")
-        self.moveWidget.engButton.clicked.connect(self.moveEng)
-        self.moveWidget.qualityButton = QPushButton("Quality")
-        self.moveWidget.qualityButton.clicked.connect(self.moveQuality)
         self.moveWidget.cancelBtn = QPushButton('Cancel')
         self.moveWidget.cancelBtn.clicked.connect(self.moveCancel)
+        self.moveWidget.okBtn = QPushButton('OK')
+        self.moveWidget.okBtn.clicked.connect(self.moveItem)
 
+        self.moveWidget.bottomButtons.addWidget(self.moveWidget.selector)
+        self.moveWidget.bottomButtons.addWidget(self.moveWidget.okBtn)
         self.moveWidget.bottomButtons.addWidget(self.moveWidget.cancelBtn)
-        self.moveWidget.bottomButtons.addWidget(self.moveWidget.productionButton)
-        self.moveWidget.bottomButtons.addWidget(self.moveWidget.engButton)
-        self.moveWidget.bottomButtons.addWidget(self.moveWidget.qualityButton)
+
         self.moveWidget.layout.addWidget(self.moveWidget.mainText)
         self.moveWidget.layout.addLayout(self.moveWidget.bottomButtons)
         self.moveWidget.setLayout(self.moveWidget.layout)
@@ -1066,7 +1140,7 @@ class MainWindow(QMainWindow):
         self.editBox.manufacturer = QComboBox()
         self.editBox.calVendor = QComboBox()
         self.editBox.calInterval = QSpinBox()
-        self.editBox.asNeeded = QCheckBox()
+        self.editBox.mandatory = QCheckBox()
         self.editBox.inService = QCheckBox()
         self.editBox.group = QComboBox()
         self.editBox.comment = QLineEdit()
@@ -1176,7 +1250,7 @@ class MainWindow(QMainWindow):
         try:
             for item in allItems():
                 if item[0] == self.itemslist.currentItem().text(0):
-                    self.moveWidget.mainText.setText('Move {} to Production, Engineering, or Quality?'.format(item[0]))
+                    self.moveWidget.mainText.setText('Move {} to :'.format(item[0]))
                     self.moveWidget.mainText.setAlignment(Qt.AlignHCenter)
                     self.moveWidget.setWindowModality(Qt.ApplicationModal)
                     disconnect()
@@ -1260,7 +1334,7 @@ class MainWindow(QMainWindow):
             if (item[6] == '' or (datetime.strptime(item[6],'%Y-%m-%d').date() - datetime.strptime(weekStart.toString(Qt.ISODate),'%Y-%m-%d').date()).days <= 60 
                 or (datetime.strptime(item[6],'%Y-%m-%d').date() < datetime.strptime(weekStart.toString(Qt.ISODate),'%Y-%m-%d').date())):
                 weekItems.append(item[0])
-                if item[7] == 0:
+                if item[7] == 1:
                     self.calendarWeekDetails.insertRow(weekRow)
                     self.calendarWeekDetails.setItem(weekRow,0,QTableWidgetItem(item[0]))
                     self.calendarWeekDetails.setItem(weekRow,1,QTableWidgetItem(item[14]))
@@ -1367,58 +1441,17 @@ class MainWindow(QMainWindow):
 
     #Item Removal Button Slots-------------------------------------------------------------------------------------------------------------
     @Slot()
-    def removeClick(self): #Remove an item from service, moving its documents to the "Removed from Service" folder.
-        connect()
-        for item in allItems():
-            if self.itemslist.currentItem().text(0) == item[0]:
-                try:
-                    newDirec = '{}\\Calibration Items\\Removed from Service'.format(calScansDir)
-                    if not path.isdir(item[8]):
-                        errorMessage('Error moving item: {}'.format(item[0]),'The directory on record for this item does not exist.')
-                        disconnect(save = False)
-                        return
-                    else:
-                        move(item[8],newDirec)
-                        c.execute("UPDATE calibration_items SET directory='{}' WHERE serial_number=?".format(newDirec + '\\' + item[0]),(item[0],))
-                except FileNotFoundError:
-                    pass
-                removeFromGroups(item[0])
-                self.remove.hide()
-        disconnect()
-        self.updateTree()
-    @Slot()
-    def referenceClick(self): #Put an item in the "Reference only" folder, update the directory in the DB
-        connect()
-        for item in allItems():
-            if self.itemslist.currentItem().text(0) == item[0]:
-                try:
-                    newDirec = '{}\\Calibration Items\\Ref Only'.format(calScansDir)
-                    if not path.isdir(item[8]):
-                        errorMessage('Error moving item: {}'.format(item[0]),'The directory on record for this item does not exist.')
-                        disconnect(save = False)
-                        return
-                    else:
-                        move(item[8],newDirec)
-                        c.execute("UPDATE calibration_items SET directory='{}' WHERE serial_number=?".format(newDirec + '\\' + item[0]),(item[0],))
-                except FileNotFoundError:
-                    pass
-                removeFromGroups(item[0])
-                self.remove.hide()   
-        disconnect()
-        self.updateTree()
-    @Slot()
     def deleteClick(self):
         connect()
         for item in allItems():
             if self.itemslist.currentItem().text(0) == item[0]:
                 warningMessage = QMessageBox()
                 warningMessage.setWindowTitle('Delete "{}"?'.format(item[0]))
-                warningMessage.setText('This function will DELETE "{}" from the database. Continue?'.format(item[0]))
+                warningMessage.setText('This will DELETE "{}" from the database. Continue?'.format(item[0]))
                 okButton = warningMessage.addButton(QMessageBox.Ok)
                 cancelButton = warningMessage.addButton(QMessageBox.Cancel)
                 warningMessage.exec_()
                 if warningMessage.clickedButton() == cancelButton:
-                    self.remove.hide()
                     disconnect()
                     return
                 elif warningMessage.clickedButton() == okButton:
@@ -1430,21 +1463,14 @@ class MainWindow(QMainWindow):
         disconnect()
         self.updateGroupList()
         self.updateTree()
-        self.remove.hide()
     @Slot()
     def removeCancel(self):
         self.remove.hide()
 
     #Move item slots-----------------------------------------------------------------------------------------------------------------------
     @Slot()
-    def moveItem(self,selection):
-        if selection == 0:
-            folder = "PRODUCTION EQUIPMENT"
-        elif selection == 1:
-            folder = "ENGINEERING EQUIPMENT"
-        elif selection == 2:
-            folder = "QUALITY EQUIPMENT"
-        newDirec = '{}\\Calibration Items\\{}'.format(calScansDir,folder)
+    def moveItem(self):
+        newDirec = '{}\\Calibration Items\\{}'.format(calScansDir,self.moveWidget.selector.currentText())
         connect()
         for item in allItems():
             if self.itemslist.currentItem().text(0) == item[0]:
@@ -1464,16 +1490,6 @@ class MainWindow(QMainWindow):
         self.updateTree()
         self.moveWidget.hide()
 
-    @Slot()
-    def moveProd(self):
-        self.moveItem(0)
-    @Slot()
-    def moveEng(self):
-        self.moveItem(1)
-    @Slot()
-    def moveQuality(self):
-        self.moveItem(2)
-    @Slot()
     def moveCancel(self):
         self.moveWidget.hide()
 
@@ -1560,22 +1576,11 @@ class MainWindow(QMainWindow):
 
     #--------------------------------------------------------------------------------------------------------------------------------------
     def goToListItem(self,sn):
-        for item in self.productionItems:
-            if item.text(0) == sn:
-                self.itemslist.setCurrentItem(item)
-                return
-        for item in self.engineeringItems:
-            if item.text(0) == sn:
-                self.itemslist.setCurrentItem(item)
-                return
-        for item in self.qualityItems:
-            if item.text(0) == sn:
-                self.itemslist.setCurrentItem(item)
-                return
-        for item in self.refItems:
-            if item.text(0) == sn:
-                self.itemslist.setCurrentItem(item)
-                return
+        for category in self.itemCats:
+            for item in category:
+                if item.text(0) == sn:
+                    self.itemslist.setCurrentItem(item)
+                    return
     @Slot()
     def editGroupClick(self):
         try:
@@ -1649,6 +1654,7 @@ class MainWindow(QMainWindow):
                     #Clear previous values in the combo boxes
                     self.locationEdit.clear()
                     self.manufacturerEdit.clear()
+                    self.calOrVerify.clear()
                     self.vendorEdit.clear()
                     self.groupEdit.clear()
 
@@ -1660,6 +1666,8 @@ class MainWindow(QMainWindow):
                     self.locationEdit.setCurrentText(item[1])
                     self.manufacturerEdit.addItems(sorted(manufacturersList))
                     self.manufacturerEdit.setCurrentText(item[4])
+                    self.calOrVerify.addItems(['CALIBRATION','VERIFICATION','MAINTENANCE'])
+                    self.calOrVerify.setCurrentText(item[19])
                     self.vendorEdit.addItems(sorted(vendorsList))
                     self.vendorEdit.setCurrentText(item[3])
 
@@ -1676,14 +1684,14 @@ class MainWindow(QMainWindow):
                     self.groupEdit.setCurrentText(item[17])
                     #----------------------------------------------------------------------------------
                     if item[7] == 0:
-                        self.asNeededEdit.setChecked(False)
+                        self.mandatoryEdit.setChecked(False)
                     else:
-                        self.asNeededEdit.setChecked(True)
+                        self.mandatoryEdit.setChecked(True)
                     if item[10] == 0:
                         self.inServiceEdit.setChecked(False)
                     else:
                         self.inServiceEdit.setChecked(True)
-                    self.asNeededEdit.setEnabled(False)
+                    self.mandatoryEdit.setEnabled(False)
                     self.inServiceEdit.setEnabled(False)
                     #self.editClick(toggle = True)
             disconnect(save = False)
@@ -1695,7 +1703,7 @@ class MainWindow(QMainWindow):
     #Bottom row button slots---------------------------------------------------------------------------------------------------------------
     @Slot()
     def indexCheck(self):
-        if self.searchoptions.currentIndex() == 6 or self.searchoptions.currentIndex() == 2:
+        if self.searchoptions.currentIndex() == 7 or self.searchoptions.currentIndex() == 3:
             self.findentry.clear()
             self.findentry.setReadOnly(True)
             self.find()
@@ -1705,10 +1713,8 @@ class MainWindow(QMainWindow):
             return
     @Slot()
     def find(self):
-        self.topitems[0].setExpanded(True)
-        self.topitems[1].setExpanded(True)
-        self.topitems[2].setExpanded(True)
-
+        for i in range(0,len(config.folders)+1):
+            self.topitems[i].setExpanded(True)
         #Calls the update method to search for items when text is changed
         searchmode = self.searchoptionsdict[self.searchoptions.currentText()]
         text = self.findentry.text()
@@ -1741,7 +1747,8 @@ class MainWindow(QMainWindow):
         if len(self.itemslist.selectedItems()) == 0:
             return
         if (self.snEdit.isReadOnly() and toggle == False) or (toggle == True and self.editable == False):
-            self.editItemBtn.setText('Save')
+            self.editItemBtn.setIcon(self.saveIcon)
+            self.editItemBtn.setToolTip('Save')
             self.snEdit.setReadOnly(False)
             self.snEdit.setText(self.snEdit.placeholderText())
             self.modelEdit.setReadOnly(False)
@@ -1750,11 +1757,12 @@ class MainWindow(QMainWindow):
             self.descEdit.setText(self.descEdit.placeholderText())
             self.locationEdit.setEnabled(True)
             self.manufacturerEdit.setEnabled(True)
+            self.calOrVerify.setEnabled(True)
             self.vendorEdit.setEnabled(True)
             self.intervalEdit.setEnabled(True)
             #self.lastEdit.setReadOnly(False)
             #self.nextEdit.setReadOnly(False)
-            self.asNeededEdit.setEnabled(True)
+            self.mandatoryEdit.setEnabled(True)
             self.inServiceEdit.setEnabled(True)
             self.inServiceDateEdit.setReadOnly(False)
             self.commentEdit.setText(self.commentEdit.placeholderText())
@@ -1774,6 +1782,7 @@ class MainWindow(QMainWindow):
                         description = self.descEdit.text()
                         location = self.locationEdit.currentText()
                         manufacturer = self.manufacturerEdit.currentText()
+                        calOrVerify = self.calOrVerify.currentText()
                         cal_vendor = self.vendorEdit.currentText()
                         interval = self.intervalEdit.value()
                         group = self.groupEdit.currentText()
@@ -1804,10 +1813,10 @@ class MainWindow(QMainWindow):
                         text = self.commentEdit.textCursor().selectedText()
 
                         comment = text
-                        if self.asNeededEdit.isChecked():
-                            calasneeded = 1
+                        if self.mandatoryEdit.isChecked():
+                            mandatory = 1
                         else:
-                            calasneeded = 0
+                            mandatory = 0
                         if self.inServiceEdit.isChecked() == True:
                             inservice = 1
                             try:
@@ -1852,9 +1861,9 @@ class MainWindow(QMainWindow):
                         selecteditem = self.itemslist.currentItem().text(0)
                         timestamp = datetime.utcnow().strftime('%Y-%m-%d-%H-%M-%S-%f')
                         sql = """
-                                UPDATE calibration_items SET serial_number='{}',model='{}',description='{}',location='{}',manufacturer='{}',cal_vendor='{}',interval={},calasneeded={},inservice={},inservicedate='{}',
-                                nextcal='{}',outofservicedate='{}',comment='{}',timestamp='{}',item_group='{}' WHERE serial_number=?
-                                """.format(sn,model,description,location,manufacturer,cal_vendor,interval,calasneeded,inservice,inservicedate,nextcal,outofservicedate,comment,timestamp,group)
+                                UPDATE calibration_items SET serial_number='{}',model='{}',description='{}',location='{}',manufacturer='{}',cal_vendor='{}',interval={},mandatory={},inservice={},inservicedate='{}',
+                                nextcal='{}',outofservicedate='{}',comment='{}',timestamp='{}',item_group='{}',verify_or_calibrate='{}' WHERE serial_number=?
+                                """.format(sn,model,description,location,manufacturer,cal_vendor,interval,mandatory,inservice,inservicedate,nextcal,outofservicedate,comment,timestamp,group,calOrVerify)
                         c.execute(sql,(sn,))
                         disconnect()
                         if self.findentry.text() != '' or self.searchoptions.currentIndex() == 6 or self.searchoptions.currentIndex() == 2:
@@ -1864,15 +1873,17 @@ class MainWindow(QMainWindow):
                         #Re-select item
                         self.goToListItem(selecteditem)
                         break
-            self.editItemBtn.setText('Edit Item')
+            self.editItemBtn.setIcon(self.editIcon)
+            self.editItemBtn.setToolTip('Edit Item')
             self.locationEdit.setEnabled(False)
             self.manufacturerEdit.setEnabled(False)
+            self.calOrVerify.setEnabled(False)
             self.vendorEdit.setEnabled(False)
             self.intervalEdit.setEnabled(False)
             self.inServiceEdit.setEnabled(False)
             self.inServiceDateEdit.setReadOnly(True)
             self.commentEdit.setReadOnly(True)
-            self.asNeededEdit.setEnabled(False)
+            self.mandatoryEdit.setEnabled(False)
             self.groupEdit.setEnabled(False)
             self.editable = False
             #Handles updating of placeholder text
@@ -1886,7 +1897,6 @@ class MainWindow(QMainWindow):
             self.modelEdit.setReadOnly(True)
             self.descEdit.setReadOnly(True)
             return
-
     #Updates the list of items in the tree-------------------------------------------------------------------------------------------------
     def updateTree(self,search = False, text = None, mode = 0):
         if self.findentry.text() != '':
@@ -1900,100 +1910,40 @@ class MainWindow(QMainWindow):
             pass
         else:
             search = False
-        self.topitems[0].takeChildren()
-        self.topitems[1].takeChildren()
-        self.topitems[2].takeChildren()
-        self.topitems[3].takeChildren()
-        self.productionItems = []
-        self.engineeringItems = []
-        self.qualityItems = []
-        self.refItems = []
+        self.itemCats = []
         connect()
         all_items = allItems()
+        for i in range(0,len(config.folders)):
+            self.itemCats.append([])
+            self.topitems[i].takeChildren()
         for item in all_items:
-            if item[8] != '':
-                if 'ENGINEERING EQUIPMENT' in item[8]:
-                    if search == False:
-                        self.engineeringItems.append(QTreeWidgetItem(self.topitems[1]))
-                        self.engineeringItems[-1].setText(0, item[0])
-                    else:
-                        if item in searchItems and mode != 13 and mode != 15:
-                            self.engineeringItems.append(QTreeWidgetItem(self.topitems[1]))
-                            self.engineeringItems[-1].setText(0, item[0])
-                        elif mode == 13:
-                            if item[13] != 0:
-                                self.engineeringItems.append(QTreeWidgetItem(self.topitems[1]))
-                                self.engineeringItems[-1].setText(0, item[0])
-                        elif mode == 15:
-                            if item[15] != '':
-                                self.engineeringItems.append(QTreeWidgetItem(self.topitems[1]))
-                                self.engineeringItems[-1].setText(0, item[0])
-                elif 'PRODUCTION EQUIPMENT' in item[8]:
-                    if search == False:
-                        self.productionItems.append(QTreeWidgetItem(self.topitems[0]))
-                        self.productionItems[-1].setText(0, item[0])
-                    else:
-                        if item in searchItems and mode != 13 and mode != 15:
-                            self.productionItems.append(QTreeWidgetItem(self.topitems[0]))
-                            self.productionItems[-1].setText(0, item[0])
-                        elif mode == 13:
-                            if item[13] != 0:
-                                self.productionItems.append(QTreeWidgetItem(self.topitems[0]))
-                                self.productionItems[-1].setText(0, item[0])
-                        elif mode == 15:
-                            if item[15] != '':
-                                self.productionItems.append(QTreeWidgetItem(self.topitems[0]))
-                                self.productionItems[-1].setText(0, item[0])
-                elif 'QUALITY EQUIPMENT' in item[8]:
-                    if search == False:
-                        self.qualityItems.append(QTreeWidgetItem(self.topitems[2]))
-                        self.qualityItems[-1].setText(0, item[0])
-                    else:
-                        if item in searchItems and mode != 13 and mode != 15:
-                            self.qualityItems.append(QTreeWidgetItem(self.topitems[2]))
-                            self.qualityItems[-1].setText(0, item[0])
-                        elif mode == 13:
-                            if item[13] != 0:
-                                self.qualityItems.append(QTreeWidgetItem(self.topitems[2]))
-                                self.qualityItems[-1].setText(0, item[0])
-                        elif mode == 15:
-                            if item[15] != '':
-                                self.qualityItems.append(QTreeWidgetItem(self.topitems[2]))
-                                self.qualityItems[-1].setText(0, item[0])
 
-                elif 'Ref Only' in item[8]:
-                    if search == False:
-                        self.refItems.append(QTreeWidgetItem(self.topitems[3]))
-                        self.refItems[-1].setText(0, item[0])
-                    else:
-                        if item in searchItems and mode != 13 and mode != 15:
-                            self.refItems.append(QTreeWidgetItem(self.topitems[3]))
-                            self.refItems[-1].setText(0, item[0])
-                        elif mode == 13:
-                            if item[13] != 0:
-                                self.refItems.append(QTreeWidgetItem(self.topitems[3]))
-                                self.refItems[-1].setText(0, item[0])
-                        elif mode == 15:
-                            if item[15] != '':
-                                    self.refItems.append(QTreeWidgetItem(self.topitems[3]))
-                                    self.refItems[-1].setText(0, item[0])
+            for i in range(0,len(config.folders)):
+                if item[8] !='':
+                    if config.folders[i] in item[8]:
+                        if search == False:
+                            self.itemCats[i].append(QTreeWidgetItem(self.topitems[i]))
+                            self.itemCats[i][-1].setText(0, item[0])
+                        else:
+                            if item in searchItems and mode != 13 and mode != 15:
+                                self.itemCats[i].append(QTreeWidgetItem(self.topitems[i]))
+                                self.itemCats[i][-1].setText(0, item[0])
+                            else:
+                                if (item[13] == 0 and mode == 13) or (item[15] == '' and mode == 15):
+                                        continue
+                                self.itemCats[i].append(QTreeWidgetItem(self.topitems[i]))
+                                self.itemCats[i][-1].setText(0, item[0])
         disconnect(save = False)
 
-        self.topitems[0].addChildren(self.productionItems)
-        self.topitems[0].sortChildren(0,Qt.AscendingOrder)
-        self.topitems[1].addChildren(self.engineeringItems)
-        self.topitems[1].sortChildren(0,Qt.AscendingOrder)
-        self.topitems[2].addChildren(self.qualityItems)
-        self.topitems[2].sortChildren(0,Qt.AscendingOrder)
-        self.topitems[3].addChildren(self.refItems)
-        self.topitems[3].sortChildren(0,Qt.AscendingOrder)
+        for i in range(0,len(config.folders)):
+            self.topitems[i].addChildren(self.itemCats[i])
+            self.topitems[i].sortChildren(0,Qt.AscendingOrder)
         return
 
     def run(self):
         load()
         updateitems()
         self.settingsWindow()
-        self.removeBox()
         self.moveBox()
         self.groupBox()
         self.backupBox()

@@ -1,10 +1,10 @@
 
-folders  = ["PRODUCTION EQUIPMENT","ENGINEERING EQUIPMENT","QUALITY EQUIPMENT", "Ref Only"]
+folders  = ["PRODUCTION EQUIPMENT","ENGINEERING EQUIPMENT","QUALITY EQUIPMENT", "Ref Only", "Removed from Service"]
 
 #Prefix directory strings with r
 
 #Database name
-dbName = r"Test Equipment Calibration List.db"
+dbName = r"debug_Test Equipment Calibration List.db"
 
 #Location of Database
 calListDir = r"\\artemis\Hardware Development Projects\Manufacturing Engineering\Test Equipment"
