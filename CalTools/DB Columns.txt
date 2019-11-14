@@ -6,7 +6,7 @@ calibration_items
 4: manufacturer
 5: lastcal
 6: nextcal
-7: calasneeded
+7: mandatory
 8: directory
 9: description
 10: inservice
@@ -17,6 +17,8 @@ calibration_items
 15: comments
 16: timestamp
 17: item_group
+18: calibration_tool
+19: verify_or_calibrate
 
 item_groups
 0: name

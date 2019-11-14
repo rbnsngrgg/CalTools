@@ -86,3 +86,12 @@ Changes
 	Fix model line being editable when CalTools is not in edit mode.
 	Add item group and actions to the out-of-cal reports.
 	Add option when right-clicking a weekly to-do item to create a cal report with only items for that week.
+
+--3.0.0
+	Add column in database to specify whether an item is calibrated, verified, or maintained.
+	Revised functionality for using the folders list in the config file. The item list now updates to show any folder that is found in the config file, instead of pre-set folders.
+	Bottom row buttons have been moved to the left of the list, now with icons and tooltips.
+	"Cal_as_needed" db column refactored as "mandatory", all bools flipped, for more straightforward handling.
+	The calendar checkbutton has changed from "show only in service" to a more accurate "Show only mandatory, in service items".
+	Notification for when there are items with invalid directories. These items are shown with red text in the list.
+		New search mode for finding showing only invalid directory items.

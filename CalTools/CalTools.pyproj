@@ -29,11 +29,20 @@
     <Compile Include="listSearch.py" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="calendar.png" />
-    <Content Include="CalToolsIcon.ico" />
-    <Content Include="CalToolsIcon.png" />
     <Content Include="ChangeLog.txt" />
     <Content Include="DB Columns.txt" />
+    <Content Include="images\calendar.png" />
+    <Content Include="images\CalToolsIcon.ico" />
+    <Content Include="images\CalToolsIcon.png" />
+    <Content Include="images\delete.png" />
+    <Content Include="images\edit.png" />
+    <Content Include="images\folder.png" />
+    <Content Include="images\move.png" />
+    <Content Include="images\report.png" />
+    <Content Include="ReadMe.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="images\" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in

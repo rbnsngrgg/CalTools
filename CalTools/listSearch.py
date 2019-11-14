@@ -5,7 +5,6 @@ def search(text, items, mode):
     ands = []
     ors = []
     foundItems = []
-    #print(textsplit)
     for index,term in enumerate(textsplit):
         if '""' in term[0:2] and '""' in term[-2:] == '""':
             terms.append(term.strip('"'))
