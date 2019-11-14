@@ -475,6 +475,7 @@ def updateitems():
             if folder not in config.folders:
                 continue
             namereader(folder = current+'\\'+folder,all = True,option = current)
+    
     return
 
 #Global so that each iteration of verifyFiles has access without having to create them each time
@@ -738,6 +739,9 @@ class MainWindow(QMainWindow):
         #Set QWidget as central for the QMainWindow, QWidget will hold layouts
         #self.centralwidget = QWidget()
         self.setCentralWidget(centralwidget)
+        #For persistence when checking item folders
+        self.missingItems = []
+        self.previousMissingItems = []
 
         #Calendar view---------------------------------------------------------------------------------------------------------------------
         self.calendarLayout = QVBoxLayout()
@@ -932,9 +936,9 @@ class MainWindow(QMainWindow):
         self.detailsGroup.setLayout(self.details)
         #----------------------------------------------------------------------------------------------------------------------------------
         self.searchoptions = QComboBox(self)
-        self.searchoptionsdict = {'Serial Number':0,'Model':14,'Description':9,'Location':1,'Manufacturer':4,'Cal Vendor':3,'Out of Cal':13, 'Has Comment':15, 'Action':19}
+        self.searchoptionsdict = {'Serial Number':0,'Model':14,'Description':9,'Location':1,'Manufacturer':4,'Cal Vendor':3,'Out of Cal':13, 'Has Comment':15, 'Action':19, 'Missing Items':99}
         self.searchoptions.addItems(sorted(list(self.searchoptionsdict.keys())))
-        self.searchoptions.setCurrentIndex(8)
+        self.searchoptions.setCurrentIndex(9)
         self.searchoptions.currentIndexChanged.connect(self.indexCheck)
         #----------------------------------------------------------------------------------------------------------------------------------
         self.focus_layout.addWidget(self.itemslist,0,1)
@@ -982,18 +986,11 @@ class MainWindow(QMainWindow):
         self.findentry.textChanged.connect(self.find)
         self.findentry.setPlaceholderText('Search')
 
-        #self.bottomrow.addWidget(self.findentry,0,0,)
-        #self.bottomrow.setColumnMinimumWidth(0,256)
         self.bottomrow.addWidget(self.editItemBtn,0,0)
-        #self.bottomrow.setColumnStretch(1,1)
         self.bottomrow.addWidget(self.openfolderbtn,1,0)
-        #self.bottomrow.setColumnStretch(2,1)
         self.bottomrow.addWidget(self.newreportbtn,2,0)
-        #self.bottomrow.setColumnStretch(3,1)
         self.bottomrow.addWidget(self.removebtn,3,0)
-        #self.bottomrow.setColumnStretch(4,1)
         self.bottomrow.addWidget(self.movebtn,4,0)
-        #self.bottomrow.setColumnStretch(5,1)
         self.bottomrow.addItem(QSpacerItem(25,25,QSizePolicy.Minimum,QSizePolicy.Expanding),5,0)
 
         
@@ -1024,7 +1021,6 @@ class MainWindow(QMainWindow):
         self.layout.addLayout(self.toprow)
         self.focus_layout.addLayout(self.bottomrow,0,0)
         self.layout.addLayout(self.focus_layout)
-        #self.layout.addLayout(self.bottomrow)
 
         centralwidget.setLayout(self.layout)
         self.editable = False
@@ -1154,7 +1150,6 @@ class MainWindow(QMainWindow):
         self.groupWidget.currentGroupItems = []
 
         self.groupWidget.groupList = QListWidget()
-        #self.groupWidget.groupList.itemClicked.connect(self.updateGroupDetails)
         self.groupWidget.groupList.currentItemChanged.connect(self.updateGroupDetails)
 
         self.groupWidget.groupDetails = QFormLayout()
@@ -1213,10 +1208,12 @@ class MainWindow(QMainWindow):
     def calReportClick(self):
         try:
             report_OOC()
-        except PermissionError:
-            pass
+        except PermissionError as e:
+            errorMessage('Error!', str(e))
     @Slot()
     def updateClick(self):
+        self.missingItems = []
+        self.previousMissingItems = []
         updateitems()
         if self.itemslist.currentItem() is not None:
             currentItem = self.itemslist.currentItem().text(0)
@@ -1224,6 +1221,8 @@ class MainWindow(QMainWindow):
             text = self.findentry.text()
             self.updateTree(search = True, text = text, mode = searchmode)
             self.goToListItem(currentItem)
+        else:
+            self.checkFolders()
     @Slot()
     def calFolderClick(self):
         startfile(calScansDir)
@@ -1703,7 +1702,7 @@ class MainWindow(QMainWindow):
     #Bottom row button slots---------------------------------------------------------------------------------------------------------------
     @Slot()
     def indexCheck(self):
-        if self.searchoptions.currentIndex() == 7 or self.searchoptions.currentIndex() == 3:
+        if self.searchoptions.currentIndex() == 6 or self.searchoptions.currentIndex() == 3 or self.searchoptions.currentIndex() == 8:
             self.findentry.clear()
             self.findentry.setReadOnly(True)
             self.find()
@@ -1713,7 +1712,7 @@ class MainWindow(QMainWindow):
             return
     @Slot()
     def find(self):
-        for i in range(0,len(config.folders)+1):
+        for i in range(0,len(config.folders)):
             self.topitems[i].setExpanded(True)
         #Calls the update method to search for items when text is changed
         searchmode = self.searchoptionsdict[self.searchoptions.currentText()]
@@ -1760,8 +1759,6 @@ class MainWindow(QMainWindow):
             self.calOrVerify.setEnabled(True)
             self.vendorEdit.setEnabled(True)
             self.intervalEdit.setEnabled(True)
-            #self.lastEdit.setReadOnly(False)
-            #self.nextEdit.setReadOnly(False)
             self.mandatoryEdit.setEnabled(True)
             self.inServiceEdit.setEnabled(True)
             self.inServiceDateEdit.setReadOnly(False)
@@ -1866,7 +1863,7 @@ class MainWindow(QMainWindow):
                                 """.format(sn,model,description,location,manufacturer,cal_vendor,interval,mandatory,inservice,inservicedate,nextcal,outofservicedate,comment,timestamp,group,calOrVerify)
                         c.execute(sql,(sn,))
                         disconnect()
-                        if self.findentry.text() != '' or self.searchoptions.currentIndex() == 6 or self.searchoptions.currentIndex() == 2:
+                        if self.findentry.text() != '' or self.searchoptions.currentIndex() == 6 or self.searchoptions.currentIndex() == 3 or self.searchoptions.currentIndex() == 8:
                             self.find()
                         else:
                             self.updateTree(selecteditem)
@@ -1897,6 +1894,32 @@ class MainWindow(QMainWindow):
             self.modelEdit.setReadOnly(True)
             self.descEdit.setReadOnly(True)
             return
+    #Verify that items in the database still exist in folders----------------------------------------------------------------------------------
+    def checkFolders(self):
+        redColor = QBrush()
+        redColor.setColor(Qt.red)
+        whiteColor = QBrush()
+        whiteColor.setColor(Qt.white)
+        self.missingItems = []
+        connect()
+        for item in allItems():
+            if not path.isdir(item[8]):
+                self.missingItems.append(item[0])
+        disconnect()
+        for category in self.itemCats:
+            for item in category:
+                if item.text(0) in self.missingItems:
+                    item.setBackground(0,redColor)
+                    item.setForeground(0,redColor)
+                else:
+                    item.setBackground(0,whiteColor)
+        if len(self.missingItems) == 0 or self.missingItems == self.previousMissingItems:
+            return
+        elif len(self.missingItems) == 1:
+            toaster.show_toast('CalTools 3','There is 1 item with a non-existent directory. You can find this item in search or by its red text.',icon_path = resource_path('images\\CalToolsIcon.ico'), threaded = True, duration = 6)
+        else:
+            toaster.show_toast('CalTools 3','There are {} items with non-existent directories. You can find these items in search or by their red text.'.format(len(self.missingItems)), icon_path = resource_path('images\\CalToolsIcon.ico'), duration = 6, threaded = True)
+        self.previousMissingItems = self.missingItems
     #Updates the list of items in the tree-------------------------------------------------------------------------------------------------
     def updateTree(self,search = False, text = None, mode = 0):
         if self.findentry.text() != '':
@@ -1905,7 +1928,7 @@ class MainWindow(QMainWindow):
             connect()
             searchItems = listSearch.search(text, allItems(),mode)
             disconnect()
-        elif mode == 15 or mode == 13:
+        elif mode == 15 or mode == 13 or mode == 99:
             searchItems = ()
             pass
         else:
@@ -1925,19 +1948,19 @@ class MainWindow(QMainWindow):
                             self.itemCats[i].append(QTreeWidgetItem(self.topitems[i]))
                             self.itemCats[i][-1].setText(0, item[0])
                         else:
-                            if item in searchItems and mode != 13 and mode != 15:
+                            if item in searchItems and mode != 13 and mode != 15 and mode != 99:
                                 self.itemCats[i].append(QTreeWidgetItem(self.topitems[i]))
                                 self.itemCats[i][-1].setText(0, item[0])
                             else:
-                                if (item[13] == 0 and mode == 13) or (item[15] == '' and mode == 15):
+                                if (item[13] == 0 and mode == 13) or (item[15] == '' and mode == 15) or (path.isdir(item[8]) and mode == 99):
                                         continue
                                 self.itemCats[i].append(QTreeWidgetItem(self.topitems[i]))
                                 self.itemCats[i][-1].setText(0, item[0])
         disconnect(save = False)
-
         for i in range(0,len(config.folders)):
             self.topitems[i].addChildren(self.itemCats[i])
             self.topitems[i].sortChildren(0,Qt.AscendingOrder)
+        self.checkFolders()
         return
 
     def run(self):
@@ -1985,7 +2008,6 @@ Alternatively, the config.py text file bundled with this executable can be edite
                 if "firstRun" in line:
                     line = 'firstRun = False'
                 cfg.write(line)
-    #reload(config)
     config = SourceFileLoader('config','config.py').load_module()
 
 if __name__ == '__main__':
