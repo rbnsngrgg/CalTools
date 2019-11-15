@@ -339,3 +339,5 @@ ASALocalRun/
 # BeatPulse healthcheck temp database
 healthchecksdb
 /CalTools/Pyinstaller
+/CalTools/build/CalTools
+/CalTools/dist

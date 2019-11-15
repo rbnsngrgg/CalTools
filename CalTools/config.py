@@ -15,4 +15,4 @@ tempFilesDir = r"\\artemis\Hardware Development Projects\Manufacturing Engineeri
 #Folder that includes "Calibration Items" folder
 calScansDir = r"\\artemis\Hardware Development Projects\Manufacturing Engineering\Test Equipment\Calibration Scans"
 
-firstRun = True
+firstRun = False

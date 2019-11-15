@@ -164,7 +164,7 @@ def create_tables(override = ''):
                                 comment TEXT DEFAULT '',
                                 timestamp TEXT DEFAULT '',
                                 item_group TEXT DEFAULT '',
-                                verify_or_calibrate TEXT DEFAULT 'CALIBRATE'
+                                verify_or_calibrate TEXT DEFAULT 'CALIBRATION'
                             )""")
                 c.execute("""INSERT INTO calibration_items (serial_number,location,interval,cal_vendor,manufacturer,lastcal,nextcal,mandatory,directory,description,
                 inservice,inservicedate,outofservicedate,caldue,model,comment,timestamp,item_group) SELECT serial_number,location,interval,cal_vendor,
@@ -1951,7 +1951,7 @@ class MainWindow(QMainWindow):
                             if item in searchItems and mode != 13 and mode != 15 and mode != 99:
                                 self.itemCats[i].append(QTreeWidgetItem(self.topitems[i]))
                                 self.itemCats[i][-1].setText(0, item[0])
-                            else:
+                            elif mode == 13 or mode == 15 or mode == 19:
                                 if (item[13] == 0 and mode == 13) or (item[15] == '' and mode == 15) or (path.isdir(item[8]) and mode == 99):
                                         continue
                                 self.itemCats[i].append(QTreeWidgetItem(self.topitems[i]))
