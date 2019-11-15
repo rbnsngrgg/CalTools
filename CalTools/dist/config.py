@@ -4,7 +4,7 @@ folders  = ["PRODUCTION EQUIPMENT","ENGINEERING EQUIPMENT","QUALITY EQUIPMENT", 
 #Prefix directory strings with r
 
 #Database name
-dbName = r"debug_Test Equipment Calibration List.db"
+dbName = r"Test Equipment Calibration List.db"
 
 #Location of Database
 calListDir = r"\\artemis\Hardware Development Projects\Manufacturing Engineering\Test Equipment"
@@ -15,4 +15,4 @@ tempFilesDir = r"\\artemis\Hardware Development Projects\Manufacturing Engineeri
 #Folder that includes "Calibration Items" folder
 calScansDir = r"\\artemis\Hardware Development Projects\Manufacturing Engineering\Test Equipment\Calibration Scans"
 
-firstRun = True
+firstRun = False

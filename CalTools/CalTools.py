@@ -1666,7 +1666,7 @@ class MainWindow(QMainWindow):
                     self.manufacturerEdit.addItems(sorted(manufacturersList))
                     self.manufacturerEdit.setCurrentText(item[4])
                     self.calOrVerify.addItems(['CALIBRATION','VERIFICATION','MAINTENANCE'])
-                    self.calOrVerify.setCurrentText(item[19])
+                    self.calOrVerify.setCurrentText(item[18])
                     self.vendorEdit.addItems(sorted(vendorsList))
                     self.vendorEdit.setCurrentText(item[3])
 

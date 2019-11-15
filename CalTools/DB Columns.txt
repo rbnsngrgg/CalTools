@@ -17,8 +17,7 @@ calibration_items
 15: comments
 16: timestamp
 17: item_group
-18: calibration_tool
-19: verify_or_calibrate
+18: verify_or_calibrate
 
 item_groups
 0: name
