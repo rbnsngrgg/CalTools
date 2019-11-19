@@ -1951,7 +1951,7 @@ class MainWindow(QMainWindow):
                             if item in searchItems and mode != 13 and mode != 15 and mode != 99:
                                 self.itemCats[i].append(QTreeWidgetItem(self.topitems[i]))
                                 self.itemCats[i][-1].setText(0, item[0])
-                            elif mode == 13 or mode == 15 or mode == 19:
+                            elif mode == 13 or mode == 15 or mode == 99:
                                 if (item[13] == 0 and mode == 13) or (item[15] == '' and mode == 15) or (path.isdir(item[8]) and mode == 99):
                                         continue
                                 self.itemCats[i].append(QTreeWidgetItem(self.topitems[i]))
