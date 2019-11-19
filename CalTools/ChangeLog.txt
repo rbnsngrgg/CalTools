@@ -95,3 +95,5 @@ Changes
 	The calendar checkbutton has changed from "show only in service" to a more accurate "Show only mandatory, in service items".
 	Notification for when there are items with invalid directories. These items are shown with red text in the list.
 		New search mode for finding showing only invalid directory items.
+--3.0.1
+	Fix missing items not showing in search.
