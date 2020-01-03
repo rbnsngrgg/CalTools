@@ -1,5 +1,5 @@
 import pickle, sys, openpyxl, sqlite3, listSearch, time, json
-from os import remove, path, startfile, listdir, unlink, mkdir
+from os import remove, path, startfile, listdir, unlink, mkdir, rename
 from shutil import copyfile, move, rmtree, copy, copytree
 from tkinter import filedialog, Tk
 from datetime import date, datetime
@@ -12,7 +12,6 @@ from importlib import reload
 from importlib.machinery import SourceFileLoader
 
 toaster = ToastNotifier()
-#toaster.show_toast('CalTools 3','CalTools is starting.',threaded = True)
 
 try:
     config = SourceFileLoader('config','./config.py').load_module()
@@ -20,7 +19,7 @@ except FileNotFoundError:
     with open('config.py','wt',encoding = "UTF-8") as cfg:
         lines = [
                     "\n",
-                    "folders  = [\"PRODUCTION EQUIPMENT\",\"ENGINEERING EQUIPMENT\",\"QUALITY EQUIPMENT\", \"Ref Only\"]\n",
+                    "folders  = [\"PRODUCTION EQUIPMENT\",\"ENGINEERING EQUIPMENT\",\"QUALITY EQUIPMENT\", \"Ref Only\", \"Removed from Service\"]\n",
                     "\n",
                     "#Prefix directory strings with r\n",
                     "\n",
@@ -36,14 +35,30 @@ except FileNotFoundError:
                     '#Folder that includes "Calibration Items" folder\n',
                     'calScansDir = r"\\\\artemis\Hardware Development Projects\Manufacturing Engineering\Test Equipment\Calibration Scans"\n',
                     '\n',
-                    'firstRun = True'
+                    'firstRun = True\n',
+                    '\n',
+                    '#Certificate Report Template Cells\n',
+                    'certificateFileName = "ReportTemplate.xlsx"\n',
+                    'cManufacturer = "C5"\n',
+                    'cModel = "C6"\n',
+                    'cSerialNumber = "C7"\n',
+                    'cDescription = "C8"\n',
+                    'cCalibrationBox = "J12"\n',
+                    'cVerificationBox = "J13"\n',
+                    'cCalibrationDate = "D18"\n',
+                    'cOperationDate = "D19"\n',
+                    'cDueDate = "D20"\n',
+                    'cProcedure = "I18"\n',
+                    'cLocation = "I19"\n',
+                    'cCertificateDate = "J42"\n'
                 ]
         for line in lines:
             cfg.write(line)
     config = SourceFileLoader('config','config.py').load_module()
 
 dbVersion = '3'
-
+previousDuplicates = []
+duplicateFolders = []
 firstrun = True
 dbDir = config.calListDir + '\\' + config.dbName
 newdbDir = ''
@@ -95,6 +110,12 @@ def create_tables(override = ''):
             connect(override)
         else:
             connect()
+        c.execute("""SELECT count(name) FROM sqlite_master WHERE type='table' AND name='calibration_items'""")
+
+        if c.fetchone()[0] == 1:
+            newDB = False
+        else:
+            newDB = True
         c.execute("""CREATE TABLE IF NOT EXISTS calibration_items (
                         serial_number TEXT PRIMARY KEY,
                         location TEXT DEFAULT '',
@@ -114,7 +135,6 @@ def create_tables(override = ''):
                         comment TEXT DEFAULT '',
                         timestamp TEXT DEFAULT '',
                         item_group TEXT DEFAULT '',
-                        calibration_tool TEXT DEFAULT '',
                         verify_or_calibrate TEXT DEFAULT 'CALIBRATE'
                     )""")
         c.execute("""CREATE TABLE IF NOT EXISTS item_groups (
@@ -123,7 +143,8 @@ def create_tables(override = ''):
                         include_all_model INTEGER DEFAULT 0
                     )""")
         c.execute("""DROP TABLE IF EXISTS directories""")
-    
+        if newDB:
+            c.execute("""PRAGMA user_version = 3""")
         c.execute("""PRAGMA user_version""")
         version = c.fetchone()[0]
 
@@ -281,35 +302,29 @@ def newReport(sn):
                     startfile('{0}/{1}_{2}.xlsx'.format(direc,today,item[0]))
                 else:
                     newfile = '{0}/{1}_{2}.xlsx'.format(direc,today,item[0])
-                    copyfile(tempFilesDir + '/' + 'ReportTemplate.xlsx',newfile)
+                    copyfile(tempFilesDir + '/' + config.certificateFileName,newfile)
 
                     #Set up openpyxl to use the new report spreadsheet
                     newreport = openpyxl.load_workbook(newfile)
                     ws = newreport.active
                     testercaldue = ''
                     #Fill in the info
-                    ws['C5'] = item[4]
-                    ws['C6'] = item[14]
-                    ws['C7'] = item[0]
-                    ws['C8'] = item[9]
-                    ws['D12'] = 'X'
-                    ws['D15'] = 'X'
-                    ws['G12'] = 'X'
-                    ws['G15'] = 'X'
-                    ws['J12'] = 'X'
-                    ws['D18'] = today
+                    ws[config.cManufacturer] = item[4]
+                    ws[config.cModel] = item[14]
+                    ws[config.cSerialNumber] = item[0]
+                    ws[config.cDescription] = item[9]
+                    if item[18] == 'CALIBRATION':
+                        ws[config.cCalibrationBox] = 'X'
+                    else:
+                        ws[config.cVerificationBox] = 'X'
+                    ws[config.cCalibrationDate] = today
                     if item[10] == 1:
-                        ws['D19'] = today
+                        ws[config.cOperationDate] = today
                     else:
                         pass
-                    ws['D20'] = str(today + relativedelta(months = item[2]))
-                    ws['I19'] = item[1]
-                    for testitem in allItems():
-                        if testitem[14] == 'ST102':
-                            testercaldue = testitem[6]
-                            break
-                    ws['J29'] = testercaldue
-                    ws['J42'] = today
+                    ws[config.cDueDate] = str(today + relativedelta(months = item[2]))
+                    ws[config.cLocation] = item[1]
+                    ws[config.cCertificateDate] = today
                     newreport.save('{0}/{1}_{2}.xlsx'.format(direc,today,item[0]))
                     #Open the file so edits/signatures can be made.
                     startfile('{0}/{1}_{2}.xlsx'.format(direc,today,item[0]))
@@ -351,11 +366,11 @@ def report_OOC(mode = '', items = [], weekOf = ''):
     else:
         ws['A2'] = f'Week of {weekOf}'
     for item in items_to_add:
-        if item[7] == 1 and item[10] == 1:
+        if item[7] == 0 and item[10] == 1:
             ws['A{}'.format(row)] = '*{}'.format(item[0])
-        elif item[7] == 0 and item[10] == 0:
-            ws['A{}'.format(row)] = '**{}'.format(item[0])
         elif item[7] == 1 and item[10] == 0:
+            ws['A{}'.format(row)] = '**{}'.format(item[0])
+        elif item[7] == 0 and item[10] == 0:
             ws['A{}'.format(row)] = '***{}'.format(item[0])
         else:
             ws['A{}'.format(row)] = item[0]
@@ -381,7 +396,8 @@ def report_OOC(mode = '', items = [], weekOf = ''):
         message.exec_()
 #Updates calitemslist----------------------------------------------------------------------------------------------------------------------
 def namereader(file='',folder='', all = False, option = None):
-    #Folder will be "ENGINEERING" or "PRODUCTION" EQUIPMENT folder 
+    global duplicateFolders
+    #Folder will be "ENGINEERING","PRODUCTION", etc. EQUIPMENT folder 
     if folder != '' and all == True:
         cont = False
 
@@ -398,13 +414,14 @@ def namereader(file='',folder='', all = False, option = None):
         #Each "itemFolder" contains all files for one item
         for itemFolder in listdir(folder):
             sn = itemFolder
-            if path.isdir('{}\\{}'.format(folder, itemFolder)):
+            currentItemFolder = '{}\\{}'.format(folder, itemFolder)
+            if path.isdir(currentItemFolder):
                 c.execute("""INSERT OR IGNORE INTO calibration_items (serial_number)
                                 VALUES (?)""", (sn,))
             else:
                 continue
             datesList = []
-            for file in listdir('{}\\{}'.format(folder, itemFolder)):
+            for file in listdir(currentItemFolder):
                 fileSplit = file.split('_')
                 if len(fileSplit) != 2:
                     continue
@@ -417,6 +434,15 @@ def namereader(file='',folder='', all = False, option = None):
                         continue
             c.execute("SELECT * FROM calibration_items WHERE serial_number = ?", (sn,))
             itemInfo = c.fetchone()
+            directoryFromDB = itemInfo[8]
+            #Checks if folder is a duplicate
+            if currentItemFolder != directoryFromDB and path.isdir(directoryFromDB):
+                check = False
+                for dupe in duplicateFolders:
+                    if dupe[0] == sn:
+                        check = True
+                if not check:
+                    duplicateFolders.append((sn,directoryFromDB,currentItemFolder))
             interval = itemInfo[2]
             if isinstance(interval, int):
                 if interval > 0:
@@ -467,6 +493,8 @@ def namereader(file='',folder='', all = False, option = None):
         disconnect()
 #Checks all folders in cal scans directory-------------------------------------------------------------------------------------------------
 def updateitems():
+    global duplicateFolders
+    duplicateFolders = []
     for dirs in listdir(calScansDir):
         current = calScansDir+'\\'+dirs
         if not path.isdir(current):
@@ -475,10 +503,9 @@ def updateitems():
             if folder not in config.folders:
                 continue
             namereader(folder = current+'\\'+folder,all = True,option = current)
-    
     return
 
-#Global so that each iteration of verifyFiles has access without having to create them each time
+#Global so that each iteration of verifyFiles has access without having to create them each time-------------------------------------------
 previousStruct = None
 currentStruct = None
 
@@ -720,8 +747,16 @@ class MainWindow(QMainWindow):
         global centralwidget, calendarWidget
         #Initialize the parent class, then set title and min window size
         QMainWindow.__init__(self)
-        self.setWindowTitle('CalTools 3')
+        self.setWindowTitle('CalTools 3.1.0')
         self.setMinimumSize(1000,600)
+
+        #Color brushes
+        self.redColor = QBrush()
+        self.redColor.setColor(Qt.red)
+        self.whiteColor = QBrush()
+        self.whiteColor.setColor(Qt.white)
+        self.orangeColor = QBrush()
+        self.orangeColor.setColor(QColor(255,130,0))
 
         #Icons
         self.icon = QIcon(resource_path('images\\CalToolsIcon.png'))
@@ -733,6 +768,7 @@ class MainWindow(QMainWindow):
         self.reportIcon = QIcon(resource_path('images\\report.png'))
         self.removeIcon  = QIcon(resource_path('images\\delete.png'))
         self.moveIcon = QIcon(resource_path('images\\move.png'))
+        self.dupeIcon = QIcon(resource_path('images\\dupe.png'))
 
         self.setWindowIcon(self.icon)
 
@@ -744,18 +780,20 @@ class MainWindow(QMainWindow):
         self.previousMissingItems = []
 
         #Calendar view---------------------------------------------------------------------------------------------------------------------
-        self.calendarLayout = QVBoxLayout()
-        self.calendarTopRow = QHBoxLayout()
-        self.calendarCenter = QHBoxLayout()
-        self.calendarCenterLeft = QVBoxLayout()
-        self.calendarCenterRight = QVBoxLayout()
-        self.calendarBottomRow = QHBoxLayout()
-        self.calendar = CalendarWidget()
+        self.calendarLayout =       QVBoxLayout()
+        self.calendarTopRow =       QHBoxLayout()
+        self.calendarCenter =       QHBoxLayout()
+        self.calendarCenterLeft =   QVBoxLayout()
+        self.calendarCenterRight =  QVBoxLayout()
+        self.calendarBottomRow =    QHBoxLayout()
+        self.calendar =             CalendarWidget()
+
         self.calendar.selectionChanged.connect(self.calendarSelection)
-        self.calendarLine1 = QFrame()
+
+        self.calendarLine1 =        QFrame()
         self.calendarLine1.setFrameShape(QFrame.HLine)
-        self.calendarWeekLabel = QLabel('To-do during week of ...:')
-        self.calendarWeekDetails = QTableWidget()
+        self.calendarWeekLabel =    QLabel('To-do during week of ...:')
+        self.calendarWeekDetails =  QTableWidget()
         self.calendarWeekDetails.setColumnCount(6)
         self.calendarWeekDetails.setHorizontalHeaderLabels(['SN','Model','Description','Location','Cal Vendor','Cal due by'])
         self.calendarWeekDetails.setEditTriggers(QAbstractItemView.NoEditTriggers)
@@ -859,7 +897,7 @@ class MainWindow(QMainWindow):
         self.calendarTopRow.addWidget(self.calendarBtn5)
 
         #Calendar bottom row buttons
-        self.calendarInServiceCheck = QCheckBox('Show only mandatory, in service items')
+        self.calendarInServiceCheck = QCheckBox('Show only mandatory, in operation items')
         self.calendarInServiceCheck.setChecked(True)
         self.calendarInServiceCheck.stateChanged.connect(self.calendarShowItems)
         self.calendarShowOnly = QComboBox(self)
@@ -872,6 +910,10 @@ class MainWindow(QMainWindow):
         self.itemslist = QTreeWidget()
         self.itemslist.setHeaderLabel('Calibration Items')
         self.itemslist.itemSelectionChanged.connect(self.showDetails)
+        self.itemslistFocus = False
+        self.itemslist.keyPressEvent = self.editEntered
+        self.itemslist.focusInEvent = self.listFocusEvent
+        self.itemslist.focusOutEvent = self.listFocusEvent
         self.itemslist.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.topitems = []
         for folder in config.folders:
@@ -927,18 +969,18 @@ class MainWindow(QMainWindow):
         self.details.addRow('Cal vendor:',self.vendorEdit)
         self.details.addRow('Cal interval:',self.intervalEdit)
         self.details.addRow('Last calibration:',self.lastEdit)
-        self.details.addRow('In Service Date (YYYY-MM-DD): ',self.inServiceDateEdit)
+        self.details.addRow('In Operation Date (YYYY-MM-DD): ',self.inServiceDateEdit)
         self.details.addRow('Next calibration:',self.nextEdit)
         self.details.addRow('Mandatory calibration:',self.mandatoryEdit)
-        self.details.addRow('In Service: ',self.inServiceEdit)
+        self.details.addRow('In Operation: ',self.inServiceEdit)
         self.details.addRow('Item Group: ', self.groupEdit)
         self.details.addRow('Comments: ',self.commentEdit)
         self.detailsGroup.setLayout(self.details)
         #----------------------------------------------------------------------------------------------------------------------------------
         self.searchoptions = QComboBox(self)
-        self.searchoptionsdict = {'Serial Number':0,'Model':14,'Description':9,'Location':1,'Manufacturer':4,'Cal Vendor':3,'Out of Cal':13, 'Has Comment':15, 'Action':19, 'Missing Items':99}
+        self.searchoptionsdict = {'Serial Number':0,'Model':14,'Description':9,'Location':1,'Manufacturer':4,'Cal Vendor':3,'Out of Cal':13, 'Has Comment':15, 'Action':18,'Duplicates':98, 'Missing Items':99}
         self.searchoptions.addItems(sorted(list(self.searchoptionsdict.keys())))
-        self.searchoptions.setCurrentIndex(9)
+        self.searchoptions.setCurrentIndex(10)
         self.searchoptions.currentIndexChanged.connect(self.indexCheck)
         #----------------------------------------------------------------------------------------------------------------------------------
         self.focus_layout.addWidget(self.itemslist,0,1)
@@ -976,6 +1018,13 @@ class MainWindow(QMainWindow):
         self.movebtn.setIcon(self.moveIcon)
         self.movebtn.setIconSize(QSize(31,31))
 
+        self.dupebtn = QPushButton('')
+        self.dupebtn.setToolTip('Open duplicate folders')
+        self.dupebtn.setFixedSize(35,35)
+        self.dupebtn.setIcon(self.dupeIcon)
+        self.dupebtn.setIconSize(QSize(31,31))
+        self.dupebtn.setVisible(False)
+
         self.findentry = QLineEdit(self)
 
         self.editItemBtn.clicked.connect(self.editClick)
@@ -983,6 +1032,7 @@ class MainWindow(QMainWindow):
         self.newreportbtn.clicked.connect(self.newReportClick)
         self.removebtn.clicked.connect(self.deleteClick)
         self.movebtn.clicked.connect(self.moveItemClick)
+        self.dupebtn.clicked.connect(self.openDupes)
         self.findentry.textChanged.connect(self.find)
         self.findentry.setPlaceholderText('Search')
 
@@ -991,7 +1041,8 @@ class MainWindow(QMainWindow):
         self.bottomrow.addWidget(self.newreportbtn,2,0)
         self.bottomrow.addWidget(self.removebtn,3,0)
         self.bottomrow.addWidget(self.movebtn,4,0)
-        self.bottomrow.addItem(QSpacerItem(25,25,QSizePolicy.Minimum,QSizePolicy.Expanding),5,0)
+        self.bottomrow.addWidget(self.dupebtn,5,0)
+        self.bottomrow.addItem(QSpacerItem(25,25,QSizePolicy.Minimum,QSizePolicy.Expanding),6,0)
 
         
         self.bottomrow.setMargin(0)
@@ -1129,7 +1180,7 @@ class MainWindow(QMainWindow):
         self.editBox.sublayout = QFormLayout()
 
         self.editBox.optionsList = QComboBox()
-        self.editBox.optionsList.addItems(sorted(['Model','Description','Location','Manufacturer','Cal Vendor','Cal Interval', 'Cal As Needed','In Service','Group','Comment']))
+        self.editBox.optionsList.addItems(sorted(['Model','Description','Location','Manufacturer','Cal Vendor','Cal Interval', 'Cal As Needed','In Operation','Group','Comment']))
         self.editBox.model = QLineEdit()
         self.editBox.description = QLineEdit()
         self.editBox.location = QComboBox()
@@ -1650,6 +1701,14 @@ class MainWindow(QMainWindow):
             all_items = allItems()
             for item in all_items:
                 if self.itemslist.currentItem().text(0) == item[0]:
+                    self.dupebtn.setVisible(False)
+                    if len(duplicateFolders) <= 1:
+                        for dupe in duplicateFolders:
+                            if self.itemslist.currentItem().text(0) == dupe[0]:
+                                self.dupebtn.setVisible(True)
+                                #break
+                            else:
+                                self.dupebtn.setVisible(False)
                     #Clear previous values in the combo boxes
                     self.locationEdit.clear()
                     self.manufacturerEdit.clear()
@@ -1702,7 +1761,8 @@ class MainWindow(QMainWindow):
     #Bottom row button slots---------------------------------------------------------------------------------------------------------------
     @Slot()
     def indexCheck(self):
-        if self.searchoptions.currentIndex() == 6 or self.searchoptions.currentIndex() == 3 or self.searchoptions.currentIndex() == 8:
+        readOnlyOptions = ['Has Comment', 'Missing Items', 'Out of Cal', 'Duplicates']
+        if self.searchoptions.currentText() in readOnlyOptions:
             self.findentry.clear()
             self.findentry.setReadOnly(True)
             self.find()
@@ -1741,9 +1801,21 @@ class MainWindow(QMainWindow):
     def newReportClick(self):
         sn = self.itemslist.currentItem().text(0)
         newReport(sn)
+
+    #Toggles edit mode when the enter key is pressed on a item, key code for enter is 16777220 or 16777221---------------------------------
+    @Slot()
+    def editEntered(self, event):
+        if (event.key() == 16777220 or event.key() == 16777221) and (self.itemslistFocus) and (len(self.itemslist.selectedItems()) == 1):
+            self.editClick()
+    @Slot()
+    def listFocusEvent(self, event):
+        if 'FocusIn' in str(event.type()):
+            self.itemslistFocus = True
+        else:
+            self.itemslistFocus = False
     @Slot()
     def editClick(self,toggle = False):
-        if len(self.itemslist.selectedItems()) == 0:
+        if len(self.itemslist.selectedItems()) == 0 or self.itemslist.currentItem().text(0) in config.folders:
             return
         if (self.snEdit.isReadOnly() and toggle == False) or (toggle == True and self.editable == False):
             self.editItemBtn.setIcon(self.saveIcon)
@@ -1828,7 +1900,7 @@ class MainWindow(QMainWindow):
                             except:
                                 message = QMessageBox()
                                 message.setWindowTitle('Format Error')
-                                message.setText('The format of the "In Service Date" is incorrect. The date was not changed, please re-enter.')
+                                message.setText('The format of the "In Operation Date" is incorrect. The date was not changed, please re-enter.')
                                 message.exec_()
                                 return
                             if inservicedate != '' and item[5] != '':
@@ -1855,12 +1927,22 @@ class MainWindow(QMainWindow):
                                 nextcal = ''
                             inservicedate = ''
                             outofservicedate = item[12]
+                        lastcal = item[5]
+                        directory = item[8]
                         selecteditem = self.itemslist.currentItem().text(0)
                         timestamp = datetime.utcnow().strftime('%Y-%m-%d-%H-%M-%S-%f')
+                        if sn != item[0]:
+                            removeFromDB(item[0])
+                            c.execute("""INSERT OR IGNORE INTO calibration_items (serial_number)
+                                VALUES (?)""", (sn,))
+                            rename(directory, directory.replace(item[0],sn))
+                            selecteditem = sn
+                            directory = directory.replace(item[0],sn)
                         sql = """
-                                UPDATE calibration_items SET serial_number='{}',model='{}',description='{}',location='{}',manufacturer='{}',cal_vendor='{}',interval={},mandatory={},inservice={},inservicedate='{}',
-                                nextcal='{}',outofservicedate='{}',comment='{}',timestamp='{}',item_group='{}',verify_or_calibrate='{}' WHERE serial_number=?
-                                """.format(sn,model,description,location,manufacturer,cal_vendor,interval,mandatory,inservice,inservicedate,nextcal,outofservicedate,comment,timestamp,group,calOrVerify)
+                                UPDATE calibration_items SET serial_number='{}',model='{}',description='{}',location='{}',manufacturer='{}',cal_vendor='{}',interval={},mandatory={},
+                                directory='{}',inservice={},inservicedate='{}',lastcal='{}',nextcal='{}',outofservicedate='{}',comment='{}',timestamp='{}',item_group='{}',verify_or_calibrate='{}' 
+                                WHERE serial_number=?
+                                """.format(sn,model,description,location,manufacturer,cal_vendor,interval,mandatory,directory,inservice,inservicedate,lastcal,nextcal,outofservicedate,comment,timestamp,group,calOrVerify)
                         c.execute(sql,(sn,))
                         disconnect()
                         if self.findentry.text() != '' or self.searchoptions.currentIndex() == 6 or self.searchoptions.currentIndex() == 3 or self.searchoptions.currentIndex() == 8:
@@ -1894,32 +1976,59 @@ class MainWindow(QMainWindow):
             self.modelEdit.setReadOnly(True)
             self.descEdit.setReadOnly(True)
             return
-    #Verify that items in the database still exist in folders----------------------------------------------------------------------------------
+    #Verify that items in the database still exist in folders, highlight items with dupes--------------------------------------------------
     def checkFolders(self):
-        redColor = QBrush()
-        redColor.setColor(Qt.red)
-        whiteColor = QBrush()
-        whiteColor.setColor(Qt.white)
+        global duplicateFolders, previousDuplicates
         self.missingItems = []
+        self.dupes = []
         connect()
         for item in allItems():
             if not path.isdir(item[8]):
                 self.missingItems.append(item[0])
+            for dupe in duplicateFolders:
+                if item[0] == dupe[0]:
+                    self.dupes.append(item[0])
         disconnect()
         for category in self.itemCats:
             for item in category:
                 if item.text(0) in self.missingItems:
-                    item.setBackground(0,redColor)
-                    item.setForeground(0,redColor)
+                    item.setBackground(0,self.redColor)
+                    item.setForeground(0,self.redColor)
+                elif item.text(0) in self.dupes:
+                    item.setBackground(0,self.orangeColor)
+                    item.setForeground(0,self.orangeColor)
                 else:
-                    item.setBackground(0,whiteColor)
+                    item.setBackground(0,self.whiteColor)
         if len(self.missingItems) == 0 or self.missingItems == self.previousMissingItems:
-            return
+            pass
         elif len(self.missingItems) == 1:
-            toaster.show_toast('CalTools 3','There is 1 item with a non-existent directory. You can find this item in search or by its red text.',icon_path = resource_path('images\\CalToolsIcon.ico'), threaded = True, duration = 6)
+            toaster.show_toast('CalTools 3','There is 1 item with a non-existent directory. You can find this item in search or by its red text.',
+                               icon_path = resource_path('images\\CalToolsIcon.ico'), threaded = True, duration = 6)
         else:
-            toaster.show_toast('CalTools 3','There are {} items with non-existent directories. You can find these items in search or by their red text.'.format(len(self.missingItems)), icon_path = resource_path('images\\CalToolsIcon.ico'), duration = 6, threaded = True)
+            toaster.show_toast('CalTools 3','There are {} items with non-existent directories. You can find these items in search or by their red text.'.format(len(self.missingItems)),
+                               icon_path = resource_path('images\\CalToolsIcon.ico'), duration = 6, threaded = True)
         self.previousMissingItems = self.missingItems
+
+        if previousDuplicates == duplicateFolders:
+            pass
+        elif len(self.dupes) == 1:
+            toaster.show_toast('CalTools 3','There is 1 item with duplicate folders. You can find this item in search or by its orange text.',
+                               icon_path = resource_path('images\\CalToolsIcon.ico'), threaded = True, duration = 6)
+        elif len(self.dupes) > 1:
+            toaster.show_toast('CalTools 3','There are {} items with duplicate folders. You can find these items in search or by their orange text.'.format(len(self.dupes)),
+                               icon_path = resource_path('images\\CalToolsIcon.ico'), duration = 6, threaded = True)
+        previousDuplicates = duplicateFolders
+    #Open the duplicate folders found for the selected item--------------------------------------------------------------------------------
+    def openDupes(self):
+        if self.itemslist.currentItem() is not None:
+            currentItem = self.itemslist.currentItem().text(0)
+            for dupe in duplicateFolders:
+                if currentItem == dupe[0]:
+                    startfile(dupe[1])
+                    startfile(dupe[2])
+                    return
+
+
     #Updates the list of items in the tree-------------------------------------------------------------------------------------------------
     def updateTree(self,search = False, text = None, mode = 0):
         if self.findentry.text() != '':
@@ -1928,7 +2037,7 @@ class MainWindow(QMainWindow):
             connect()
             searchItems = listSearch.search(text, allItems(),mode)
             disconnect()
-        elif mode == 15 or mode == 13 or mode == 99:
+        elif mode == 15 or mode == 13 or mode == 99 or mode == 98:
             searchItems = ()
             pass
         else:
@@ -1951,8 +2060,15 @@ class MainWindow(QMainWindow):
                             if item in searchItems and mode != 13 and mode != 15 and mode != 99:
                                 self.itemCats[i].append(QTreeWidgetItem(self.topitems[i]))
                                 self.itemCats[i][-1].setText(0, item[0])
-                            elif mode == 13 or mode == 15 or mode == 99:
+                            elif mode == 13 or mode == 15 or mode == 99 or mode == 98:
                                 if (item[13] == 0 and mode == 13) or (item[15] == '' and mode == 15) or (path.isdir(item[8]) and mode == 99):
+                                        continue
+                                if mode == 98:
+                                    modeFound = False
+                                    for dupe in duplicateFolders:
+                                        if item[0] == dupe[0]:
+                                            modeFound = True
+                                    if not modeFound:
                                         continue
                                 self.itemCats[i].append(QTreeWidgetItem(self.topitems[i]))
                                 self.itemCats[i][-1].setText(0, item[0])
@@ -2006,7 +2122,7 @@ Alternatively, the config.py text file bundled with this executable can be edite
         with open('config.py','wt',encoding = "UTF-8") as cfg:
             for line in lines:
                 if "firstRun" in line:
-                    line = 'firstRun = False'
+                    line = 'firstRun = False\n'
                 cfg.write(line)
     config = SourceFileLoader('config','config.py').load_module()
 

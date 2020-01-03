@@ -97,3 +97,15 @@ Changes
 		New search mode for finding showing only invalid directory items.
 --3.0.1
 	Fix missing items not showing in search.
+--3.1.0
+	Fix date appearing in wrong cell in the report.
+	Inverted "cal as needed" marking in out of cal report to match DB format. (Issue 27)
+	Change "In service" to "In operation" to have a distinction between items that are inoperable and items that are operable, but not currently used.
+	Added excel report cells and file name to the config file so that a change in the template file will not require a new CalTools version.
+	Add full version number to window title bar.
+	Fix list not updating when items are deleted or moved (Issue 29)
+	Add notification for when an item has duplicate folders. (Issue 25)
+		New search mode for finding items with duplicates.
+	Fix broken "Action" search mode.
+	Add functionality to rename items within the app. (Issue 28)
+	Enter key now toggles editing of a single item when the list widget is in focus.

@@ -25,20 +25,23 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CalTools.py" />
-    <Compile Include="config_orig.py" />
+    <Compile Include="config.py" />
     <Compile Include="listSearch.py" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="CalTools.spec" />
     <Content Include="ChangeLog.txt" />
     <Content Include="DB Columns.txt" />
     <Content Include="images\calendar.png" />
     <Content Include="images\CalToolsIcon.ico" />
     <Content Include="images\CalToolsIcon.png" />
     <Content Include="images\delete.png" />
+    <Content Include="images\dupe.png" />
     <Content Include="images\edit.png" />
     <Content Include="images\folder.png" />
     <Content Include="images\move.png" />
     <Content Include="images\report.png" />
+    <Content Include="images\save.png" />
     <Content Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
