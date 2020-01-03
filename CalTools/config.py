@@ -15,4 +15,19 @@ tempFilesDir = r"\\artemis\Hardware Development Projects\Manufacturing Engineeri
 #Folder that includes "Calibration Items" folder
 calScansDir = r"\\artemis\Hardware Development Projects\Manufacturing Engineering\Test Equipment\Calibration Scans"
 
-firstRun = False
+firstRun = True
+
+#Certificate Report Template Cells
+certificateFileName = "ReportTemplate.xlsx"
+cManufacturer = "C5"
+cModel = "C6"
+cSerialNumber = "C7"
+cDescription = "C8"
+cCalibrationBox = "J12"
+cVerificationBox = "J13"
+cCalibrationDate = "D18"
+cOperationDate = "D19"
+cDueDate = "D20"
+cProcedure = "I18"
+cLocation = "I19"
+cCertificateDate = "J42"

@@ -341,3 +341,4 @@ healthchecksdb
 /CalTools/Pyinstaller
 /CalTools/build/CalTools
 /CalTools/dist
+/CalTools/Checklist.txt
