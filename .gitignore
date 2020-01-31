@@ -342,3 +342,4 @@ healthchecksdb
 /CalTools/build/CalTools
 /CalTools/dist
 /CalTools/Checklist.txt
+/CalTools.pyperf

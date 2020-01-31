@@ -15,7 +15,11 @@ tempFilesDir = r"\\artemis\Hardware Development Projects\Manufacturing Engineeri
 #Folder that includes "Calibration Items" folder
 calScansDir = r"\\artemis\Hardware Development Projects\Manufacturing Engineering\Test Equipment\Calibration Scans"
 
-firstRun = True
+firstRun = False
+
+#When to mark items as due in db, and when to show them on the calendar (in days)
+markCalDue = 30
+dueInCalendar = 60
 
 #Certificate Report Template Cells
 certificateFileName = "ReportTemplate.xlsx"

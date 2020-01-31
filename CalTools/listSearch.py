@@ -5,6 +5,11 @@ def search(text, items, mode):
     ands = []
     ors = []
     foundItems = []
+    itemList = []
+    #Prevents first item being dropped by sqlite cursor
+    for item in items:
+        itemList.append(item)
+    #Find keywords
     for index,term in enumerate(textsplit):
         if '""' in term[0:2] and '""' in term[-2:] == '""':
             terms.append(term.strip('"'))
@@ -28,7 +33,8 @@ def search(text, items, mode):
                 else:
                     newor.append(textsplit[index + 1].strip('"'))
                     ors.append(newor)
-    for item in items:
+    #Find operands for keywords
+    for item in itemList:
         if len(nots) == 0 and len(ands) == 0 and len(ors) == 0:
             break
         hasNot = False
@@ -58,8 +64,7 @@ def search(text, items, mode):
             if andsFound == True and hasOr == True:
                 foundItems.append(item)
     if len(terms) == 0:
-        for item in items:
+        for item in itemList:
             if text.lower() in item[mode].lower():
                 foundItems.append(item)
-
     return foundItems

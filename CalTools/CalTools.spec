@@ -15,7 +15,8 @@ a = Analysis(['CalTools.py'],
 			 ('C:\\Users\\grobinson\\source\\repos\\CalTools\\CalTools\\images\\report.png','images'),
 			 ('C:\\Users\\grobinson\\source\\repos\\CalTools\\CalTools\\images\\delete.png','images'),
 			 ('C:\\Users\\grobinson\\source\\repos\\CalTools\\CalTools\\images\\move.png','images'),
-			 ('C:\\Users\\grobinson\\source\\repos\\CalTools\\CalTools\\images\\dupe.png','images')
+			 ('C:\\Users\\grobinson\\source\\repos\\CalTools\\CalTools\\images\\dupe.png','images'),
+			 ('C:\\Users\\grobinson\\source\\repos\\CalTools\\CalTools\\images\\tools.png','images')
 			 ],
              hiddenimports=[],
              hookspath=[],

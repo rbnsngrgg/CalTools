@@ -109,3 +109,14 @@ Changes
 	Fix broken "Action" search mode.
 	Add functionality to rename items within the app. (Issue 28)
 	Enter key now toggles editing of a single item when the list widget is in focus.
+--3.2.0
+	--Bug Fixes:
+		Fix outdated style by updating Pyinstaller.
+		Fix arrow keys not scrolling in the item list.
+		Fix crash caused by default directory being unreachable. The working directory will now be used if the default can't be reached. (Issue 36)
+		Fix first item in DB not appearing in search due to how the SQLite cursor was used. (Issue 38)
+	--Features:
+		Add receiving folder functionality that transfers properly-named files to the equipment folder
+		Add spash screen
+		Add config option for when to mark an item as due for calibration (Issue 35)
+		Change "Open Cal List" button to "Receiving Folder"
