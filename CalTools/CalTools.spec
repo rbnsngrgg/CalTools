@@ -15,12 +15,13 @@ a = Analysis(['CalTools.py'],
 			 ('C:\\Users\\grobinson\\source\\repos\\CalTools\\CalTools\\images\\report.png','images'),
 			 ('C:\\Users\\grobinson\\source\\repos\\CalTools\\CalTools\\images\\delete.png','images'),
 			 ('C:\\Users\\grobinson\\source\\repos\\CalTools\\CalTools\\images\\move.png','images'),
-			 ('C:\\Users\\grobinson\\source\\repos\\CalTools\\CalTools\\images\\dupe.png','images')
+			 ('C:\\Users\\grobinson\\source\\repos\\CalTools\\CalTools\\images\\dupe.png','images'),
+			 ('C:\\Users\\grobinson\\source\\repos\\CalTools\\CalTools\\images\\tools.png','images')
 			 ],
              hiddenimports=[],
              hookspath=[],
              runtime_hooks=[],
-             excludes=['matplotlib'],
+             excludes=['matplotlib','numpy','scipy','pandas','PIL'],
              win_no_prefer_redirects=False,
              win_private_assemblies=False,
              cipher=block_cipher)
@@ -36,4 +37,4 @@ exe = EXE(pyz,
           strip=False,
           upx=True,
           runtime_tmpdir=None,
-          console=False , icon='CalToolsIcon.ico')
+          console=True , icon='CalToolsIcon.ico')

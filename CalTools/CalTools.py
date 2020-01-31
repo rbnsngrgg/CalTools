@@ -1,5 +1,6 @@
-import pickle, sys, openpyxl, sqlite3, listSearch, time, json
-from os import remove, path, startfile, listdir, unlink, mkdir, rename
+import pickle, sys, sqlite3, listSearch, time, json
+from openpyxl import load_workbook
+from os import remove, path, startfile, listdir, unlink, mkdir, rename, makedirs
 from shutil import copyfile, move, rmtree, copy, copytree
 from tkinter import filedialog, Tk
 from datetime import date, datetime
@@ -15,6 +16,7 @@ toaster = ToastNotifier()
 
 try:
     config = SourceFileLoader('config','./config.py').load_module()
+    dbDir = config.calListDir + '\\' + config.dbName
 except FileNotFoundError:
     with open('config.py','wt',encoding = "UTF-8") as cfg:
         lines = [
@@ -37,6 +39,10 @@ except FileNotFoundError:
                     '\n',
                     'firstRun = True\n',
                     '\n',
+                    '#When to mark items as due in db, and when to show them on the calendar (in days)\n',
+                    'markCalDue = 30\n',
+                    'dueInCalendar = 60\n',
+                    '\n',
                     '#Certificate Report Template Cells\n',
                     'certificateFileName = "ReportTemplate.xlsx"\n',
                     'cManufacturer = "C5"\n',
@@ -55,14 +61,48 @@ except FileNotFoundError:
         for line in lines:
             cfg.write(line)
     config = SourceFileLoader('config','config.py').load_module()
+    dbDir = config.calListDir + '\\' + config.dbName
 
+#Creates Receiving Folder if it doesn't exist, using config.calListDir---------------------------------------------------------------------
+def createReceiving():
+    if not path.isdir(f"{config.calListDir}\\Receiving"):
+        if path.isdir(config.calListDir):
+            mkdir(f"{config.calListDir}\\Receiving")
+        else:
+            errorMessage('Error!','Could not locate Cal list directory (calListDir).')
 dbVersion = '3'
 previousDuplicates = []
 duplicateFolders = []
 firstrun = True
-dbDir = config.calListDir + '\\' + config.dbName
 newdbDir = ''
 
+#Checks that all config directories are valid. Create test equipment folder in working directory if not------------------------------------
+def checkDirs():
+    global config, dbDir
+    if not path.isdir(config.calListDir):
+        splash.showMessage('Assigning working directory, rewriting config...',Qt.AlignRight)
+        lines = []
+        toStrip = config.calListDir
+        if path.isfile('config.py'):
+            with open('config.py','rt') as cfg:
+                for line in cfg:
+                    if toStrip in line:
+                        line = line.replace(toStrip,"Test Equipment")
+                    lines.append(line)
+            with open('config.py','wt',encoding = "UTF-8") as cfg:
+                for line in lines:
+                    if "firstRun" in line:
+                        line = 'firstRun = False\n'
+                    cfg.write(line)
+        splash.showMessage('Reloading config...',Qt.AlignRight)
+        config = SourceFileLoader('config','config.py').load_module()
+        dbDir = config.calListDir + '\\' + config.dbName
+        try:
+            splash.showMessage('Creating working directory...',Qt.AlignRight)
+            makedirs(config.tempFilesDir)
+            makedirs(config.calScansDir)
+        except Exception as e:
+            errorMessage('Error!',f"checkDirs(): {e}")
 #Function for images included in pyinstaller .exe
 def resource_path(relative_path):
     if hasattr(sys, '_MEIPASS'):
@@ -282,11 +322,6 @@ def changedir(choice):
         return directory
     root.destroy()
 
-#Opens the Cal-PM List---------------------------------------------------------------------------------------------------------------------
-def calList():
-    file = calListDir + '\\Test Equipment Cal-PM List.xlsx'
-    startfile(file)
-
 #Creates a new, blank, Excel report for today's date---------------------------------------------------------------------------------------
 def newReport(sn):
     updateitems()
@@ -305,7 +340,7 @@ def newReport(sn):
                     copyfile(tempFilesDir + '/' + config.certificateFileName,newfile)
 
                     #Set up openpyxl to use the new report spreadsheet
-                    newreport = openpyxl.load_workbook(newfile)
+                    newreport = load_workbook(newfile)
                     ws = newreport.active
                     testercaldue = ''
                     #Fill in the info
@@ -330,6 +365,7 @@ def newReport(sn):
                     startfile('{0}/{1}_{2}.xlsx'.format(direc,today,item[0]))
     disconnect()
     updateitems()
+
 #Generates an Excel spreadsheet with info on every item that is out of cal (OOC) or is within 30 days of its next cal date-----------------
 def report_OOC(mode = '', items = [], weekOf = ''):
     items_to_add = []
@@ -337,7 +373,6 @@ def report_OOC(mode = '', items = [], weekOf = ''):
     all_items = allItems()
     if mode != 'calendar':
         for item in all_items:
-            #if (item.nextcal - datetime.today().date()).days <= 30:
             if item[13] == 1:
                 if item[1] == 'At calibration':
                     continue
@@ -353,7 +388,7 @@ def report_OOC(mode = '', items = [], weekOf = ''):
     if not path.isdir('{0}\\Calibration Items\\Snapshot Reports'.format(calScansDir)):
         mkdir('{0}\\Calibration Items\\Snapshot Reports'.format(calScansDir))
     copyfile('{}\\Out of Cal Report.xlsx'.format(tempFilesDir),'{0}\\Calibration Items\\Snapshot Reports\\{1}_Out of Cal Report.xlsx'.format(calScansDir,today))
-    report = openpyxl.load_workbook('{0}\\Calibration Items\\Snapshot Reports\\{1}_Out of Cal Report.xlsx'.format(calScansDir,today))
+    report = load_workbook('{0}\\Calibration Items\\Snapshot Reports\\{1}_Out of Cal Report.xlsx'.format(calScansDir,today))
     if mode != 'calendar':
         name = '{0}\\Calibration Items\\Snapshot Reports\\{1}_Out of Cal Report.xlsx'.format(calScansDir,today)
     else:
@@ -394,6 +429,7 @@ def report_OOC(mode = '', items = [], weekOf = ''):
         message.setWindowTitle('Error')
         message.setText('The file could not be opened.')
         message.exec_()
+
 #Updates calitemslist----------------------------------------------------------------------------------------------------------------------
 def namereader(file='',folder='', all = False, option = None):
     global duplicateFolders
@@ -422,16 +458,14 @@ def namereader(file='',folder='', all = False, option = None):
                 continue
             datesList = []
             for file in listdir(currentItemFolder):
-                fileSplit = file.split('_')
-                if len(fileSplit) != 2:
+                fileSplit = checkFileName(file)
+                if not fileSplit: continue
+                try:
+                    date = datetime.strptime(fileSplit[0],'%Y-%m-%d').date()
+                    if len(fileSplit[0]) == 10:
+                        datesList.append(fileSplit[0])
+                except Exception as e:
                     continue
-                else:
-                    try:
-                        date = datetime.strptime(fileSplit[0],'%Y-%m-%d').date()
-                        if len(fileSplit[0]) == 10:
-                            datesList.append(fileSplit[0])
-                    except Exception as e:
-                        continue
             c.execute("SELECT * FROM calibration_items WHERE serial_number = ?", (sn,))
             itemInfo = c.fetchone()
             directoryFromDB = itemInfo[8]
@@ -473,7 +507,7 @@ def namereader(file='',folder='', all = False, option = None):
                     inservicedate = ''
                 nextcal = str(datetime.strptime(lastcal,'%Y-%m-%d').date() + relativedelta(months = interval))
             try:
-                if (datetime.strptime(nextcal,'%Y-%m-%d').date() - datetime.today().date()).days <= 30:
+                if (datetime.strptime(nextcal,'%Y-%m-%d').date() - datetime.today().date()).days <= config.markCalDue:
                     caldue = 1
                 else:
                     caldue = 0
@@ -491,9 +525,11 @@ def namereader(file='',folder='', all = False, option = None):
             c.execute(sql,(sn,))
 
         disconnect()
+
 #Checks all folders in cal scans directory-------------------------------------------------------------------------------------------------
 def updateitems():
     global duplicateFolders
+    receiving()
     duplicateFolders = []
     for dirs in listdir(calScansDir):
         current = calScansDir+'\\'+dirs
@@ -504,6 +540,38 @@ def updateitems():
                 continue
             namereader(folder = current+'\\'+folder,all = True,option = current)
     return
+
+#Checks receiving folder-------------------------------------------------------------------------------------------------------------------
+def receiving():
+    rFolder = f"{config.calListDir}\\Receiving"
+    connect()
+    for file in listdir(rFolder):
+        fileSplit = checkFileName(file)
+        if not fileSplit: continue
+        itemSN = fileSplit[1].split('.')[0]
+        for item in allItems():
+            if (item[0] == itemSN) and not (path.isfile(f"{item[8]}\\{file}")):
+                try:
+                    move(f"{rFolder}\\{file}",item[8])
+                    break
+                except Exception as e:
+                    errorMessage('Error!',f'receiving(): {e}')
+                    break
+            elif (item[0] == itemSN) and (path.isfile(f"{item[8]}\\{file}")):
+                try:
+                    move(f"{rFolder}\\{file}",f"{rFolder}\\copy_{file}")
+                    break
+                except Exception as e:
+                    errorMessage('Error!',f'receiving(): {e}')
+                    break
+    disconnect()
+
+def checkFileName(filename):
+    fileSplit = filename.split('_')
+    if len(fileSplit) != 2:
+        return False
+    else:
+        return fileSplit
 
 #Global so that each iteration of verifyFiles has access without having to create them each time-------------------------------------------
 previousStruct = None
@@ -550,6 +618,7 @@ def verifyFiles(root = True, cFolder = r"['root']", pFolder = r"['root']"):
     #Will return list to be displayed in a window
     else:
         return missing
+
 #Backup files------------------------------------------------------------------------------------------------------------------------------
 #cFolder is not the full path, just the folder name
 @Slot()
@@ -612,6 +681,7 @@ def backup(complete = False,verifyOnly = False, cFolder = '', root = True):
 def removeFromDB(sn):
     c.execute("DELETE FROM calibration_items WHERE serial_number = ?",(sn,))
     removeFromGroups(sn)
+
 def removeFromGroups(sn):
     removeFromGroupsC = conn.cursor()
     for group in allGroups():
@@ -643,6 +713,7 @@ def checkReplacements(item):
     else:
         message = 'Replace or calibrate by {}.'.format(item[6])
     return message
+
 def allGroups():
     allGroupsC = conn.cursor()
     groups = allGroupsC.execute("SELECT * FROM item_groups")
@@ -742,12 +813,13 @@ class CalendarWidget(QCalendarWidget):
             dates.append(QDate(year,month,day))
         disconnect()
         return dates
+
 class MainWindow(QMainWindow):
     def __init__(self):
         global centralwidget, calendarWidget
         #Initialize the parent class, then set title and min window size
         QMainWindow.__init__(self)
-        self.setWindowTitle('CalTools 3.1.0')
+        self.setWindowTitle('CalTools 3.2.0')
         self.setMinimumSize(1000,600)
 
         #Color brushes
@@ -852,8 +924,8 @@ class MainWindow(QMainWindow):
         self.calendarButton.setIcon(self.calendarIcon)
         self.calendarButton.setIconSize(QSize(31,31))
         self.calendarButton.clicked.connect(self.switchView)
-        self.btn0 = QPushButton('Open Cal List')
-        self.btn0.clicked.connect(self.calListClick)
+        self.btn0 = QPushButton('Receiving Folder')
+        self.btn0.clicked.connect(self.receivingClick)
         self.btn2 = QPushButton('Out of Cal Report')
         self.btn2.clicked.connect(self.calReportClick)
         self.btn3 = QPushButton('Update Items')
@@ -869,8 +941,8 @@ class MainWindow(QMainWindow):
         self.itemsButton.setIcon(self.toolsIcon)
         self.itemsButton.setIconSize(QSize(30,30))
         self.itemsButton.clicked.connect(self.switchView)
-        self.calendarBtn0 = QPushButton('Open Cal List')
-        self.calendarBtn0.clicked.connect(self.calListClick)
+        self.calendarBtn0 = QPushButton('Receiving Folder')
+        self.calendarBtn0.clicked.connect(self.receivingClick)
         self.calendarBtn2 = QPushButton('Out of Cal Report')
         self.calendarBtn2.clicked.connect(self.calReportClick)
         self.calendarBtn3 = QPushButton('Update Items')
@@ -911,7 +983,7 @@ class MainWindow(QMainWindow):
         self.itemslist.setHeaderLabel('Calibration Items')
         self.itemslist.itemSelectionChanged.connect(self.showDetails)
         self.itemslistFocus = False
-        self.itemslist.keyPressEvent = self.editEntered
+        self.itemslist.keyPressEvent = self.listKeyPress
         self.itemslist.focusInEvent = self.listFocusEvent
         self.itemslist.focusOutEvent = self.listFocusEvent
         self.itemslist.setSelectionMode(QAbstractItemView.ExtendedSelection)
@@ -1253,8 +1325,11 @@ class MainWindow(QMainWindow):
         self.groupWidget.groupDetails.itemList.takeItem(row)
     #Slots for buttons---------------------------------------------------------------------------------------------------------------------
     @Slot()
-    def calListClick(self):
-        calList()
+    def receivingClick(self):
+        try:
+            startfile(f"{config.calListDir}\\Receiving")
+        except Exception as e:
+            errorMessage('Error Opening Receiving Folder',f"{str(e)}")
     @Slot()
     def calReportClick(self):
         try:
@@ -1381,7 +1456,7 @@ class MainWindow(QMainWindow):
             #Week items
             if 'Ref Only' in item[8]:
                 continue
-            if (item[6] == '' or (datetime.strptime(item[6],'%Y-%m-%d').date() - datetime.strptime(weekStart.toString(Qt.ISODate),'%Y-%m-%d').date()).days <= 60 
+            if (item[6] == '' or (datetime.strptime(item[6],'%Y-%m-%d').date() - datetime.strptime(weekStart.toString(Qt.ISODate),'%Y-%m-%d').date()).days <= config.dueInCalendar 
                 or (datetime.strptime(item[6],'%Y-%m-%d').date() < datetime.strptime(weekStart.toString(Qt.ISODate),'%Y-%m-%d').date())):
                 weekItems.append(item[0])
                 if item[7] == 1:
@@ -1804,9 +1879,13 @@ class MainWindow(QMainWindow):
 
     #Toggles edit mode when the enter key is pressed on a item, key code for enter is 16777220 or 16777221---------------------------------
     @Slot()
-    def editEntered(self, event):
+    def listKeyPress(self, event):
+        #Enter pressed
         if (event.key() == 16777220 or event.key() == 16777221) and (self.itemslistFocus) and (len(self.itemslist.selectedItems()) == 1):
             self.editClick()
+        #Pass any other key to default event handler
+        else:
+            QTreeWidget.keyPressEvent(self.itemslist,event)
     @Slot()
     def listFocusEvent(self, event):
         if 'FocusIn' in str(event.type()):
@@ -2107,7 +2186,7 @@ def successMessage(title = '', text = ''):
 
 #Run---------------------------------------------------------------------------------------------------------------------------------------
 def checkFirstRun():
-    global config
+    global config,dbDir
     if config.firstRun == True:
         successMessage('First start up', """
 It appears that this is the first time CalTools has been run here. 
@@ -2125,14 +2204,30 @@ Alternatively, the config.py text file bundled with this executable can be edite
                     line = 'firstRun = False\n'
                 cfg.write(line)
     config = SourceFileLoader('config','config.py').load_module()
+    dbDir = config.calListDir + '\\' + config.dbName
 
 if __name__ == '__main__':
+    #Splash screen
+    pixmap = QPixmap(resource_path('images\\tools.png'))
+    splash = QSplashScreen(pixmap)
+    splash.show()
+
+    splash.showMessage('Checking config directories...',Qt.AlignRight)
     checkFirstRun()
+    checkDirs()
+    
+    splash.showMessage('Connecting to database...',Qt.AlignRight)
     try:
         connect()
     except Exception as e:
         errorMessage('Error!', str(e))
     disconnect()
+    splash.showMessage('Checking receiving folder...',Qt.AlignRight)
+    createReceiving()
+    splash.showMessage('Updating database...',Qt.AlignRight)
     create_tables()
+    splash.clearMessage()
+    splash.close()
+
     app = MainWindow()
     app.run()
