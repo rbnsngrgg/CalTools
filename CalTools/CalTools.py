@@ -1,4 +1,5 @@
-import pickle, sys, openpyxl, sqlite3, listSearch, time, json
+import pickle, sys, sqlite3, listSearch, time, json
+from openpyxl import load_workbook
 from os import remove, path, startfile, listdir, unlink, mkdir, rename, makedirs
 from shutil import copyfile, move, rmtree, copy, copytree
 from tkinter import filedialog, Tk
@@ -339,7 +340,7 @@ def newReport(sn):
                     copyfile(tempFilesDir + '/' + config.certificateFileName,newfile)
 
                     #Set up openpyxl to use the new report spreadsheet
-                    newreport = openpyxl.load_workbook(newfile)
+                    newreport = load_workbook(newfile)
                     ws = newreport.active
                     testercaldue = ''
                     #Fill in the info
@@ -387,7 +388,7 @@ def report_OOC(mode = '', items = [], weekOf = ''):
     if not path.isdir('{0}\\Calibration Items\\Snapshot Reports'.format(calScansDir)):
         mkdir('{0}\\Calibration Items\\Snapshot Reports'.format(calScansDir))
     copyfile('{}\\Out of Cal Report.xlsx'.format(tempFilesDir),'{0}\\Calibration Items\\Snapshot Reports\\{1}_Out of Cal Report.xlsx'.format(calScansDir,today))
-    report = openpyxl.load_workbook('{0}\\Calibration Items\\Snapshot Reports\\{1}_Out of Cal Report.xlsx'.format(calScansDir,today))
+    report = load_workbook('{0}\\Calibration Items\\Snapshot Reports\\{1}_Out of Cal Report.xlsx'.format(calScansDir,today))
     if mode != 'calendar':
         name = '{0}\\Calibration Items\\Snapshot Reports\\{1}_Out of Cal Report.xlsx'.format(calScansDir,today)
     else:
