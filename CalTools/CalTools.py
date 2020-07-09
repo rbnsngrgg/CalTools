@@ -13,7 +13,9 @@ from importlib import reload
 from importlib.machinery import SourceFileLoader
 
 toaster = ToastNotifier()
+swVersion = "3.2.1"
 
+#Load config, or create config if it doesn't exist-----------------------------------------------------------------------------------------
 try:
     config = SourceFileLoader('config','./config.py').load_module()
     dbDir = config.calListDir + '\\' + config.dbName
@@ -56,7 +58,7 @@ except FileNotFoundError:
                     'cDueDate = "D20"\n',
                     'cProcedure = "I18"\n',
                     'cLocation = "I19"\n',
-                    'cCertificateDate = "J42"\n'
+                    'cCertificateDate = "J42"\n',
                 ]
         for line in lines:
             cfg.write(line)
@@ -819,7 +821,7 @@ class MainWindow(QMainWindow):
         global centralwidget, calendarWidget
         #Initialize the parent class, then set title and min window size
         QMainWindow.__init__(self)
-        self.setWindowTitle('CalTools 3.2.0')
+        self.setWindowTitle(f'CalTools {swVersion}')
         self.setMinimumSize(1000,600)
 
         #Color brushes
@@ -1701,6 +1703,7 @@ class MainWindow(QMainWindow):
 
     #--------------------------------------------------------------------------------------------------------------------------------------
     def goToListItem(self,sn):
+        self.findentry.clear()
         for category in self.itemCats:
             for item in category:
                 if item.text(0) == sn:
