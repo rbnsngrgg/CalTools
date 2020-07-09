@@ -120,3 +120,6 @@ Changes
 		Add spash screen
 		Add config option for when to mark an item as due for calibration (Issue 35)
 		Change "Open Cal List" button to "Receiving Folder"
+--3.2.1
+	--Bug Fixes:
+		Fix bug that caused an item to not be selectd when "Go To Item" was selected from calendar mode while text was in the search bar (Issue 41).
