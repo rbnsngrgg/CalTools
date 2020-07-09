@@ -37,4 +37,4 @@ exe = EXE(pyz,
           strip=False,
           upx=True,
           runtime_tmpdir=None,
-          console=True , icon='CalToolsIcon.ico')
+          console=False , icon='CalToolsIcon.ico')

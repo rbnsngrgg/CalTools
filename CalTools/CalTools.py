@@ -423,6 +423,8 @@ def report_OOC(mode = '', items = [], weekOf = ''):
         ws['K{}'.format(row)] = item[15]
         row += 1
     report.save(name)
+    if mode == 'calendar':
+        unlink('{0}\\Calibration Items\\Snapshot Reports\\{1}_Out of Cal Report.xlsx'.format(calScansDir,today))
     disconnect()
     try:
         startfile(name)

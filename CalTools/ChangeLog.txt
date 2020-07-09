@@ -123,3 +123,6 @@ Changes
 --3.2.1
 	--Bug Fixes:
 		Fix bug that caused an item to not be selectd when "Go To Item" was selected from calendar mode while text was in the search bar (Issue 41).
+--3.2.2
+	--Bug Fixes:
+		Fix bug that caused a blank spreadsheet to be generated alongside the weekly report spreadsheet.
