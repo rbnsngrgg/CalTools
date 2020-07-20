@@ -1,4 +1,4 @@
-import pickle, sys, sqlite3, listSearch, time, json
+import pickle, sys, sqlite3, listSearch, time, json, asyncio
 from openpyxl import load_workbook
 from os import remove, path, startfile, listdir, unlink, mkdir, rename, makedirs
 from shutil import copyfile, move, rmtree, copy, copytree
@@ -2220,7 +2220,6 @@ if __name__ == '__main__':
     splash.showMessage('Checking config directories...',Qt.AlignRight)
     checkFirstRun()
     checkDirs()
-    
     splash.showMessage('Connecting to database...',Qt.AlignRight)
     try:
         connect()
@@ -2232,6 +2231,7 @@ if __name__ == '__main__':
     splash.showMessage('Updating database...',Qt.AlignRight)
     create_tables()
     splash.clearMessage()
+    time.sleep(1)
     splash.close()
 
     app = MainWindow()
