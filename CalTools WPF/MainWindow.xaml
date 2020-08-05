@@ -29,7 +29,7 @@
         </DockPanel>
         <!--Top row buttons-->
         <DockPanel Grid.Row="1">
-            <Button x:Name="CalendarButton" Width="35" Height="35" HorizontalAlignment="Left" Margin="10,0,0,0" >
+            <Button x:Name="CalendarButton" Width="35" Height="35" HorizontalAlignment="Left" Margin="10,0,0,0" Click="CalendarButton_Click">
                 <Image Source="C:\Users\grobinson\source\repos\CalTools\CalTools WPF\images\LightTheme\calendar.png"/>
             </Button>
             <Button x:Name="ReceivingFolderButton"  MinWidth="150" MaxWidth="500" Height="20" HorizontalAlignment="Stretch" Margin="15,0,0,0" Content="Receiving Folder"/>
@@ -65,10 +65,10 @@
                         <Image Source="C:\Users\grobinson\source\repos\CalTools\CalTools WPF\images\LightTheme\move.png"/>
                     </Button>
                 </StackPanel>
-                <TreeView MinWidth="200" Name="CalibrationItems">
-                    <TreeViewItem Header="Calibration Items" Focusable="False" HorizontalAlignment="Left"/>
+                <TreeView MinWidth="220" x:Name="CalibrationItemTree">
+                    <TreeViewItem x:Name="CalibrationItemList" Header="Calibration Items" Focusable="False" HorizontalAlignment="Left" IsExpanded="True" IsManipulationEnabled="False"/>
                 </TreeView>
-                <GroupBox Header="Item Details" HorizontalAlignment="Stretch" MinWidth="730" Width="Auto">
+                <GroupBox Header="Item Details" HorizontalAlignment="Stretch" MinWidth="720" Width="Auto">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="200"/>
@@ -94,14 +94,54 @@
                     </Grid>
                 </GroupBox>
             </DockPanel>
-            <StackPanel Margin="55,0,0,0" Grid.Row="1" Width="200" HorizontalAlignment="Left">
+            <StackPanel Margin="55,0,0,0" Grid.Row="1" Width="220" HorizontalAlignment="Left">
                 <ListBox Height="20" VerticalAlignment="Top" Margin="0,5,0,5"/>
                 <TextBox Height="20" VerticalAlignment="Top" Margin="0,0,0,5"/>
             </StackPanel>
         </Grid>
         <!--Calendar View-->
-        <Grid Visibility="Collapsed">
-            
+        <Grid x:Name="CalendarViewGrid" Visibility="Collapsed" Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+            <!--Calendar, checkbox, combobox-->
+            <StackPanel Grid.Column="0">
+                <Viewbox MinHeight="250" MaxHeight="400">
+                    <Calendar x:Name="ItemCalendar"/>
+                </Viewbox>
+                <CheckBox Content="Show only mandatory, in operation items."/>
+                <!--Add other combo box items based on config settings-->
+                <ComboBox>
+                    <ComboBoxItem Content="Show All" IsSelected="True"/>
+                </ComboBox>
+            </StackPanel>
+            <!--Text boxes and tables-->
+            <StackPanel Grid.Column="1" Grid.ColumnSpan="2">
+                <Label x:Name="weekTodoLabel" Content="To-do during week of...:"/>
+                <DataGrid x:Name="todoTable" MinHeight="220" VerticalAlignment="Stretch" CanUserResizeColumns="True" Height="Auto" Width="Auto">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="SN" Width="100"/>
+                        <DataGridTextColumn Header="Model" Width="100"/>
+                        <DataGridTextColumn Header="Description" Width="*"/>
+                        <DataGridTextColumn Header="Location" Width="100"/>
+                        <DataGridTextColumn Header="Cal Vendor" Width="100"/>
+                        <DataGridTextColumn Header="Cal Due By" Width="75"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+                <TextBox x:Name="todoTextBox" Focusable="False" Margin="0,5,0,0"/>
+                <Separator HorizontalAlignment="Stretch" VerticalAlignment="Center" Margin="0,5,0,5"/>
+                <DataGrid x:Name="dueOnTable" VerticalAlignment="Stretch" CanUserResizeColumns="True" Height="Auto" Width="Auto">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="SN" Width="100"/>
+                        <DataGridTextColumn Header="Model" Width="100"/>
+                        <DataGridTextColumn Header="Description" Width="*"/>
+                        <DataGridTextColumn Header="Location" Width="100"/>
+                        <DataGridTextColumn Header="Cal Vendor" Width="100"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </StackPanel>
         </Grid>
     </Grid>
 </Window>
