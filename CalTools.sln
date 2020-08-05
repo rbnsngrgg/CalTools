@@ -5,7 +5,7 @@ VisualStudioVersion = 16.0.29201.188
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "CalTools", "CalTools\CalTools.pyproj", "{0A69CAEF-1C36-473E-9453-B6CC5A5A0CD4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CalTools WPF", "CalTools WPF\CalTools WPF.csproj", "{09B24D32-169F-4BF6-9132-2F486A815C2F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CalToolsWPF", "CalTools WPF\CalToolsWPF.csproj", "{09B24D32-169F-4BF6-9132-2F486A815C2F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

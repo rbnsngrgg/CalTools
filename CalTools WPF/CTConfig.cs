@@ -22,19 +22,15 @@ namespace CalTools_WPF
         public int MarkCalDue { get; set; }
         public int DueInCalendar { get; set; }
         public string CerificateFileName { get; set; }
-        public Dictionary<string,string> ReportCells { get; set; }
-
-        public CTConfig()
-        {
-            ReportCells = new Dictionary<string, string>();
-        }
+        public Dictionary<string, string> ReportCells { get; set; } = new Dictionary<string, string>();
+        public List<string> Folders { get; set; } = new List<string>();
 
         public bool CreateConfig(string configPath)
         {
             try
             {
                 //Generate file and write first lines
-                string[] lines = { "<CalTools_Config FirstRun = \"True\">",
+                string[] lines = { "<CalTools_Config FirstRun = \"True\" Folders = \"PRODUCTION EQUIPMENT,ENGINEERING EQUIPMENT,QUALITY EQUIPMENT,Ref Only,Removed from Service\">",
                         "\t<Database DbName = \"debug_Test Equipment Calibration List.db\"/>",
                         "\t<Directories CalListDir = \"\\\\artemis\\Hardware Development Projects\\Manufacturing Engineering\\Test Equipment\" " +
                         "TempFilesDir = \"\\\\artemis\\Hardware Development Projects\\Manufacturing Engineering\\Test Equipment\\Template Files\" " +
@@ -75,7 +71,7 @@ namespace CalTools_WPF
             {
                 XmlDocument config = new XmlDocument();
                 config.Load(configPath);
-
+                Folders.AddRange(config.FirstChild.Attributes[1].Value.Split(","));
                 FirstRun = bool.Parse(config.FirstChild.Attributes[0].Value);
                 DbName = config.FirstChild.ChildNodes[0].Attributes[0].Value;
                 CalListDir = config.FirstChild.ChildNodes[1].Attributes[0].Value;
