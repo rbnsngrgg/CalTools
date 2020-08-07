@@ -33,7 +33,7 @@
                 <Image Source="C:\Users\grobinson\source\repos\CalTools\CalTools WPF\images\LightTheme\calendar.png"/>
             </Button>
             <Button x:Name="ReceivingFolderButton"  MinWidth="150" MaxWidth="500" Height="20" HorizontalAlignment="Stretch" Margin="15,0,0,0" Content="Receiving Folder"/>
-            <Button x:Name="CalReportButton"  MinWidth="150" MaxWidth="500" Height="20" HorizontalAlignment="Stretch" Margin="10,0,0,0" Content="Out of Cal Report"/>
+            <Button x:Name="CalReportButton"  MinWidth="150" MaxWidth="500" Height="20" HorizontalAlignment="Stretch" Margin="10,0,0,0" Content="Out of Cal Report" Visibility="Collapsed"/>
             <Button x:Name="UpdateButton"  MinWidth="150" MaxWidth="500" Height="20" HorizontalAlignment="Stretch" Margin="10,0,0,0" Content="Update Items"/>
             <Button x:Name="CalFolderButton"  MinWidth="150" MaxWidth="500" Height="20" HorizontalAlignment="Stretch" Margin="10,0,0,0" Content="Calibrations Folder"/>
             <Button x:Name="SettingsButton"  MinWidth="150" MaxWidth="500" Height="20" HorizontalAlignment="Stretch" Margin="10,0,0,0" Content="Settings" Visibility="Collapsed"/>
