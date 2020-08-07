@@ -5,8 +5,8 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:CalTools_WPF"
         mc:Ignorable="d"
-        Title="CalTools 4" Height="610" Width="1000" MinHeight="610" MinWidth="1000"
-        Name="CalToolsMainWindow" WindowStyle="SingleBorderWindow" Background="#FFF0F0F0">
+        Title="CalTools" Height="610" Width="1000" MinHeight="610" MinWidth="1000"
+        x:Name="CalToolsMainWindow" WindowStyle="SingleBorderWindow" Background="#FFF0F0F0">
     <Window.Resources>
         <Style TargetType="Image">
             <Setter Property="RenderOptions.BitmapScalingMode" Value="HighQuality"/>
@@ -36,7 +36,7 @@
             <Button x:Name="CalReportButton"  MinWidth="150" MaxWidth="500" Height="20" HorizontalAlignment="Stretch" Margin="10,0,0,0" Content="Out of Cal Report"/>
             <Button x:Name="UpdateButton"  MinWidth="150" MaxWidth="500" Height="20" HorizontalAlignment="Stretch" Margin="10,0,0,0" Content="Update Items"/>
             <Button x:Name="CalFolderButton"  MinWidth="150" MaxWidth="500" Height="20" HorizontalAlignment="Stretch" Margin="10,0,0,0" Content="Calibrations Folder"/>
-            <Button x:Name="SettingsButton"  MinWidth="150" MaxWidth="500" Height="20" HorizontalAlignment="Stretch" Margin="10,0,0,0" Content="Settings"/>
+            <Button x:Name="SettingsButton"  MinWidth="150" MaxWidth="500" Height="20" HorizontalAlignment="Stretch" Margin="10,0,0,0" Content="Settings" Visibility="Collapsed"/>
             <Separator HorizontalAlignment="Stretch" Background="White"/>
         </DockPanel>
         <!--Main View-->
@@ -65,14 +65,15 @@
                         <Image Source="C:\Users\grobinson\source\repos\CalTools\CalTools WPF\images\LightTheme\move.png"/>
                     </Button>
                 </StackPanel>
-                <TreeView MinWidth="220" x:Name="CalibrationItemTree">
-                    <TreeViewItem x:Name="CalibrationItemList" Header="Calibration Items" Focusable="False" HorizontalAlignment="Left" IsExpanded="True" IsManipulationEnabled="False"/>
-                </TreeView>
-                <GroupBox Header="Item Details" HorizontalAlignment="Stretch" MinWidth="720" Width="Auto">
+                <GroupBox Header="Calibration Items">
+                    <TreeView MinWidth="220" VerticalAlignment="Stretch" x:Name="CalibrationItemTree">
+                    </TreeView>
+                </GroupBox>
+                <GroupBox Header="Item Details" HorizontalAlignment="Stretch" MinWidth="650" Width="Auto">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="200"/>
-                            <ColumnDefinition MinWidth="530" Width="Auto"/>
+                            <ColumnDefinition MinWidth="450" Width="*"/>
                         </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="25"/>
@@ -91,10 +92,57 @@
                             <RowDefinition Height="25"/>
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
+                        <Label Content="SN:" HorizontalAlignment="Left" Grid.Row="0" Grid.Column="0"/>
+                            <TextBox x:Name="DetailsSN" IsEnabled="False" Grid.Row="0" Grid.Column="1" Height ="22" Width="Auto"/>
+                        <Label Content="Model:" HorizontalAlignment="Left" Grid.Row="1" Grid.Column="0"/>
+                            <TextBox x:Name="DetailsModel" IsEnabled="False" Grid.Row="1" Grid.Column="1" Height="22" Width="Auto"/>
+                        <Label Content="Description:" HorizontalAlignment="Left" Grid.Row="2" Grid.Column="0"/>
+                            <TextBox x:Name="DetailsDescription" IsEnabled="False" Grid.Row="2" Grid.Column="1" Height="22" Width="Auto"/>
+                        <Label Content="Location:" HorizontalAlignment="Left" Grid.Row="3" Grid.Column="0"/>
+                            <ComboBox x:Name="DetailsLocation" IsEnabled="False" IsEditable="True" Grid.Row="3" Grid.Column="1" Height="22" Width="Auto"/>
+                        <Label Content="Manufacturer:" HorizontalAlignment="Left" Grid.Row="4" Grid.Column="0"/>
+                            <ComboBox x:Name="DetailsManufacturer" IsEnabled="False" IsEditable ="True" Grid.Row="4" Grid.Column="1" Height="22" Width="Auto"/>
+                        <Label Content="Action:" HorizontalAlignment="Left" Grid.Row="5" Grid.Column="0"/>
+                            <ComboBox x:Name="DetailsAction" IsEnabled="False" IsEditable ="False" Grid.Row="5" Grid.Column="1" Height="22" Width="Auto"/>
+                        <Label Content="Cal Vendor:" HorizontalAlignment="Left" Grid.Row="6" Grid.Column="0"/>
+                            <ComboBox x:Name="DetailsVendor" IsEnabled="False" IsEditable ="True" Grid.Row="6" Grid.Column="1" Height="22" Width="Auto"/>
+                        <Label Content="Cal Interval:" HorizontalAlignment="Left" Grid.Row="7" Grid.Column="0"/>
+                            <!--Custom spinbox-->
+                            <Grid Grid.Row="7" Grid.Column="1" Height="22" Width="Auto">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition Width="25"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition/>
+                                    <RowDefinition/>
+                                </Grid.RowDefinitions>
+                                <TextBox x:Name="DetailsIntervalBox" IsEnabled="False" Grid.RowSpan="2"/>
+                                <Button x:Name="DetailsIntervalUp" IsEnabled="False" Grid.Row="0" Grid.Column="1">
+                                    <Image Source="C:\Users\grobinson\source\repos\CalTools\CalTools WPF\images\LightTheme\ArrowUp.png"/>
+                                </Button>
+                                <Button x:Name="DetailsIntervalDown" IsEnabled="False" Grid.Row="1" Grid.Column="1">
+                                    <Image Source="C:\Users\grobinson\source\repos\CalTools\CalTools WPF\images\LightTheme\ArrowDown.png"/>
+                                </Button>
+                            </Grid>
+                        <Label Content="Last Calibration:" HorizontalAlignment="Left" Grid.Row="8" Grid.Column="0"/>
+                            <TextBox x:Name="DetailsLastCal" IsEnabled="False" Grid.Row="8" Grid.Column="1" Height="22" Width="Auto"/>
+                        <Label Content="In Operation Date:" HorizontalAlignment="Left" Grid.Row="9" Grid.Column="0"/>
+                            <TextBox x:Name="DetailsOperationDate" IsEnabled="False" Grid.Row="9" Grid.Column="1" Height="22" Width="Auto"/>
+                        <Label Content="Next Calibration:" HorizontalAlignment="Left" Grid.Row="10" Grid.Column="0"/>
+                            <TextBox x:Name="DetailsNextCal" IsEnabled="False" Grid.Row="10" Grid.Column="1" Height="22" Width="Auto"/>
+                        <Label Content="Mandatory Calibration:" HorizontalAlignment="Left" Grid.Row="11" Grid.Column="0"/>
+                            <CheckBox x:Name="DetailsMandatory" IsEnabled="False" VerticalAlignment="Center" HorizontalAlignment="Left" Grid.Row="11" Grid.Column="1"/>
+                        <Label Content="In Operation:" HorizontalAlignment="Left" Grid.Row="12" Grid.Column="0"/>
+                            <CheckBox x:Name="DetailsInOperation" IsEnabled="False" VerticalAlignment="Center" HorizontalAlignment="Left" Grid.Row="12" Grid.Column="1"/>
+                        <Label Content="Item Group:" HorizontalAlignment="Left" Grid.Row="13" Grid.Column="0"/>
+                            <ComboBox x:Name="DetailsItemGroup" IsEnabled="False" IsEditable ="False" Grid.Row="13" Grid.Column="1" Height="22" Width="Auto"/>
+                        <Label Content="Comments:" HorizontalAlignment="Left" Grid.Row="15" Grid.Column="0"/>
+                            <TextBlock x:Name="DetailsComments" Background="#FFFBFBFB" IsEnabled="False" Grid.Row="15" Grid.Column="1"/>
                     </Grid>
                 </GroupBox>
             </DockPanel>
-            <StackPanel Margin="55,0,0,0" Grid.Row="1" Width="220" HorizontalAlignment="Left">
+            <StackPanel Margin="61,0,0,0" Grid.Row="1" Width="220" HorizontalAlignment="Left">
                 <ListBox Height="20" VerticalAlignment="Top" Margin="0,5,0,5"/>
                 <TextBox Height="20" VerticalAlignment="Top" Margin="0,0,0,5"/>
             </StackPanel>

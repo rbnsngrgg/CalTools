@@ -22,6 +22,7 @@ namespace CalTools_WPF
     /// </summary>
     public partial class MainWindow : Window
     {
+        public readonly string version = "4.0.0";
         private CTDatabase database;
         private CTConfig config = new CTConfig();
         public MainWindow()
@@ -29,20 +30,25 @@ namespace CalTools_WPF
             config.LoadConfig();
             database = new CTDatabase(config.DbPath);
             InitializeComponent();
+            CalToolsMainWindow.Title = $"CalTools {version}";
             UpdateItemList();
         }
 
         //Update GUI Elements
         private void UpdateItemList()
         {
-            CalibrationItemList.Items.Clear();
+            CalibrationItemTree.Items.Clear();
             List<CalibrationItem> items = database.GetAllItems("calibration_items");
-            foreach(var item in items)
+            foreach(string folder in config.Folders)
             {
-                TreeViewItem treeItem = new TreeViewItem();
-                treeItem.Header = item.SerialNumber;
-                CalibrationItemList.Items.Add(treeItem);
+                CalibrationItemTree.Items.Add(new TreeViewItem().Header = folder);
             }
+            //foreach(var item in items)
+            //{
+            //    TreeViewItem treeItem = new TreeViewItem();
+            //    treeItem.Header = item.SerialNumber;
+            //    CalibrationItemList.Items.Add(treeItem);
+            //}
             
         }
 
