@@ -60,6 +60,7 @@ namespace CalTools_WPF
                 return false;
             }
         }
+        //TODO: Handle parsing xml with prepended child node from xml notepad
         public void LoadConfig()
         {
             string configPath = $"{Directory.GetCurrentDirectory()}\\{configName}";

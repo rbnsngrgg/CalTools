@@ -32,10 +32,10 @@
             <Button x:Name="CalendarButton" Width="35" Height="35" HorizontalAlignment="Left" Margin="10,0,0,0" Click="CalendarButton_Click">
                 <Image Source="C:\Users\grobinson\source\repos\CalTools\CalTools WPF\images\LightTheme\calendar.png"/>
             </Button>
-            <Button x:Name="ReceivingFolderButton"  MinWidth="150" MaxWidth="500" Height="20" HorizontalAlignment="Stretch" Margin="15,0,0,0" Content="Receiving Folder"/>
+            <Button x:Name="ReceivingFolderButton"  MinWidth="150" MaxWidth="500" Height="20" HorizontalAlignment="Stretch" Margin="15,0,0,0" Content="Receiving Folder" Click="ReceivingFolderButton_Click"/>
             <Button x:Name="CalReportButton"  MinWidth="150" MaxWidth="500" Height="20" HorizontalAlignment="Stretch" Margin="10,0,0,0" Content="Out of Cal Report" Visibility="Collapsed"/>
             <Button x:Name="UpdateButton"  MinWidth="150" MaxWidth="500" Height="20" HorizontalAlignment="Stretch" Margin="10,0,0,0" Content="Update Items"/>
-            <Button x:Name="CalFolderButton"  MinWidth="150" MaxWidth="500" Height="20" HorizontalAlignment="Stretch" Margin="10,0,0,0" Content="Calibrations Folder"/>
+            <Button x:Name="CalFolderButton"  MinWidth="150" MaxWidth="500" Height="20" HorizontalAlignment="Stretch" Margin="10,0,0,0" Content="Calibrations Folder" Click="CalFolderButton_Click"/>
             <Button x:Name="SettingsButton"  MinWidth="150" MaxWidth="500" Height="20" HorizontalAlignment="Stretch" Margin="10,0,0,0" Content="Settings" Visibility="Collapsed"/>
             <Separator HorizontalAlignment="Stretch" Background="White"/>
         </DockPanel>
@@ -66,7 +66,7 @@
                     </Button>
                 </StackPanel>
                 <GroupBox Header="Calibration Items">
-                    <TreeView MinWidth="220" VerticalAlignment="Stretch" x:Name="CalibrationItemTree">
+                    <TreeView MinWidth="220" VerticalAlignment="Stretch" x:Name="CalibrationItemTree" SelectedItemChanged="CalibrationItemTree_SelectedItemChanged">
                     </TreeView>
                 </GroupBox>
                 <GroupBox Header="Item Details" HorizontalAlignment="Stretch" MinWidth="650" Width="Auto">
@@ -103,7 +103,11 @@
                         <Label Content="Manufacturer:" HorizontalAlignment="Left" Grid.Row="4" Grid.Column="0"/>
                             <ComboBox x:Name="DetailsManufacturer" IsEnabled="False" IsEditable ="True" Grid.Row="4" Grid.Column="1" Height="22" Width="Auto"/>
                         <Label Content="Action:" HorizontalAlignment="Left" Grid.Row="5" Grid.Column="0"/>
-                            <ComboBox x:Name="DetailsAction" IsEnabled="False" IsEditable ="False" Grid.Row="5" Grid.Column="1" Height="22" Width="Auto"/>
+                        <ComboBox x:Name="DetailsAction" IsEnabled="False" IsEditable ="False" Grid.Row="5" Grid.Column="1" Height="22" Width="Auto">
+                            <ComboBoxItem x:Name="ActionCalibration" Content="CALIBRATION"/>
+                            <ComboBoxItem x:Name="ActionMaintenance" Content="MAINTENANCE"/>
+                            <ComboBoxItem x:Name="ActionVerification" Content="VERIFICATION"/>
+                        </ComboBox>
                         <Label Content="Cal Vendor:" HorizontalAlignment="Left" Grid.Row="6" Grid.Column="0"/>
                             <ComboBox x:Name="DetailsVendor" IsEnabled="False" IsEditable ="True" Grid.Row="6" Grid.Column="1" Height="22" Width="Auto"/>
                         <Label Content="Cal Interval:" HorizontalAlignment="Left" Grid.Row="7" Grid.Column="0"/>
@@ -157,7 +161,7 @@
             <!--Calendar, checkbox, combobox-->
             <StackPanel Grid.Column="0">
                 <Viewbox MinHeight="250" MaxHeight="400">
-                    <Calendar x:Name="ItemCalendar"/>
+                    <Calendar x:Name="ItemCalendar" PreviewMouseUp="ItemCalendar_PreviewMouseUp"/>
                 </Viewbox>
                 <CheckBox Content="Show only mandatory, in operation items."/>
                 <!--Add other combo box items based on config settings-->
