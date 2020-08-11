@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
+using Newtonsoft.Json;
 
 namespace CalTools_WPF
 {
@@ -26,9 +28,38 @@ namespace CalTools_WPF
         public string ItemGroup { get; set; }
         public string VerifyOrCalibrate { get; set; } = "CALIBRATION";
 
+        public enum DatabaseColumns
+        {
+            serial_number = 0,
+            location,
+            interval,
+            cal_vendor,
+            manufacturer,
+            lastcal,
+            nextcal,
+            mandatory,
+            directory,
+            description,
+            inservice,
+            inservicedate,
+            outofservicedate,
+            caldue,
+            model,
+            comments,
+            timestamp,
+            item_group,
+            verify_or_calibrate,
+            certificate_number
+        }
         public CalibrationItem(string sn)
         {
             this.SerialNumber = sn;
+        }
+
+        //Return a JSON string that represents this instance
+        public string ToJson()
+        {
+            return JsonConvert.SerializeObject(this);
         }
     }
 }

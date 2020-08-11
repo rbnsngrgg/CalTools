@@ -49,10 +49,13 @@
             <DockPanel Grid.Row="0">
                 <!--Side buttons-->
                 <StackPanel Width="55" HorizontalAlignment="Left">
-                    <Button x:Name="EditItemButton" Width="35" Height="35" HorizontalAlignment="Left" Margin="10,0,0,0" ToolTip="Edit Item">
-                        <Image Source="C:\Users\grobinson\source\repos\CalTools\CalTools WPF\images\LightTheme\edit.png" Width="30" Height="30"/>
+                    <Button x:Name="EditItemButton" Width="35" Height="35" HorizontalAlignment="Left" Margin="10,0,0,0" ToolTip="Edit Item" Click="EditItemButton_Click" Visibility="Visible">
+                        <Image x:Name="EditButtonImage" Source="C:\Users\grobinson\source\repos\CalTools\CalTools WPF\images\LightTheme\edit.png" Width="30" Height="30"/>
                     </Button>
-                    <Button x:Name="OpenFolderButton" Width="35" Height="35" HorizontalAlignment="Left" Margin="10,10,0,0">
+                    <Button x:Name="SaveItemButton" Width="35" Height="35" HorizontalAlignment="Left" Margin="10,0,0,0" ToolTip="Save Item" Click="SaveItemButton_Click" Visibility="Collapsed">
+                        <Image x:Name="SaveButtonImage"  Source="C:\Users\grobinson\source\repos\CalTools\CalTools WPF\images\LightTheme\save.png" Width="30" Height="30"/>
+                    </Button>
+                    <Button x:Name="OpenFolderButton" Width="35" Height="35" HorizontalAlignment="Left" Margin="10,10,0,0" Click="OpenFolderButton_Click">
                         <Image Source="C:\Users\grobinson\source\repos\CalTools\CalTools WPF\images\LightTheme\folder.png"/>
                     </Button>
                     <Button x:Name="NewReportButton" Width="35" Height="35" HorizontalAlignment="Left" Margin="10,10,0,0">
@@ -70,7 +73,7 @@
                     </TreeView>
                 </GroupBox>
                 <GroupBox Header="Item Details" HorizontalAlignment="Stretch" MinWidth="650" Width="Auto">
-                    <Grid>
+                    <Grid x:Name="DetailsGrid">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="200"/>
                             <ColumnDefinition MinWidth="450" Width="*"/>
@@ -121,11 +124,11 @@
                                     <RowDefinition/>
                                     <RowDefinition/>
                                 </Grid.RowDefinitions>
-                                <TextBox x:Name="DetailsIntervalBox" IsEnabled="False" Grid.RowSpan="2"/>
-                                <Button x:Name="DetailsIntervalUp" IsEnabled="False" Grid.Row="0" Grid.Column="1">
+                                <TextBox x:Name="DetailsIntervalBox" IsEnabled="False" IsReadOnly="True" Grid.RowSpan="2"/>
+                                <Button x:Name="DetailsIntervalUp" IsEnabled="False" Grid.Row="0" Grid.Column="1" Click="DetailsIntervalUp_Click">
                                     <Image Source="C:\Users\grobinson\source\repos\CalTools\CalTools WPF\images\LightTheme\ArrowUp.png"/>
                                 </Button>
-                                <Button x:Name="DetailsIntervalDown" IsEnabled="False" Grid.Row="1" Grid.Column="1">
+                                <Button x:Name="DetailsIntervalDown" IsEnabled="False" Grid.Row="1" Grid.Column="1" Click="DetailsIntervalDown_Click">
                                     <Image Source="C:\Users\grobinson\source\repos\CalTools\CalTools WPF\images\LightTheme\ArrowDown.png"/>
                                 </Button>
                             </Grid>

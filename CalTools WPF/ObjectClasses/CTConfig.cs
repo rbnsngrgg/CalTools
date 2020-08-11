@@ -25,6 +25,7 @@ namespace CalTools_WPF
         public Dictionary<string, string> ReportCells { get; set; } = new Dictionary<string, string>();
         public List<string> Folders { get; set; } = new List<string>();
 
+        //TODO: Add list of procedures to config, to be selected from when creating a new CalibrationData object
         public bool CreateConfig(string configPath)
         {
             try
@@ -60,7 +61,6 @@ namespace CalTools_WPF
                 return false;
             }
         }
-        //TODO: Handle parsing xml with prepended child node from xml notepad
         public void LoadConfig()
         {
             string configPath = $"{Directory.GetCurrentDirectory()}\\{configName}";
@@ -72,28 +72,28 @@ namespace CalTools_WPF
             {
                 XmlDocument config = new XmlDocument();
                 config.Load(configPath);
-                Folders.AddRange(config.FirstChild.Attributes[1].Value.Split(","));
-                FirstRun = bool.Parse(config.FirstChild.Attributes[0].Value);
-                DbName = config.FirstChild.ChildNodes[0].Attributes[0].Value;
-                CalListDir = config.FirstChild.ChildNodes[1].Attributes[0].Value;
-                TempFilesDir = config.FirstChild.ChildNodes[1].Attributes[1].Value;
-                CalScansDir = config.FirstChild.ChildNodes[1].Attributes[2].Value;
-                MarkCalDue = int.Parse(config.FirstChild.ChildNodes[2].Attributes[0].Value);
-                DueInCalendar = int.Parse(config.FirstChild.ChildNodes[2].Attributes[1].Value);
+                Folders.AddRange(config.LastChild.Attributes[1].Value.Split(","));
+                FirstRun = bool.Parse(config.LastChild.Attributes[0].Value);
+                DbName = config.LastChild.ChildNodes[0].Attributes[0].Value;
+                CalListDir = config.LastChild.ChildNodes[1].Attributes[0].Value;
+                TempFilesDir = config.LastChild.ChildNodes[1].Attributes[1].Value;
+                CalScansDir = config.LastChild.ChildNodes[1].Attributes[2].Value;
+                MarkCalDue = int.Parse(config.LastChild.ChildNodes[2].Attributes[0].Value);
+                DueInCalendar = int.Parse(config.LastChild.ChildNodes[2].Attributes[1].Value);
 
-                ReportCells.Add("CerificateFileName", config.FirstChild.ChildNodes[3].Attributes[0].Value);
-                ReportCells.Add("ManufacturerCell", config.FirstChild.ChildNodes[3].Attributes[1].Value);
-                ReportCells.Add("ModelCell", config.FirstChild.ChildNodes[3].Attributes[2].Value);
-                ReportCells.Add("SerialNumberCell", config.FirstChild.ChildNodes[3].Attributes[3].Value);
-                ReportCells.Add("DescriptionCell", config.FirstChild.ChildNodes[3].Attributes[4].Value);
-                ReportCells.Add("CalibrationCell", config.FirstChild.ChildNodes[3].Attributes[5].Value);
-                ReportCells.Add("VerificationCell", config.FirstChild.ChildNodes[3].Attributes[6].Value);
-                ReportCells.Add("CalibrationDateCell", config.FirstChild.ChildNodes[3].Attributes[7].Value);
-                ReportCells.Add("OperationDateCell", config.FirstChild.ChildNodes[3].Attributes[8].Value);
-                ReportCells.Add("DueDateCell", config.FirstChild.ChildNodes[3].Attributes[9].Value);
-                ReportCells.Add("ProcedureCell", config.FirstChild.ChildNodes[3].Attributes[10].Value);
-                ReportCells.Add("LocationCell", config.FirstChild.ChildNodes[3].Attributes[11].Value);
-                ReportCells.Add("CertDateCell", config.FirstChild.ChildNodes[3].Attributes[12].Value);
+                ReportCells.Add("CerificateFileName", config.LastChild.ChildNodes[3].Attributes[0].Value);
+                ReportCells.Add("ManufacturerCell", config.LastChild.ChildNodes[3].Attributes[1].Value);
+                ReportCells.Add("ModelCell", config.LastChild.ChildNodes[3].Attributes[2].Value);
+                ReportCells.Add("SerialNumberCell", config.LastChild.ChildNodes[3].Attributes[3].Value);
+                ReportCells.Add("DescriptionCell", config.LastChild.ChildNodes[3].Attributes[4].Value);
+                ReportCells.Add("CalibrationCell", config.LastChild.ChildNodes[3].Attributes[5].Value);
+                ReportCells.Add("VerificationCell", config.LastChild.ChildNodes[3].Attributes[6].Value);
+                ReportCells.Add("CalibrationDateCell", config.LastChild.ChildNodes[3].Attributes[7].Value);
+                ReportCells.Add("OperationDateCell", config.LastChild.ChildNodes[3].Attributes[8].Value);
+                ReportCells.Add("DueDateCell", config.LastChild.ChildNodes[3].Attributes[9].Value);
+                ReportCells.Add("ProcedureCell", config.LastChild.ChildNodes[3].Attributes[10].Value);
+                ReportCells.Add("LocationCell", config.LastChild.ChildNodes[3].Attributes[11].Value);
+                ReportCells.Add("CertDateCell", config.LastChild.ChildNodes[3].Attributes[12].Value);
 
                 DbPath = Path.Combine(CalListDir,DbName);
             }

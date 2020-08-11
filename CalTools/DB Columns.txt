@@ -18,6 +18,7 @@ calibration_items
 16: timestamp
 17: item_group
 18: verify_or_calibrate
+19: certificate_number
 
 item_groups
 0: name

@@ -56,7 +56,6 @@ namespace CalTools_WPF
                 }
                 CalibrationItemTree.Items.Add(group);
             }
-            database.Disconnect();
         }
 
         private void UpdateDetails(CalibrationItem item)
@@ -95,6 +94,18 @@ namespace CalTools_WPF
             DetailsComments.Text = item.Comment;
         }
 
+        private void DetailsEditToggle()
+        {
+            bool enable = !DetailsSN.IsEnabled;
+            foreach (UIElement child in DetailsGrid.Children)
+            {
+                child.IsEnabled = enable;
+                DetailsIntervalBox.IsEnabled = enable;
+                DetailsIntervalUp.IsEnabled = enable;
+                DetailsIntervalDown.IsEnabled = enable;
+            }
+        }
+
         //GUI Event handlers
         private void CalendarButton_Click(object sender, RoutedEventArgs e)
         {
@@ -124,15 +135,12 @@ namespace CalTools_WPF
 
         private void CalibrationItemTree_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
-            foreach(var item in database.GetAllItems("calibration_items"))
-            {
-                if(e.NewValue.ToString().Contains(item.SerialNumber))
-                {
-                    UpdateDetails(item);
-                    break;
-                }
+            TreeViewItem selected;
+            if(CalibrationItemTree.SelectedItem != null) 
+            { 
+                selected = (TreeViewItem)CalibrationItemTree.SelectedItem; 
+                UpdateDetails(database.GetCalItem("calibration_items", "serial_number", (string)selected.Header)); 
             }
-            database.Disconnect();
         }
 
         //Prevent calendar from holding focus, requiring two clicks to escape
@@ -141,6 +149,53 @@ namespace CalTools_WPF
             if(Mouse.Captured is CalendarItem)
             {
                 Mouse.Capture(null);
+            }
+        }
+
+        private void EditItemButton_Click(object sender, RoutedEventArgs e)
+        {
+            EditItemButton.Visibility = Visibility.Collapsed;
+            DetailsEditToggle();
+            SaveItemButton.Visibility = Visibility.Visible;
+        }
+
+        private void SaveItemButton_Click(object sender, RoutedEventArgs e)
+        {
+            SaveItemButton.Visibility = Visibility.Collapsed;
+            DetailsEditToggle();
+            EditItemButton.Visibility = Visibility.Visible;
+        }
+
+        private void OpenFolderButton_Click(object sender, RoutedEventArgs e)
+        {
+            TreeViewItem selected;
+            if (CalibrationItemTree.SelectedItem != null)
+            {
+                selected = (TreeViewItem)CalibrationItemTree.SelectedItem;
+                string directory = database.GetCalItem("calibration_items", "serial_number", (string)selected.Header).Directory;
+                Process.Start("explorer",directory);
+            }
+        }
+
+        private void DetailsIntervalUp_Click(object sender, RoutedEventArgs e)
+        {
+            if (!DetailsIntervalBox.IsEnabled) { return; }
+            int num;
+            if(int.TryParse(DetailsIntervalBox.Text, out num))
+            {
+                num++;
+                DetailsIntervalBox.Text = num.ToString();
+            }
+        }
+
+        private void DetailsIntervalDown_Click(object sender, RoutedEventArgs e)
+        {
+            if (!DetailsIntervalBox.IsEnabled) { return; }
+            int num;
+            if (int.TryParse(DetailsIntervalBox.Text, out num))
+            {
+                num--;
+                DetailsIntervalBox.Text = num.ToString();
             }
         }
     }
