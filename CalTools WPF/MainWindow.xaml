@@ -34,7 +34,7 @@
             </Button>
             <Button x:Name="ReceivingFolderButton"  MinWidth="150" MaxWidth="500" Height="20" HorizontalAlignment="Stretch" Margin="15,0,0,0" Content="Receiving Folder" Click="ReceivingFolderButton_Click"/>
             <Button x:Name="CalReportButton"  MinWidth="150" MaxWidth="500" Height="20" HorizontalAlignment="Stretch" Margin="10,0,0,0" Content="Out of Cal Report" Visibility="Collapsed"/>
-            <Button x:Name="UpdateButton"  MinWidth="150" MaxWidth="500" Height="20" HorizontalAlignment="Stretch" Margin="10,0,0,0" Content="Update Items"/>
+            <Button x:Name="UpdateButton"  MinWidth="150" MaxWidth="500" Height="20" HorizontalAlignment="Stretch" Margin="10,0,0,0" Content="Update Items" Click="UpdateButton_Click"/>
             <Button x:Name="CalFolderButton"  MinWidth="150" MaxWidth="500" Height="20" HorizontalAlignment="Stretch" Margin="10,0,0,0" Content="Calibrations Folder" Click="CalFolderButton_Click"/>
             <Button x:Name="SettingsButton"  MinWidth="150" MaxWidth="500" Height="20" HorizontalAlignment="Stretch" Margin="10,0,0,0" Content="Settings" Visibility="Collapsed"/>
             <Separator HorizontalAlignment="Stretch" Background="White"/>
@@ -58,7 +58,7 @@
                     <Button x:Name="OpenFolderButton" Width="35" Height="35" HorizontalAlignment="Left" Margin="10,10,0,0" Click="OpenFolderButton_Click">
                         <Image Source="C:\Users\grobinson\source\repos\CalTools\CalTools WPF\images\LightTheme\folder.png"/>
                     </Button>
-                    <Button x:Name="NewReportButton" Width="35" Height="35" HorizontalAlignment="Left" Margin="10,10,0,0">
+                    <Button x:Name="NewReportButton" Width="35" Height="35" HorizontalAlignment="Left" Margin="10,10,0,0" ToolTip="Add Calibration Data" Click="NewReportButton_Click">
                         <Image Source="C:\Users\grobinson\source\repos\CalTools\CalTools WPF\images\LightTheme\report.png"/>
                     </Button>
                     <Button x:Name="DeleteItemButton" Width="35" Height="35" HorizontalAlignment="Left" Margin="10,10,0,0">
@@ -133,11 +133,11 @@
                                 </Button>
                             </Grid>
                         <Label Content="Last Calibration:" HorizontalAlignment="Left" Grid.Row="8" Grid.Column="0"/>
-                            <TextBox x:Name="DetailsLastCal" IsEnabled="False" Grid.Row="8" Grid.Column="1" Height="22" Width="Auto"/>
+                            <Label x:Name="DetailsLastCal" IsEnabled="False" Grid.Row="8" Grid.Column="1" Height="Auto" Width="Auto"/>
                         <Label Content="In Operation Date:" HorizontalAlignment="Left" Grid.Row="9" Grid.Column="0"/>
                             <TextBox x:Name="DetailsOperationDate" IsEnabled="False" Grid.Row="9" Grid.Column="1" Height="22" Width="Auto"/>
                         <Label Content="Next Calibration:" HorizontalAlignment="Left" Grid.Row="10" Grid.Column="0"/>
-                            <TextBox x:Name="DetailsNextCal" IsEnabled="False" Grid.Row="10" Grid.Column="1" Height="22" Width="Auto"/>
+                            <Label x:Name="DetailsNextCal" IsEnabled="False" Grid.Row="10" Grid.Column="1" Height="Auto" Width="Auto"/>
                         <Label Content="Mandatory Calibration:" HorizontalAlignment="Left" Grid.Row="11" Grid.Column="0"/>
                             <CheckBox x:Name="DetailsMandatory" IsEnabled="False" VerticalAlignment="Center" HorizontalAlignment="Left" Grid.Row="11" Grid.Column="1"/>
                         <Label Content="In Operation:" HorizontalAlignment="Left" Grid.Row="12" Grid.Column="0"/>

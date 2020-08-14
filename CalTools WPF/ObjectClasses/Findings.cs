@@ -6,14 +6,14 @@ using System.Text;
 
 namespace CalTools_WPF.ObjectClasses
 {
-    class Findings
+    public class Findings
     {
         public List<Param> parameters = new List<Param>();
         public bool DataFiles { get; set; } = false;
         public List<string> files = new List<string>();
     }
 
-    class Param
+    public class Param
     {
         public string Name { get; set; }
         public float Tolerance { get; set; }
@@ -21,7 +21,12 @@ namespace CalTools_WPF.ObjectClasses
         public string UnitOfMeasure { get; set; }
         public float MeasurementBefore { get; set; }
         public float MeasurementAfter { get; set; }
-
+        public float Setting { get; set; }
+        public Param() { }
+        public Param(string name)
+        {
+            Name = name;
+        }
         public Param(string name, float tolerance, bool isPercent, string uom, float measureBefore, float measureAfter)
         {
             Name = name;

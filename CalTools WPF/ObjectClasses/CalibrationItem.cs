@@ -27,6 +27,7 @@ namespace CalTools_WPF
         public DateTime? TimeStamp { get; set; } = null;
         public string ItemGroup { get; set; }
         public string VerifyOrCalibrate { get; set; } = "CALIBRATION";
+        public string CertificateNumber { get; set; }
 
         public enum DatabaseColumns
         {
