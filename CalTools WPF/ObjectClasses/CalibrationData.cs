@@ -19,6 +19,7 @@ namespace CalTools_WPF.ObjectClasses
         public string StandardEquipment { get; set; } = "";
         public Findings? findings = new Findings();
         public string Remarks { get; set; } = "";
+        public string Technician { get; set; } = "";
         public enum DatabaseColumns
         {
             ColID,

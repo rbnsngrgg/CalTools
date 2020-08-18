@@ -24,6 +24,7 @@ namespace CalTools_WPF
         public string CerificateFileName { get; set; }
         public Dictionary<string, string> ReportCells { get; set; } = new Dictionary<string, string>();
         public List<string> Folders { get; set; } = new List<string>();
+        public List<string> Procedures { get; set; } = new List<string>();
 
         //TODO: Add list of procedures to config, to be selected from when creating a new CalibrationData object
         public bool CreateConfig(string configPath)
@@ -31,7 +32,8 @@ namespace CalTools_WPF
             try
             {
                 //Generate file and write first lines
-                string[] lines = { "<CalTools_Config FirstRun = \"True\" Folders = \"PRODUCTION EQUIPMENT,ENGINEERING EQUIPMENT,QUALITY EQUIPMENT,Ref Only,Removed from Service\">",
+                string[] lines = { "<CalTools_Config FirstRun = \"True\" Folders = \"PRODUCTION EQUIPMENT,ENGINEERING EQUIPMENT,QUALITY EQUIPMENT,Ref Only,Removed from Service\"" +
+                        " Procedures = \"019-0065\">",
                         "\t<Database DbName = \"debug_Test Equipment Calibration List.db\"/>",
                         "\t<Directories CalListDir = \"\\\\artemis\\Hardware Development Projects\\Manufacturing Engineering\\Test Equipment\" " +
                         "TempFilesDir = \"\\\\artemis\\Hardware Development Projects\\Manufacturing Engineering\\Test Equipment\\Template Files\" " +
@@ -73,6 +75,7 @@ namespace CalTools_WPF
                 XmlDocument config = new XmlDocument();
                 config.Load(configPath);
                 Folders.AddRange(config.LastChild.Attributes[1].Value.Split(","));
+                Procedures.AddRange(config.LastChild.Attributes[2].Value.Split(","));
                 FirstRun = bool.Parse(config.LastChild.Attributes[0].Value);
                 DbName = config.LastChild.ChildNodes[0].Attributes[0].Value;
                 CalListDir = config.LastChild.ChildNodes[1].Attributes[0].Value;
@@ -94,6 +97,9 @@ namespace CalTools_WPF
                 ReportCells.Add("ProcedureCell", config.LastChild.ChildNodes[3].Attributes[10].Value);
                 ReportCells.Add("LocationCell", config.LastChild.ChildNodes[3].Attributes[11].Value);
                 ReportCells.Add("CertDateCell", config.LastChild.ChildNodes[3].Attributes[12].Value);
+
+                Debug.WriteLine(Procedures[0]);
+                Debug.WriteLine(CalScansDir);
 
                 DbPath = Path.Combine(CalListDir,DbName);
             }

@@ -1,36 +1,21 @@
-﻿using System;
+﻿using CalTools_WPF.ObjectClasses;
+using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using System.IO;
-using Microsoft.Data.Sqlite;
-using System.Diagnostics;
 using System.Windows.Controls.Primitives;
-using System.Globalization;
-using System.Xml.XPath;
-using CalTools_WPF.ObjectClasses;
-using Newtonsoft.Json;
+using System.Windows.Input;
 
 namespace CalTools_WPF
 {
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// </summary>
+    /// This file is reserved for GUI actions and event handlers in the main window.
     public partial class MainWindow : Window
     {
-        public readonly string version = "4.0.0";
-        private CTDatabase database;
-        private CTConfig config = new CTConfig();
         public MainWindow()
         {
             config.LoadConfig();
@@ -38,21 +23,35 @@ namespace CalTools_WPF
             InitializeComponent();
             CalToolsMainWindow.Title = $"CalTools {version}";
             UpdateItemList();
+            DetailsManufacturer.ItemsSource = manufacturers;
+            DetailsLocation.ItemsSource = locations;
+            DetailsVendor.ItemsSource = calVendors;
+            DetailsItemGroup.ItemsSource = itemGroups;
+            List<string> searchOptionsList = new List<string>(searchModes.Keys);
+            searchOptionsList.Sort();
+            SearchOptions.ItemsSource = (searchOptionsList);
+            SearchOptions.SelectedItem = "Serial Number";
         }
 
         //Update GUI Elements
         private void UpdateItemList()
         {
+            string currentItem = SelectedSN();
             ScanFolders();
+            AddItemsToList(database.GetAllCalItems());
+            UpdateLists();
+            GoToItem(currentItem);
+        }
+        private void AddItemsToList(List<CalibrationItem> items)
+        {
             CalibrationItemTree.Items.Clear();
-            List<CalibrationItem> items = database.GetAllCalItems();
-            foreach(string folder in config.Folders)
+            foreach (string folder in config.Folders)
             {
                 TreeViewItem group = new TreeViewItem();
                 group.Header = folder;
-                foreach(var item in items)
+                foreach (var item in items)
                 {
-                    if(item.Directory.Contains(folder))
+                    if (item.Directory.Contains(folder))
                     {
                         TreeViewItem treeItem = new TreeViewItem();
                         treeItem.Header = item.SerialNumber;
@@ -62,7 +61,6 @@ namespace CalTools_WPF
                 CalibrationItemTree.Items.Add(group);
             }
         }
-
         private void UpdateDetails(CalibrationItem item)
         {
             if (item != null)
@@ -99,6 +97,8 @@ namespace CalTools_WPF
                 DetailsInOperation.IsChecked = item.InService;
                 DetailsItemGroup.Text = item.ItemGroup;
                 DetailsComments.Text = item.Comment;
+                DetailsStandardBox.IsChecked = item.StandardEquipment;
+                DetailsCertificateNum.Text = item.CertificateNumber;
             }
         }
 
@@ -108,57 +108,13 @@ namespace CalTools_WPF
             foreach (UIElement child in DetailsGrid.Children)
             {
                 child.IsEnabled = enable;
-                DetailsIntervalBox.IsEnabled = enable;
-                DetailsIntervalUp.IsEnabled = enable;
-                DetailsIntervalDown.IsEnabled = enable;
             }
+            DetailsIntervalBox.IsEnabled = enable;
+            DetailsIntervalUp.IsEnabled = enable;
+            DetailsIntervalDown.IsEnabled = enable;
+            DetailsComments.IsEnabled = enable;
         }
 
-        private void ScanFolders()
-        {
-            string itemsFolder = $"{config.CalScansDir}\\Calibration Items\\";
-            foreach(string folder in config.Folders)
-            {
-                string scanFolder = $"{itemsFolder}{folder}";
-                if(Directory.Exists(scanFolder))
-                {
-                    foreach(string itemFolder in Directory.GetDirectories(scanFolder))
-                    {
-                        string itemSN = System.IO.Path.GetFileName(itemFolder);
-                        CalibrationItem calItem = database.GetCalItem("calibration_items","serial_number",itemSN);
-                        if (calItem == null) { calItem = new CalibrationItem(itemSN);}
-                        calItem.Directory = itemFolder;
-                        DateTime? latest = GetLatestCal(calItem.SerialNumber, calItem.Directory);
-                        if (latest != null)
-                        {
-                        }
-                    }
-                }
-            }
-        }
-        private DateTime? GetLatestCal(string sn, string folder)
-        {
-            DateTime? calDate = new DateTime();
-            foreach(string filePath in Directory.GetFiles(folder))
-            {
-                string file = System.IO.Path.GetFileNameWithoutExtension(filePath);
-                List<string> fileSplit = new List<string>();
-                fileSplit.AddRange(file.Split("_"));
-                DateTime fileDate;
-                foreach (string split in fileSplit)
-                {
-                    if(DateTime.TryParseExact(split,database.dateFormat,CultureInfo.InvariantCulture,DateTimeStyles.AdjustToUniversal, out fileDate))
-                    {
-                        if(fileDate > calDate) { calDate = fileDate; break; }
-                    }
-                }
-            }
-            foreach(CalibrationData data in database.GetCalData(sn))
-            {
-                if(data.CalibrationDate > calDate) { calDate = data.CalibrationDate; Debug.WriteLine(calDate); }
-            }
-            return calDate;
-        }
         private void GoToItem(string sn)
         {
             foreach (TreeViewItem item in CalibrationItemTree.Items)
@@ -176,47 +132,38 @@ namespace CalTools_WPF
                 item.IsExpanded = false;
             }
         }
-        //Create new xaml window for selecting a folder from those listed in the config file.
-        private string GetNewItemFolder(string sn)
-        {
-            string folder = "";
-            NewItemFolderSelect folderDialog = new NewItemFolderSelect();
-            foreach (string configFolder in config.Folders)
-            {
-                ComboBoxItem boxItem = new ComboBoxItem();
-                boxItem.Content = configFolder;
-                folderDialog.FolderSelectComboBox.Items.Add(boxItem);
-            }
-            if (folderDialog.ShowDialog() == true)
-            {
-                //Check that the folder from the config exists before the new item folder is allowed to be created.
-                if (Directory.Exists($"{config.CalScansDir}\\Calibration Items\\{folderDialog.FolderSelectComboBox.Text}"))
-                { folder = $"{config.CalScansDir}\\Calibration Items\\{folderDialog.FolderSelectComboBox.Text}\\{sn}"; }
-            }
-            return folder;
-        }
 
+        private void ExpandTreeItems()
+        {
+            foreach (TreeViewItem group in CalibrationItemTree.Items)
+            {
+                group.IsExpanded = true;
+            }
+        }
+        //True if the TreeView has an item selected, false if item is null
         private bool IsItemSelected()
         {
             TreeViewItem selectedItem = (TreeViewItem)CalibrationItemTree.SelectedItem;
-            if(selectedItem != null)
+            if (selectedItem != null)
             {
-                if(!config.Folders.Contains(selectedItem.Header.ToString()))
+                if (!config.Folders.Contains(selectedItem.Header.ToString()))
                 { return true; }
             }
             return false;
         }
+        //Return header(SN) of selected item in treeview, empty string if no item is selected.
         private string SelectedSN()
         {
             TreeViewItem selectedItem = (TreeViewItem)CalibrationItemTree.SelectedItem;
+            if (!IsItemSelected()) { return ""; }
             string sn = selectedItem.Header.ToString();
             return sn;
         }
 
-        //GUI Event handlers
+        //GUI Event handlers---------------------------------------------------------------------------------------------------------------
         private void CalendarButton_Click(object sender, RoutedEventArgs e)
         {
-            if(MainViewGrid.Visibility== Visibility.Visible)
+            if (MainViewGrid.Visibility == Visibility.Visible)
             {
                 MainViewGrid.Visibility = Visibility.Collapsed;
                 CalendarViewGrid.Visibility = Visibility.Visible;
@@ -227,40 +174,35 @@ namespace CalTools_WPF
                 MainViewGrid.Visibility = Visibility.Visible;
             }
         }
-
         private void CalFolderButton_Click(object sender, RoutedEventArgs e)
         {
-            try{ Process.Start("explorer",config.CalListDir); }
-            catch(System.Exception ex) { MessageBox.Show($"Error opening calibrations folder: {ex.Message}","Error",MessageBoxButton.OK,MessageBoxImage.Error); }
+            try { Process.Start("explorer", config.CalListDir); }
+            catch (System.Exception ex) { MessageBox.Show($"Error opening calibrations folder: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error); }
         }
-
         private void ReceivingFolderButton_Click(object sender, RoutedEventArgs e)
         {
             try { Process.Start("explorer", $"{config.CalListDir}\\receiving"); }
             catch (System.Exception ex) { MessageBox.Show($"Error opening receiving folder: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error); }
         }
-
         private void CalibrationItemTree_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
             TreeViewItem selected;
-            if (DetailsSN.IsEnabled) 
+            if (DetailsSN.IsEnabled)
             {
                 SaveItemButton.Visibility = Visibility.Collapsed;
                 DetailsEditToggle();
                 EditItemButton.Visibility = Visibility.Visible;
             }
-            if(CalibrationItemTree.SelectedItem != null) 
-            { 
-                selected = (TreeViewItem)CalibrationItemTree.SelectedItem; 
-                UpdateDetails(database.GetCalItem("calibration_items", "serial_number", (string)selected.Header)); 
+            if (CalibrationItemTree.SelectedItem != null)
+            {
+                selected = (TreeViewItem)CalibrationItemTree.SelectedItem;
+                UpdateDetails(database.GetCalItem("calibration_items", "serial_number", (string)selected.Header));
             }
         }
-
-
         //Prevent calendar from holding focus, requiring two clicks to escape
         private void ItemCalendar_PreviewMouseUp(object sender, MouseButtonEventArgs e)
         {
-            if(Mouse.Captured is CalendarItem)
+            if (Mouse.Captured is CalendarItem)
             {
                 Mouse.Capture(null);
             }
@@ -289,7 +231,7 @@ namespace CalTools_WPF
                 if (item == null)
                 {
                     item = new CalibrationItem(DetailsSN.Text);
-                    result = MessageBox.Show($"Item SN: {DetailsSN.Text} does not exist in the database. Create this item?", "Item Not Found",MessageBoxButton.YesNo,MessageBoxImage.Information);                    
+                    result = MessageBox.Show($"Item SN: {DetailsSN.Text} does not exist in the database. Create this item?", "Item Not Found", MessageBoxButton.YesNo, MessageBoxImage.Information);
                 }
                 item.Model = DetailsModel.Text;
                 item.Description = DetailsDescription.Text;
@@ -305,12 +247,23 @@ namespace CalTools_WPF
                 item.InService = DetailsInOperation.IsChecked == true;
                 item.ItemGroup = DetailsItemGroup.Text;
                 item.Comment = DetailsComments.Text;
-                if(result==MessageBoxResult.Yes | result==MessageBoxResult.None)
+                if ((bool)DetailsStandardBox.IsChecked)
+                {
+                    item.StandardEquipment = true;
+                    if (DetailsCertificateNum.Text.Length == 0)
+                    {
+                        MessageBox.Show("A certificate number is required for items marked as Standard Equipment.", "Certificate Number", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                        return;
+                    }
+                }
+                else { item.StandardEquipment = false; }
+                item.CertificateNumber = DetailsCertificateNum.Text;
+                if (result == MessageBoxResult.Yes | result == MessageBoxResult.None)
                 {
                     if (result == MessageBoxResult.Yes)
                     {
                         string folder = GetNewItemFolder(item.SerialNumber);
-                        if (folder != "") 
+                        if (folder != "")
                         {
                             item.Directory = folder;
                             Directory.CreateDirectory(folder);
@@ -321,7 +274,7 @@ namespace CalTools_WPF
                         }
                     }
                     else
-                    { 
+                    {
                         database.SaveCalItem(item);
                         SaveItemButton.Visibility = Visibility.Collapsed;
                         DetailsEditToggle();
@@ -329,6 +282,7 @@ namespace CalTools_WPF
                         sn = item.SerialNumber;
                     }
                 }
+                UpdateListsSingle(item);
             }
             GoToItem(sn);
         }
@@ -339,14 +293,14 @@ namespace CalTools_WPF
             {
                 selected = (TreeViewItem)CalibrationItemTree.SelectedItem;
                 string directory = database.GetCalItem("calibration_items", "serial_number", (string)selected.Header).Directory;
-                Process.Start("explorer",directory);
+                Process.Start("explorer", directory);
             }
         }
         private void DetailsIntervalUp_Click(object sender, RoutedEventArgs e)
         {
             if (!DetailsIntervalBox.IsEnabled) { return; }
             int num;
-            if(int.TryParse(DetailsIntervalBox.Text, out num))
+            if (int.TryParse(DetailsIntervalBox.Text, out num))
             {
                 num++;
                 DetailsIntervalBox.Text = num.ToString();
@@ -362,21 +316,76 @@ namespace CalTools_WPF
                 DetailsIntervalBox.Text = num.ToString();
             }
         }
-
         private void UpdateButton_Click(object sender, RoutedEventArgs e)
         {
             UpdateItemList();
         }
-
         private void NewReportButton_Click(object sender, RoutedEventArgs e)
         {
             if (!IsItemSelected()) { return; }
+            CalibrationItem calItem = database.GetCalItem("calibration_items", "serial_number", SelectedSN());
             CalDataEntry dataEntry = new CalDataEntry();
             dataEntry.SerialNumberBox.Text = SelectedSN();
-            if(dataEntry.ShowDialog() == true)
+            dataEntry.DateBox.Text = DateTime.UtcNow.ToString(database.dateFormat);
+            dataEntry.ProcedureBox.ItemsSource = config.Procedures;
+            dataEntry.EquipmentBox.ItemsSource = standardEquipment;
+            if (dataEntry.ShowDialog() == true)
             {
-                Debug.WriteLine(JsonConvert.SerializeObject(dataEntry.data));
+                dataEntry.data.DueDate = dataEntry.data.CalibrationDate.Value.AddMonths(calItem.Interval);
+                dataEntry.data.StandardEquipment = JsonConvert.SerializeObject(database.GetCalItem("calibration_items", "serial_number", dataEntry.EquipmentBox.Text));
+                database.SaveCalData(dataEntry.data);
+                UpdateItemList();
             }
+        }
+        private void DetailsStandardBox_Checked(object sender, RoutedEventArgs e)
+        {
+            if ((bool)DetailsStandardBox.IsChecked)
+            {
+                DetailsMandatory.IsChecked = true;
+                DetailsMandatory.IsEnabled = false;
+                DetailsCertificateLabel.Visibility = Visibility.Visible;
+                DetailsCertificateNum.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                if (DetailsSN.IsEnabled) { DetailsMandatory.IsEnabled = true; }
+                DetailsCertificateLabel.Visibility = Visibility.Collapsed;
+                DetailsCertificateNum.Clear();
+                DetailsCertificateNum.Visibility = Visibility.Collapsed;
+            }
+
+        }
+        private void DeleteItemButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (IsItemSelected())
+            {
+                string selectedItem = SelectedSN();
+                if(MessageBox.Show($"This will delete {selectedItem} from the database. Any calibration records will remain. Continue?",
+                    "Delete Item",MessageBoxButton.YesNo,MessageBoxImage.Information) == MessageBoxResult.Yes)
+                {
+                    database.RemoveCalItem(selectedItem);
+                    UpdateItemList();
+                }
+            }
+        }
+
+        private void SearchOptions_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            SearchBox.Clear();
+            string selection = SearchOptions.SelectedItem.ToString();
+            if (selection == "Calibration Due" | selection == "Has Comment" | selection == "Standard Equipment")
+            {
+                AddItemsToList(ItemListFilter(searchModes[selection],""));
+                SearchBox.IsEnabled = false;
+                ExpandTreeItems();
+            }
+            else { SearchBox.IsEnabled = true; AddItemsToList(database.GetAllCalItems()); }
+        }
+
+        private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            AddItemsToList(ItemListFilter(searchModes[SearchOptions.SelectedItem.ToString()], SearchBox.Text));
+            ExpandTreeItems();
         }
     }
 }

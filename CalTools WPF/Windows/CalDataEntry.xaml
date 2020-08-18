@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:CalTools_WPF"
         mc:Ignorable="d"
-        Title="Calibration Data Entry" Height="470" Width="800" MinHeight="470" MinWidth="800">
+        Title="Calibration Data Entry" Height="550" Width="800" MinHeight="500" MinWidth="800">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="30"/>
@@ -38,6 +38,7 @@
                 <RowDefinition/>
                 <RowDefinition/>
                 <RowDefinition Height="75"/>
+                <RowDefinition/>
             </Grid.RowDefinitions>
             <Label Content="Serial Number:" Grid.Row="0" Grid.Column="1" HorizontalAlignment="Center" FontSize="14"/>
                 <TextBox x:Name="SerialNumberBox" Grid.Row="0" Grid.Column="2" FontSize="16" Grid.ColumnSpan="4" IsEnabled="False"/>
@@ -78,6 +79,8 @@
             </DataGrid>
             <Label Content="Remarks:" Grid.Row="11" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Top" FontSize="14"/>
             <TextBox x:Name="RemarksBox" Grid.Row="11" Grid.Column="2" Grid.ColumnSpan="4" VerticalAlignment="Center" Height="65" TextWrapping="Wrap"/>
+            <Label Content="Technician:" Grid.Row="12" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Top" FontSize="14"/>
+            <TextBox x:Name="TechnicianBox" Grid.Row="12" Grid.Column="2" Grid.ColumnSpan="2" VerticalAlignment="Center" FontSize="14"/>
         </Grid>
         <DockPanel Grid.Row="2" HorizontalAlignment="Center" Grid.ColumnSpan="2">
             <Button x:Name="SaveButton" Content="Save" FontSize="16" Grid.Row="2" Width="150" Height="30" Click="SaveButton_Click"/>
