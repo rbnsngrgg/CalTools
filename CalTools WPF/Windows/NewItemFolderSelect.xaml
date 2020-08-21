@@ -6,10 +6,11 @@
         xmlns:local="clr-namespace:CalTools_WPF"
         mc:Ignorable="d"
         x:Name="FolderSelectWindow"
-        Title="Folder Select" Height="200" Width="400" FocusManager.FocusedElement="{Binding ElementName=FolderSelectWindow}">
+        Title="Folder Select" Height="200" Width="400" FocusManager.FocusedElement="{Binding ElementName=FolderSelectWindow}"
+        Icon="C:\Users\grobinson\source\repos\CalTools\CalTools WPF\images\CalToolsIcon.ico">
     <Grid>
         <StackPanel>
-            <Label Content="Select a folder for the new item: " HorizontalAlignment="Center" FontWeight="Bold" FontSize="14" Margin="20"/>
+            <Label Content="Select a folder for the item: " HorizontalAlignment="Center" FontWeight="Bold" FontSize="14" Margin="20"/>
             <ComboBox x:Name="FolderSelectComboBox" Width="300" SelectionChanged="FolderSelectComboBox_SelectionChanged"/>
             <DockPanel Margin="0,30,0,0">
                 <Button x:Name="FolderSelectOK" IsEnabled="False" Content="OK" Width="100" HorizontalAlignment="Center" Margin="80,0,0,0" Click="FolderSelectOK_Click"/>

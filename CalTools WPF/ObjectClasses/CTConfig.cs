@@ -1,11 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Xml;
+﻿using System.Collections.Generic;
 using System.IO;
-using System.Dynamic;
 using System.Windows;
-using System.Diagnostics;
+using System.Xml;
 
 namespace CalTools_WPF
 {
@@ -18,7 +14,7 @@ namespace CalTools_WPF
         public string CalListDir { get; set; }
         public string TempFilesDir { get; set; }
         public string CalScansDir { get; set; }
-        public bool FirstRun { get; set; }
+        public string Theme { get; set; }
         public int MarkCalDue { get; set; }
         public int DueInCalendar { get; set; }
         public string CerificateFileName { get; set; }
@@ -26,15 +22,14 @@ namespace CalTools_WPF
         public List<string> Folders { get; set; } = new List<string>();
         public List<string> Procedures { get; set; } = new List<string>();
 
-        //TODO: Add list of procedures to config, to be selected from when creating a new CalibrationData object
         public bool CreateConfig(string configPath)
         {
             try
             {
                 //Generate file and write first lines
-                string[] lines = { "<CalTools_Config FirstRun = \"True\" Folders = \"PRODUCTION EQUIPMENT,ENGINEERING EQUIPMENT,QUALITY EQUIPMENT,Ref Only,Removed from Service\"" +
+                string[] lines = { "<CalTools_Config Theme = \"Light\" Folders = \"PRODUCTION EQUIPMENT,ENGINEERING EQUIPMENT,QUALITY EQUIPMENT,Ref Only,Removed from Service\"" +
                         " Procedures = \"019-0065\">",
-                        "\t<Database DbName = \"debug_Test Equipment Calibration List.db\"/>",
+                        "\t<Database DbName = \"Test Equipment Calibration List.db\"/>",
                         "\t<Directories CalListDir = \"\\\\artemis\\Hardware Development Projects\\Manufacturing Engineering\\Test Equipment\" " +
                         "TempFilesDir = \"\\\\artemis\\Hardware Development Projects\\Manufacturing Engineering\\Test Equipment\\Template Files\" " +
                         "CalScansDir = \"\\\\artemis\\Hardware Development Projects\\Manufacturing Engineering\\Test Equipment\\Calibration Scans\"/>",
@@ -76,7 +71,7 @@ namespace CalTools_WPF
                 config.Load(configPath);
                 Folders.AddRange(config.LastChild.Attributes[1].Value.Split(","));
                 Procedures.AddRange(config.LastChild.Attributes[2].Value.Split(","));
-                FirstRun = bool.Parse(config.LastChild.Attributes[0].Value);
+                Theme = config.LastChild.Attributes[0].Value;
                 DbName = config.LastChild.ChildNodes[0].Attributes[0].Value;
                 CalListDir = config.LastChild.ChildNodes[1].Attributes[0].Value;
                 TempFilesDir = config.LastChild.ChildNodes[1].Attributes[1].Value;
@@ -98,12 +93,9 @@ namespace CalTools_WPF
                 ReportCells.Add("LocationCell", config.LastChild.ChildNodes[3].Attributes[11].Value);
                 ReportCells.Add("CertDateCell", config.LastChild.ChildNodes[3].Attributes[12].Value);
 
-                Debug.WriteLine(Procedures[0]);
-                Debug.WriteLine(CalScansDir);
-
-                DbPath = Path.Combine(CalListDir,DbName);
+                DbPath = Path.Combine(CalListDir, DbName);
             }
-            catch(System.Exception ex)
+            catch (System.Exception ex)
             {
                 MessageBox.Show($"Error loading config file: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }

@@ -5,8 +5,9 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:CalTools_WPF"
         mc:Ignorable="d"
-        Title="CalTools" Height="640" Width="1000" MinHeight="610" MinWidth="1000"
-        x:Name="CalToolsMainWindow" WindowStyle="SingleBorderWindow" Background="#FFF0F0F0">
+        Title="CalTools" Height="660" Width="1000" MinHeight="640" MinWidth="1000"
+        x:Name="CalToolsMainWindow" WindowStyle="SingleBorderWindow" Background="WhiteSmoke"
+        Icon="C:\Users\grobinson\source\repos\CalTools\CalTools WPF\images\CalToolsIcon.ico">
     <Window.Resources>
         <Style TargetType="Image">
             <Setter Property="RenderOptions.BitmapScalingMode" Value="HighQuality"/>
@@ -15,21 +16,22 @@
     <Grid>
         <Grid.RowDefinitions>
             <!--Menu bar-->
-            <RowDefinition Height="20" MinHeight="20" MaxHeight="20"/>
+            <RowDefinition Height="5" MinHeight="5" MaxHeight="5"/>
             <!--Top row buttons-->
             <RowDefinition Height="50" MinHeight="50" MaxHeight="50"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="25"/>
         </Grid.RowDefinitions>
         <!--Menu bar-->
-        <DockPanel Grid.Row="0">
-            <Menu DockPanel.Dock="Top" Background="White">
-                <MenuItem Header="_File"/>
-                <MenuItem Header="_Tools"/>
+        <DockPanel Grid.Row="0" Visibility="Collapsed">
+            <Menu x:Name="MainMenuBar" DockPanel.Dock="Top" Background="White">
+                <!--<MenuItem Header="_File"/>-->
+                <!--<MenuItem Header="_Tools"/>-->
             </Menu>
         </DockPanel>
         <!--Top row buttons-->
         <DockPanel Grid.Row="1">
-            <Button x:Name="CalendarButton" Width="35" Height="35" HorizontalAlignment="Left" Margin="10,0,0,0" Click="CalendarButton_Click">
+            <Button x:Name="CalendarButton" Width="35" Height="35" HorizontalAlignment="Left" Margin="10,0,0,0" ToolTip="Toggle Calendar View" Click="CalendarButton_Click">
                 <Image Source="C:\Users\grobinson\source\repos\CalTools\CalTools WPF\images\LightTheme\calendar.png"/>
             </Button>
             <Button x:Name="ReceivingFolderButton"  MinWidth="150" MaxWidth="500" Height="20" HorizontalAlignment="Stretch" Margin="15,0,0,0" Content="Receiving Folder" Click="ReceivingFolderButton_Click"/>
@@ -55,7 +57,7 @@
                     <Button x:Name="SaveItemButton" Width="35" Height="35" HorizontalAlignment="Left" Margin="10,0,0,0" ToolTip="Save Item" Click="SaveItemButton_Click" Visibility="Collapsed">
                         <Image x:Name="SaveButtonImage"  Source="C:\Users\grobinson\source\repos\CalTools\CalTools WPF\images\LightTheme\save.png" Width="30" Height="30"/>
                     </Button>
-                    <Button x:Name="OpenFolderButton" Width="35" Height="35" HorizontalAlignment="Left" Margin="10,10,0,0" Click="OpenFolderButton_Click">
+                    <Button x:Name="OpenFolderButton" Width="35" Height="35" HorizontalAlignment="Left" Margin="10,10,0,0" ToolTip="Open Item Folder" Click="OpenFolderButton_Click">
                         <Image Source="C:\Users\grobinson\source\repos\CalTools\CalTools WPF\images\LightTheme\folder.png"/>
                     </Button>
                     <Button x:Name="NewReportButton" Width="35" Height="35" HorizontalAlignment="Left" Margin="10,10,0,0" ToolTip="Add Calibration Data" Click="NewReportButton_Click">
@@ -64,7 +66,7 @@
                     <Button x:Name="DeleteItemButton" Width="35" Height="35" HorizontalAlignment="Left" Margin="10,10,0,0" ToolTip="Delete Item" Click="DeleteItemButton_Click">
                         <Image Source="C:\Users\grobinson\source\repos\CalTools\CalTools WPF\images\LightTheme\delete.png"/>
                     </Button>
-                    <Button x:Name="MoveItemButton" Width="35" Height="35" HorizontalAlignment="Left" Margin="10,10,0,0" ToolTip="Move Item" Click="DeleteItemButton_Click">
+                    <Button x:Name="MoveItemButton" Width="35" Height="35" HorizontalAlignment="Left" Margin="10,10,0,0" ToolTip="Move Item" Click="MoveItemButton_Click">
                         <Image Source="C:\Users\grobinson\source\repos\CalTools\CalTools WPF\images\LightTheme\move.png"/>
                     </Button>
                 </StackPanel>
@@ -88,7 +90,7 @@
                             <RowDefinition Height="25"/>
                             <RowDefinition Height="25"/>
                             <RowDefinition Height="25"/>
-                            <RowDefinition Height="25"/>
+                            <RowDefinition Height="0"/>
                             <RowDefinition Height="25"/>
                             <RowDefinition Height="25"/>
                             <RowDefinition Height="25"/>
@@ -148,7 +150,7 @@
                         <Label Content="In Operation:" HorizontalAlignment="Left" Grid.Row="13" Grid.Column="0"/>
                             <CheckBox x:Name="DetailsInOperation" IsEnabled="False" VerticalAlignment="Center" HorizontalAlignment="Left" Grid.Row="13" Grid.Column="1"/>
                         <Label Content="Item Group:" HorizontalAlignment="Left" Grid.Row="14" Grid.Column="0"/>
-                            <ComboBox x:Name="DetailsItemGroup" IsEnabled="False" IsEditable ="False" Grid.Row="14" Grid.Column="1" Height="22" Width="Auto"/>
+                            <ComboBox x:Name="DetailsItemGroup" IsEnabled="False" IsEditable ="True" Grid.Row="14" Grid.Column="1" Height="22" Width="Auto"/>
                         <Label Content="Comments:" HorizontalAlignment="Left" Grid.Row="16" Grid.Column="0"/>
                             <TextBox x:Name="DetailsComments" Background="#FFFBFBFB" IsEnabled="False" Grid.Row="16" Grid.Column="1"/>
                     </Grid>
@@ -169,39 +171,35 @@
             <!--Calendar, checkbox, combobox-->
             <StackPanel Grid.Column="0">
                 <Viewbox MinHeight="250" MaxHeight="400">
-                    <Calendar x:Name="ItemCalendar" PreviewMouseUp="ItemCalendar_PreviewMouseUp"/>
+                    <Calendar x:Name="ItemCalendar" PreviewMouseUp="ItemCalendar_PreviewMouseUp" SelectedDatesChanged="ItemCalendar_SelectedDatesChanged" Margin="5,0,0,0"/>
                 </Viewbox>
-                <CheckBox Content="Show only mandatory, in operation items."/>
-                <!--Add other combo box items based on config settings-->
-                <ComboBox>
-                    <ComboBoxItem Content="Show All" IsSelected="True"/>
-                </ComboBox>
+                <CheckBox x:Name="MandatoryOnlyBox" Content="Show only mandatory, in operation items." Checked="MandatoryOnlyBox_Checked" Unchecked="MandatoryOnlyBox_Checked" Margin="9,0,0,0"/>
             </StackPanel>
             <!--Text boxes and tables-->
             <StackPanel Grid.Column="1" Grid.ColumnSpan="2">
                 <Label x:Name="weekTodoLabel" Content="To-do during week of...:"/>
-                <DataGrid x:Name="todoTable" MinHeight="220" VerticalAlignment="Stretch" CanUserResizeColumns="True" Height="Auto" Width="Auto">
+                <DataGrid x:Name="todoTable" Height="480" VerticalAlignment="Stretch" CanUserResizeColumns="True" Width="Auto" 
+                          AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" IsReadOnly="True" Margin="5,0,5,0">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="SN" Width="100"/>
-                        <DataGridTextColumn Header="Model" Width="100"/>
-                        <DataGridTextColumn Header="Description" Width="*"/>
-                        <DataGridTextColumn Header="Location" Width="100"/>
-                        <DataGridTextColumn Header="Cal Vendor" Width="100"/>
-                        <DataGridTextColumn Header="Cal Due By" Width="75"/>
+                        <DataGridTextColumn Header="SN" Width="100" Binding="{Binding SerialNumber}"/>
+                        <DataGridTextColumn Header="Model" Width="100" Binding="{Binding Model}"/>
+                        <DataGridTextColumn Header="Description" Width="*" Binding="{Binding Description}"/>
+                        <DataGridTextColumn Header="Location" Width="100" Binding="{Binding Location}"/>
+                        <DataGridTextColumn Header="Cal Vendor" Width="100" Binding="{Binding CalVendor}"/>
+                        <DataGridTextColumn x:Name="CalDueCol" Header="Cal Due By" Width="75" Binding="{Binding NextCal}"/>
                     </DataGrid.Columns>
-                </DataGrid>
-                <TextBox x:Name="todoTextBox" Focusable="False" Margin="0,5,0,0"/>
-                <Separator HorizontalAlignment="Stretch" VerticalAlignment="Center" Margin="0,5,0,5"/>
-                <DataGrid x:Name="dueOnTable" VerticalAlignment="Stretch" CanUserResizeColumns="True" Height="Auto" Width="Auto">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn Header="SN" Width="100"/>
-                        <DataGridTextColumn Header="Model" Width="100"/>
-                        <DataGridTextColumn Header="Description" Width="*"/>
-                        <DataGridTextColumn Header="Location" Width="100"/>
-                        <DataGridTextColumn Header="Cal Vendor" Width="100"/>
-                    </DataGrid.Columns>
+                    <DataGrid.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem x:Name="TableMenuGoto" Header="Go to Item" Click="TableMenuGoto_Click"/>
+                            <MenuItem x:Name="TableMenuCalData" Header="Add Calibration Data" Click="TableMenuCalData_Click"/>
+                        </ContextMenu>
+                    </DataGrid.ContextMenu>
                 </DataGrid>
             </StackPanel>
         </Grid>
+        <StatusBar x:Name="MainStatusBar" Grid.Row="3" Background="#f0f0f0">
+            <StatusBarItem x:Name="StatusBarMainLabel" VerticalAlignment="Center" Content="Ready"/>
+            <ProgressBar x:Name="StatusProgressBar" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="100,0,0,0" Width="150" Height="20" Value="0" Visibility="Hidden"/>
+        </StatusBar>
     </Grid>
 </Window>

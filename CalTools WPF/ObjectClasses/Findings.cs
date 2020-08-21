@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Reflection.Metadata;
-using System.Security.Permissions;
-using System.Text;
+﻿using System.Collections.Generic;
 
 namespace CalTools_WPF.ObjectClasses
 {

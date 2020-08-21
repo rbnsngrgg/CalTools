@@ -10,7 +10,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
-
+using System.Windows.Media;
 namespace CalTools_WPF
 {
     /// This file is reserved for GUI actions and event handlers in the main window.
@@ -21,21 +21,33 @@ namespace CalTools_WPF
             config.LoadConfig();
             database = new CTDatabase(config.DbPath);
             InitializeComponent();
+            LogicInit();
+        }
+        private void LogicInit()
+        {
             CalToolsMainWindow.Title = $"CalTools {version}";
-            UpdateItemList();
+            if (database.DatabaseReady())
+            {
+                UpdateItemList();
+                HighlightNonExistent();
+                MandatoryOnlyBox.IsChecked = true;
+                List<string> searchOptionsList = new List<string>(searchModes.Keys);
+                searchOptionsList.Sort();
+                SearchOptions.ItemsSource = (searchOptionsList);
+                SearchOptions.SelectedItem = "Serial Number";
+                ItemCalendar.SelectedDate = DateTime.Today;
+            }
             DetailsManufacturer.ItemsSource = manufacturers;
             DetailsLocation.ItemsSource = locations;
             DetailsVendor.ItemsSource = calVendors;
             DetailsItemGroup.ItemsSource = itemGroups;
-            List<string> searchOptionsList = new List<string>(searchModes.Keys);
-            searchOptionsList.Sort();
-            SearchOptions.ItemsSource = (searchOptionsList);
-            SearchOptions.SelectedItem = "Serial Number";
+            todoTable.ItemsSource = weekTodoItems;
         }
-
         //Update GUI Elements
         private void UpdateItemList()
         {
+            if (!database.tablesExist) { return; }
+            CheckReceiving();
             string currentItem = SelectedSN();
             ScanFolders();
             AddItemsToList(database.GetAllCalItems());
@@ -44,6 +56,7 @@ namespace CalTools_WPF
         }
         private void AddItemsToList(List<CalibrationItem> items)
         {
+            items.Sort((x, y) => x.SerialNumber.CompareTo(y.SerialNumber));
             CalibrationItemTree.Items.Clear();
             foreach (string folder in config.Folders)
             {
@@ -59,6 +72,25 @@ namespace CalTools_WPF
                     }
                 }
                 CalibrationItemTree.Items.Add(group);
+            }
+        }
+        private void HighlightNonExistent()
+        {
+            List<string> nonExistent = new List<string>();
+            foreach (CalibrationItem calItem in database.GetAllCalItems())
+            {
+                if (!Directory.Exists(calItem.Directory))
+                {
+                    nonExistent.Add(calItem.SerialNumber);
+                }
+            }
+            foreach (TreeViewItem item in CalibrationItemTree.Items)
+            {
+                foreach (TreeViewItem subItem in item.Items)
+                {
+                    if (nonExistent.Contains((string)subItem.Header)) { subItem.Foreground = Brushes.Red; subItem.ToolTip = "Missing folder"; }
+                    else { subItem.Foreground = Brushes.Black; subItem.ToolTip = null; }
+                }
             }
         }
         private void UpdateDetails(CalibrationItem item)
@@ -162,6 +194,10 @@ namespace CalTools_WPF
 
         //GUI Event handlers---------------------------------------------------------------------------------------------------------------
         private void CalendarButton_Click(object sender, RoutedEventArgs e)
+        {
+            ToggleView();
+        }
+        private void ToggleView()
         {
             if (MainViewGrid.Visibility == Visibility.Visible)
             {
@@ -319,16 +355,23 @@ namespace CalTools_WPF
         private void UpdateButton_Click(object sender, RoutedEventArgs e)
         {
             UpdateItemList();
+            HighlightNonExistent();
         }
         private void NewReportButton_Click(object sender, RoutedEventArgs e)
         {
             if (!IsItemSelected()) { return; }
-            CalibrationItem calItem = database.GetCalItem("calibration_items", "serial_number", SelectedSN());
+            NewReport(database.GetCalItem("calibration_items", "serial_number", SelectedSN()));
+        }
+        private void NewReport(CalibrationItem calItem)
+        {
             CalDataEntry dataEntry = new CalDataEntry();
-            dataEntry.SerialNumberBox.Text = SelectedSN();
+            dataEntry.SerialNumberBox.Text = calItem.SerialNumber;
             dataEntry.DateBox.Text = DateTime.UtcNow.ToString(database.dateFormat);
             dataEntry.ProcedureBox.ItemsSource = config.Procedures;
             dataEntry.EquipmentBox.ItemsSource = standardEquipment;
+            if (config.Procedures.Count > 0) { dataEntry.ProcedureBox.SelectedIndex = 0; }
+            if (standardEquipment.Count > 0) { dataEntry.EquipmentBox.SelectedIndex = 0; }
+            dataEntry.findings.parameters.Add(new Param($"Parameter {dataEntry.findings.parameters.Count + 1}"));
             if (dataEntry.ShowDialog() == true)
             {
                 dataEntry.data.DueDate = dataEntry.data.CalibrationDate.Value.AddMonths(calItem.Interval);
@@ -360,32 +403,93 @@ namespace CalTools_WPF
             if (IsItemSelected())
             {
                 string selectedItem = SelectedSN();
-                if(MessageBox.Show($"This will delete {selectedItem} from the database. Any calibration records will remain. Continue?",
-                    "Delete Item",MessageBoxButton.YesNo,MessageBoxImage.Information) == MessageBoxResult.Yes)
+                if (MessageBox.Show($"This will delete {selectedItem} from the database. Any calibration records will remain. Continue?",
+                    "Delete Item", MessageBoxButton.YesNo, MessageBoxImage.Information) == MessageBoxResult.Yes)
                 {
                     database.RemoveCalItem(selectedItem);
                     UpdateItemList();
                 }
             }
         }
-
+        private void MoveItemButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (IsItemSelected())
+            {
+                CalibrationItem selectedItem = database.GetCalItem("calibration_items", "serial_number", SelectedSN());
+                NewItemFolderSelect selection = new NewItemFolderSelect();
+                selection.FolderSelectComboBox.ItemsSource = config.Folders;
+                if ((bool)selection.ShowDialog() & selectedItem != null)
+                {
+                    string selectedFolder = selection.FolderSelectComboBox.SelectedItem.ToString();
+                    string newDirectory = $"{config.CalScansDir}\\Calibration Items\\{selectedFolder}";
+                    if (Directory.Exists(newDirectory)) { newDirectory += $"\\{selectedItem.SerialNumber}"; }
+                    else { MessageBox.Show($"The directory \"{newDirectory}\" is missing or inaccessible.", "Folder Not Found", MessageBoxButton.OK, MessageBoxImage.Error); return; }
+                    if (selectedItem.Directory == newDirectory) { return; }
+                    Directory.Move(selectedItem.Directory, newDirectory);
+                    UpdateItemList();
+                }
+            }
+        }
         private void SearchOptions_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             SearchBox.Clear();
             string selection = SearchOptions.SelectedItem.ToString();
             if (selection == "Calibration Due" | selection == "Has Comment" | selection == "Standard Equipment")
             {
-                AddItemsToList(ItemListFilter(searchModes[selection],""));
+                AddItemsToList(ItemListFilter(searchModes[selection], ""));
                 SearchBox.IsEnabled = false;
                 ExpandTreeItems();
             }
             else { SearchBox.IsEnabled = true; AddItemsToList(database.GetAllCalItems()); }
         }
-
         private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             AddItemsToList(ItemListFilter(searchModes[SearchOptions.SelectedItem.ToString()], SearchBox.Text));
             ExpandTreeItems();
+        }
+        //Calendar event handlers----------------------------------------------------------------------------------------------------------
+        private void ItemCalendar_SelectedDatesChanged(object sender, SelectionChangedEventArgs e)
+        {
+            weekTodoLabel.Content = "To do during week of: " + ItemCalendar.SelectedDate.Value.ToString(database.dateFormat);
+            UpdateItemsTable();
+        }
+        private void UpdateItemsTable()
+        {
+            weekTodoItems.Clear();
+            foreach (CalibrationItem calItem in database.GetAllCalItems())
+            {
+                if (ItemCalendar.SelectedDate != null & calItem.NextCal != null)
+                {
+                    if ((bool)MandatoryOnlyBox.IsChecked)
+                    {
+                        if (((calItem.NextCal - ItemCalendar.SelectedDate).Value.TotalDays < config.MarkCalDue) & calItem.Mandatory & calItem.InService)
+                        {
+                            weekTodoItems.Add(calItem);
+                        }
+                    }
+                    else
+                    {
+                        if (((calItem.NextCal - ItemCalendar.SelectedDate).Value.TotalDays < config.MarkCalDue))
+                        {
+                            weekTodoItems.Add(calItem);
+                        }
+                    }
+                }
+            }
+            todoTable.Items.Refresh();
+        }
+        private void MandatoryOnlyBox_Checked(object sender, RoutedEventArgs e)
+        {
+            UpdateItemsTable();
+        }
+        private void TableMenuGoto_Click(object sender, RoutedEventArgs e)
+        {
+            ToggleView();
+            GoToItem(((CalibrationItem)todoTable.SelectedItem).SerialNumber);
+        }
+        private void TableMenuCalData_Click(object sender, RoutedEventArgs e)
+        {
+            NewReport((CalibrationItem)todoTable.SelectedItem);
         }
     }
 }
