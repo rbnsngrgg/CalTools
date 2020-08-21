@@ -29,7 +29,6 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="CalTools.spec" />
-    <Content Include="ChangeLog.txt" />
     <Content Include="DB Columns.txt" />
     <Content Include="images\calendar.png" />
     <Content Include="images\CalToolsIcon.ico" />
@@ -42,7 +41,6 @@
     <Content Include="images\report.png" />
     <Content Include="images\save.png" />
     <Content Include="images\tools.png" />
-    <Content Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="images\" />

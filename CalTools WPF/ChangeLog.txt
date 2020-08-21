@@ -126,3 +126,11 @@ Changes
 --3.2.2
 	--Bug Fixes:
 		Fix bug that caused a blank spreadsheet to be generated alongside the weekly report spreadsheet.
+--4.0.0
+	--Refactored using C# and WPF.
+	--Add in-app form for adding calibration data.
+	--Simplified calendar view.
+	--Database changes:
+		Remove item groups table (column in calibration_items remains).
+		Add "standard_equipment" and "certificate_number" columns to calibration_items table.
+		Add calibration_data table with auto-increment ID. Includes JSON/plain text calibration information. Used alongside existing file structure.
