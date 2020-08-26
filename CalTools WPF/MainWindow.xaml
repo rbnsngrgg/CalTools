@@ -97,6 +97,7 @@
                             <RowDefinition Height="25"/>
                             <RowDefinition Height="25"/>
                             <RowDefinition Height="*"/>
+                            <RowDefinition x:Name="CalibrationDataRow" Height="Auto"/>
                         </Grid.RowDefinitions>
                         <Label Content="SN:" HorizontalAlignment="Left" Grid.Row="0" Grid.Column="0"/>
                             <TextBox x:Name="DetailsSN" IsEnabled="False" Grid.Row="0" Grid.Column="1" Height ="22" Width="Auto"/>
@@ -151,8 +152,15 @@
                             <CheckBox x:Name="DetailsInOperation" IsEnabled="False" VerticalAlignment="Center" HorizontalAlignment="Left" Grid.Row="13" Grid.Column="1"/>
                         <Label Content="Item Group:" HorizontalAlignment="Left" Grid.Row="14" Grid.Column="0"/>
                             <ComboBox x:Name="DetailsItemGroup" IsEnabled="False" IsEditable ="True" Grid.Row="14" Grid.Column="1" Height="22" Width="Auto"/>
-                        <Label Content="Comments:" HorizontalAlignment="Left" Grid.Row="16" Grid.Column="0"/>
-                            <TextBox x:Name="DetailsComments" Background="#FFFBFBFB" IsEnabled="False" Grid.Row="16" Grid.Column="1"/>
+                        <Label Content="Comments:" HorizontalAlignment="Left" Grid.Row="15" Grid.Column="0"/>
+                            <TextBox x:Name="DetailsComments" Background="#FFFBFBFB" IsEnabled="False" Grid.Row="15" Grid.Column="1"/>
+                        <Button x:Name="ShowDataButton" Content="Show Calibration Data" HorizontalAlignment="Center" IsEnabled="False" Grid.Row="17" Grid.Column="0" Height="25" Width="150" Click="ShowDataButton_Click"/>
+                        <DataGrid x:Name="DetailsCalDataTable" CanUserAddRows="False" CanUserDeleteRows="False" AutoGenerateColumns="False" Grid.Row="17" Grid.Column="1" MinHeight="100" Height="Auto" Visibility="Collapsed">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Date" MinWidth="130" Binding="{Binding [date]}"/>
+                                <DataGridTextColumn Header="Location" MinWidth="350" Binding="{Binding [location]}"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
                     </Grid>
                 </GroupBox>
             </DockPanel>
