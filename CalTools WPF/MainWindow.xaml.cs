@@ -50,7 +50,12 @@ namespace CalTools_WPF
             CheckReceiving();
             string currentItem = SelectedSN();
             ScanFolders();
-            AddItemsToList(database.GetAllCalItems());
+            if (SearchBox.Text.Length != 0)
+            {
+                AddItemsToList(ItemListFilter(searchModes[SearchOptions.SelectedItem.ToString()], SearchBox.Text));
+                ExpandTreeItems();
+            }
+            else { AddItemsToList(database.GetAllCalItems()); }
             UpdateLists();
             GoToItem(currentItem);
         }
@@ -145,6 +150,9 @@ namespace CalTools_WPF
             DetailsIntervalUp.IsEnabled = enable;
             DetailsIntervalDown.IsEnabled = enable;
             DetailsComments.IsEnabled = enable;
+            ShowDataButton.IsEnabled = enable;
+            DetailsCalDataTable.IsEnabled = enable;
+            if (!enable) { DetailsCalDataTable.Visibility = Visibility.Collapsed; ShowDataButton.Content = "Show Calibration Data"; }
         }
 
         private void GoToItem(string sn)
@@ -456,6 +464,7 @@ namespace CalTools_WPF
         private void UpdateItemsTable()
         {
             weekTodoItems.Clear();
+            todoTable.Items.Refresh();
             foreach (CalibrationItem calItem in database.GetAllCalItems())
             {
                 if (ItemCalendar.SelectedDate != null & calItem.NextCal != null)
@@ -490,6 +499,18 @@ namespace CalTools_WPF
         private void TableMenuCalData_Click(object sender, RoutedEventArgs e)
         {
             NewReport((CalibrationItem)todoTable.SelectedItem);
+        }
+
+        private void ShowDataButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (DetailsCalDataTable.Visibility == Visibility.Visible)
+            { ShowDataButton.Content = "Show Calibration Data"; DetailsCalDataTable.Visibility = Visibility.Collapsed; }
+            else if (DetailsSN.IsEnabled)
+            {
+                ShowDataButton.Content = "Hide Calibration Data";
+                DetailsCalDataTable.Visibility = Visibility.Visible;
+                DetailsCalDataTable.ItemsSource = ListCalData(SelectedSN());
+            }
         }
     }
 }

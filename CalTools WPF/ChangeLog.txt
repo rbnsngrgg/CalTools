@@ -134,3 +134,9 @@ Changes
 		Remove item groups table (column in calibration_items remains).
 		Add "standard_equipment" and "certificate_number" columns to calibration_items table.
 		Add calibration_data table with auto-increment ID. Includes JSON/plain text calibration information. Used alongside existing file structure.
+--4.1.0
+	--Fix bug that could cause an older date to overwrite a newer date when scanning files for calibration dates.
+	--Fix bug that causes due dates to not update in calendar to-do table (Issue 52)
+	--Fix bugged database timestamp entry in calibration_data table (Issue 50)
+	--Fix bug that caused search to be ignored when the item list updates (Issue 48)
+	--Add button and data table in details view that shows the location and dates of all of an item's calibration records.

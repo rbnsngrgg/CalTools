@@ -195,7 +195,7 @@ namespace CalTools_WPF
                         $"VALUES ('{data.SerialNumber}','{JsonConvert.SerializeObject(data.StateBefore)}','{JsonConvert.SerializeObject(data.StateAfter)}'," +
                         $"'{JsonConvert.SerializeObject(data.ActionTaken)}','{data.CalibrationDate.Value.ToString(dateFormat)}','{data.DueDate.Value.ToString(dateFormat)}'," +
                         $"'{data.Procedure}','{data.StandardEquipment}','{JsonConvert.SerializeObject(data.findings)}','{data.Remarks}','{data.Technician}'," +
-                        $"{DateTime.UtcNow.ToString(timestampFormat)})";
+                        $"'{DateTime.UtcNow.ToString(timestampFormat, CultureInfo.InvariantCulture)}')";
                     Execute(command);
                     return true;
                 }

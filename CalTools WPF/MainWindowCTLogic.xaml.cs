@@ -12,7 +12,7 @@ namespace CalTools_WPF
     //Other main window code-behind logic that doesn't directly interact with the GUI elements.
     public partial class MainWindow : Window
     {
-        public readonly string version = "4.0.0";
+        public readonly string version = "4.1.0";
         private CTDatabase database;
         private CTConfig config = new CTConfig();
         private Dictionary<string, string> searchModes = new Dictionary<string, string>() {
@@ -96,11 +96,40 @@ namespace CalTools_WPF
                     { if (currentFileDate > fileDate) { fileDate = currentFileDate; } }
                     else if (sn == split) { snFound = true; }
                 }
-                if (snFound) { calDate = fileDate; }
+                if (snFound & fileDate > calDate) { calDate = fileDate; }
             }
             foreach (CalibrationData data in calData)
             { if (data.CalibrationDate > calDate & data.SerialNumber == sn) { calDate = data.CalibrationDate; } }
             return calDate;
+        }
+        //Gets all calibration data for an item and lists them by (date,location)
+        private List<Dictionary<string,string>> ListCalData(string sn)
+        {
+            List<Dictionary<string, string>> calDataList = new List<Dictionary<string, string>>();
+            foreach(CalibrationData data in database.GetCalData(sn))
+            {
+                Dictionary<string, string> cal = new Dictionary<string, string>();
+                cal.Add("date",data.CalibrationDate.Value.ToString(database.dateFormat));
+                cal.Add("location", $"{config.DbName}, \"calibration_data\" Row {data.ID}");
+                calDataList.Add(cal);
+            }
+            foreach (string filePath in Directory.GetFiles(database.GetCalItem("calibration_items", "serial_number", sn).Directory))
+            {
+                Dictionary<string, string> cal = new Dictionary<string, string>();
+                string file = System.IO.Path.GetFileNameWithoutExtension(filePath);
+                bool snFound = false;
+                bool dateFound = false;
+                DateTime fileDate = new DateTime();
+                DateTime tryDate;
+                foreach (string split in file.Split("_"))
+                {
+                    if (DateTime.TryParseExact(split, database.dateFormat, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out tryDate))
+                    {dateFound = true; fileDate = tryDate; }
+                    else if (sn == split) { snFound = true; }
+                    if(dateFound & snFound) { cal.Add("date",fileDate.ToString(database.dateFormat,CultureInfo.InvariantCulture)); cal.Add("location",filePath); calDataList.Add(cal); break; }
+                }
+            }
+            return calDataList;
         }
         private Dictionary<string, string> ParseFileName(string filePath)
         {
