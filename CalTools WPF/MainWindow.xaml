@@ -194,7 +194,7 @@
                         <DataGridTextColumn Header="Description" Width="*" Binding="{Binding Description}"/>
                         <DataGridTextColumn Header="Location" Width="100" Binding="{Binding Location}"/>
                         <DataGridTextColumn Header="Cal Vendor" Width="100" Binding="{Binding CalVendor}"/>
-                        <DataGridTextColumn x:Name="CalDueCol" Header="Cal Due By" Width="75" Binding="{Binding NextCal}"/>
+                        <DataGridTextColumn x:Name="CalDueCol" Header="Cal Due By" Width="75" Binding="{Binding DueDateFormat}"/>
                     </DataGrid.Columns>
                     <DataGrid.ContextMenu>
                         <ContextMenu>

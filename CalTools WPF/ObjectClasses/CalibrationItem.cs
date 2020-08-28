@@ -11,8 +11,10 @@ namespace CalTools_WPF
         public int Interval { get; set; } = 12;
         public string CalVendor { get; set; }
         public string Manufacturer { get; set; }
-        public DateTime? LastCal { get; set; } = null;
-        public DateTime? NextCal { get; set; } = null;
+        private DateTime? lastCal { get; set; } = null;
+        public DateTime? LastCal { get { return lastCal; } set { lastCal = value; if (value != null) { CalDateFormat = lastCal.Value.ToString("yyyy-MM-dd"); } } }
+        private DateTime? nextCal = null;
+        public DateTime? NextCal { get { return nextCal; } set { nextCal = value; if (value != null) { DueDateFormat = nextCal.Value.ToString("yyyy-MM-dd"); } } }
         public bool Mandatory { get; set; } = true;
         public string Directory { get; set; }
         public string Description { get; set; }
@@ -27,6 +29,8 @@ namespace CalTools_WPF
         public string VerifyOrCalibrate { get; set; } = "CALIBRATION";
         public string CertificateNumber { get; set; }
         public bool StandardEquipment { get; set; } = false;
+        public string CalDateFormat { get; set; }
+        public string DueDateFormat { get; set; }
         public enum DatabaseColumns
         {
             serial_number = 0,

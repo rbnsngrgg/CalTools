@@ -48,6 +48,7 @@ namespace CalTools_WPF
                     {
                         CalibrationItem calItem = null;
                         bool newItem = false;
+                        bool changesMade = false;
                         string itemSN = System.IO.Path.GetFileName(itemFolder);
                         foreach (CalibrationItem item in allItems)
                         {
@@ -60,10 +61,16 @@ namespace CalTools_WPF
                         {
                             calItem.Directory = itemFolder;
                             calItem.LastCal = latest;
+                            
                             if (calItem.LastCal != null)
                             { calItem.NextCal = calItem.LastCal.Value.AddMonths(calItem.Interval); }
                             if (newItem) { database.CreateCalItem(calItem.SerialNumber); }
-                            database.SaveCalItem(calItem);
+                            changesMade = true;
+                        }
+                        if (latest != null)
+                        {
+                            if(calItem.NextCal != calItem.LastCal.Value.AddMonths(calItem.Interval))
+                            { calItem.NextCal = calItem.LastCal.Value.AddMonths(calItem.Interval); changesMade = true; }
                         }
                         if (calItem.NextCal != null)
                         {
@@ -77,6 +84,7 @@ namespace CalTools_WPF
                             else { if (calItem.CalDue) { database.UpdateColumn(calItem.SerialNumber, "caldue", "0"); } }
                         }
                         else { if (calItem.CalDue) { database.UpdateColumn(calItem.SerialNumber, "caldue", "0"); } }
+                        if (changesMade) { database.SaveCalItem(calItem); }
                     }
                 }
             }

@@ -211,6 +211,7 @@ namespace CalTools_WPF
             {
                 MainViewGrid.Visibility = Visibility.Collapsed;
                 CalendarViewGrid.Visibility = Visibility.Visible;
+                UpdateItemsTable();
             }
             else
             {
@@ -328,6 +329,7 @@ namespace CalTools_WPF
                 }
                 UpdateListsSingle(item);
             }
+            UpdateItemList();
             GoToItem(sn);
         }
         private void OpenFolderButton_Click(object sender, RoutedEventArgs e)
@@ -493,12 +495,13 @@ namespace CalTools_WPF
         }
         private void TableMenuGoto_Click(object sender, RoutedEventArgs e)
         {
-            ToggleView();
-            GoToItem(((CalibrationItem)todoTable.SelectedItem).SerialNumber);
+            if (todoTable.SelectedItem != null)
+            { ToggleView(); GoToItem(((CalibrationItem)todoTable.SelectedItem).SerialNumber); }
         }
         private void TableMenuCalData_Click(object sender, RoutedEventArgs e)
         {
-            NewReport((CalibrationItem)todoTable.SelectedItem);
+            if (todoTable.SelectedItem != null)
+            { NewReport((CalibrationItem)todoTable.SelectedItem); }
         }
 
         private void ShowDataButton_Click(object sender, RoutedEventArgs e)
