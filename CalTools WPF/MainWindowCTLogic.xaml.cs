@@ -12,7 +12,7 @@ namespace CalTools_WPF
     //Other main window code-behind logic that doesn't directly interact with the GUI elements.
     public partial class MainWindow : Window
     {
-        public readonly string version = "4.1.0";
+        public readonly string version = "4.1.1";
         private CTDatabase database;
         private CTConfig config = new CTConfig();
         private Dictionary<string, string> searchModes = new Dictionary<string, string>() {
@@ -61,7 +61,7 @@ namespace CalTools_WPF
                         {
                             calItem.Directory = itemFolder;
                             calItem.LastCal = latest;
-                            
+
                             if (calItem.LastCal != null)
                             { calItem.NextCal = calItem.LastCal.Value.AddMonths(calItem.Interval); }
                             if (newItem) { database.CreateCalItem(calItem.SerialNumber); }
@@ -69,7 +69,7 @@ namespace CalTools_WPF
                         }
                         if (latest != null)
                         {
-                            if(calItem.NextCal != calItem.LastCal.Value.AddMonths(calItem.Interval))
+                            if (calItem.NextCal != calItem.LastCal.Value.AddMonths(calItem.Interval))
                             { calItem.NextCal = calItem.LastCal.Value.AddMonths(calItem.Interval); changesMade = true; }
                         }
                         if (calItem.NextCal != null)
@@ -111,13 +111,13 @@ namespace CalTools_WPF
             return calDate;
         }
         //Gets all calibration data for an item and lists them by (date,location)
-        private List<Dictionary<string,string>> ListCalData(string sn)
+        private List<Dictionary<string, string>> ListCalData(string sn)
         {
             List<Dictionary<string, string>> calDataList = new List<Dictionary<string, string>>();
-            foreach(CalibrationData data in database.GetCalData(sn))
+            foreach (CalibrationData data in database.GetCalData(sn))
             {
                 Dictionary<string, string> cal = new Dictionary<string, string>();
-                cal.Add("date",data.CalibrationDate.Value.ToString(database.dateFormat));
+                cal.Add("date", data.CalibrationDate.Value.ToString(database.dateFormat));
                 cal.Add("location", $"{config.DbName}, \"calibration_data\" Row {data.ID}");
                 calDataList.Add(cal);
             }
@@ -132,9 +132,9 @@ namespace CalTools_WPF
                 foreach (string split in file.Split("_"))
                 {
                     if (DateTime.TryParseExact(split, database.dateFormat, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out tryDate))
-                    {dateFound = true; fileDate = tryDate; }
+                    { dateFound = true; fileDate = tryDate; }
                     else if (sn == split) { snFound = true; }
-                    if(dateFound & snFound) { cal.Add("date",fileDate.ToString(database.dateFormat,CultureInfo.InvariantCulture)); cal.Add("location",filePath); calDataList.Add(cal); break; }
+                    if (dateFound & snFound) { cal.Add("date", fileDate.ToString(database.dateFormat, CultureInfo.InvariantCulture)); cal.Add("location", filePath); calDataList.Add(cal); break; }
                 }
             }
             return calDataList;
