@@ -3,6 +3,7 @@ using Microsoft.Data.Sqlite;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Windows;
 
@@ -134,19 +135,29 @@ namespace CalTools_WPF
             {
                 if (Connect())
                 {
-                    string command = $"INSERT OR IGNORE INTO calibration_items (serial_number) VALUES ('{item.SerialNumber}')";
+                    string command = $"INSERT OR IGNORE INTO calibration_items (serial_number) VALUES ('{item.SerialNumber.Replace("'", "''")}')";
                     Execute(command);
-                    command = $"UPDATE calibration_items SET serial_number='{item.SerialNumber}', model='{item.Model}',description='{item.Description}',location='{item.Location}'," +
-                                        $"manufacturer='{item.Manufacturer}',cal_vendor='{item.CalVendor}',interval='{item.Interval}',mandatory='{(item.Mandatory == true ? 1 : 0)}'," +
-                                        $"directory='{item.Directory}',inservice='{(item.InService == true ? 1 : 0)}'," +
-                                        $"inservicedate='{(item.InServiceDate == null ? "" : item.InServiceDate.Value.ToString(dateFormat, CultureInfo.InvariantCulture))}'," +
-                                        $"lastcal='{(item.LastCal == null ? "" : item.LastCal.Value.ToString(dateFormat, CultureInfo.InvariantCulture))}'," +
-                                        $"nextcal='{(item.NextCal == null ? "" : item.NextCal.Value.ToString(dateFormat, CultureInfo.InvariantCulture))}'," +
-                                        $"outofservicedate='{(item.OutOfServiceDate == null ? "" : item.OutOfServiceDate.Value.ToString(dateFormat, CultureInfo.InvariantCulture))}'," +
-                                        $"comment='{item.Comment}',timestamp='{DateTime.UtcNow.ToString(timestampFormat, CultureInfo.InvariantCulture)}',item_group='{item.ItemGroup}'," +
-                                        $"verify_or_calibrate='{item.VerifyOrCalibrate}',certificate_number='{item.CertificateNumber}'," +
-                                        $"standard_equipment='{(item.StandardEquipment == true ? 1 : 0)}', certificate_number='{item.CertificateNumber}' " +
-                                        $"WHERE serial_number='{item.SerialNumber}'";
+                    command = $"UPDATE calibration_items SET serial_number='{item.SerialNumber.Replace("'", "''")}'," +
+                        $"model='{item.Model.Replace("'", "''")}'," +
+                        $"description='{item.Description.Replace("'", "''")}'," +
+                        $"location='{item.Location.Replace("'", "''")}'," +
+                        $"manufacturer='{item.Manufacturer.Replace("'", "''")}'," +
+                        $"cal_vendor='{item.CalVendor.Replace("'", "''")}'," +
+                        $"interval='{item.Interval}'," +
+                        $"mandatory='{(item.Mandatory == true ? 1 : 0)}'," +
+                        $"directory='{item.Directory.Replace("'", "''")}'," +
+                        $"inservice='{(item.InService == true ? 1 : 0)}'," +
+                        $"inservicedate='{(item.InServiceDate == null ? "" : item.InServiceDate.Value.ToString(dateFormat, CultureInfo.InvariantCulture))}'," +
+                        $"lastcal='{(item.LastCal == null ? "" : item.LastCal.Value.ToString(dateFormat, CultureInfo.InvariantCulture))}'," +
+                        $"nextcal='{(item.NextCal == null ? "" : item.NextCal.Value.ToString(dateFormat, CultureInfo.InvariantCulture))}'," +
+                        $"outofservicedate='{(item.OutOfServiceDate == null ? "" : item.OutOfServiceDate.Value.ToString(dateFormat, CultureInfo.InvariantCulture))}'," +
+                        $"comment='{item.Comment.Replace("'", "''")}'," +
+                        $"timestamp='{DateTime.UtcNow.ToString(timestampFormat, CultureInfo.InvariantCulture)}'," +
+                        $"item_group='{item.ItemGroup.Replace("'", "''")}'," +
+                        $"verify_or_calibrate='{item.VerifyOrCalibrate}'," +
+                        $"certificate_number='{item.CertificateNumber.Replace("'", "''")}'," +
+                        $"standard_equipment='{(item.StandardEquipment == true ? 1 : 0)}' " +
+                        $"WHERE serial_number='{item.SerialNumber.Replace("'", "''")}'";
                     Execute(command);
                     Disconnect();
                     return true;
@@ -192,9 +203,9 @@ namespace CalTools_WPF
                 {
                     string command = $"INSERT INTO calibration_data (serial_number,state_before_action,state_after_action,action_taken,calibration_date,due_date,procedure,standard_equipment," +
                         $"findings,remarks,technician,entry_timestamp) " +
-                        $"VALUES ('{data.SerialNumber}','{JsonConvert.SerializeObject(data.StateBefore)}','{JsonConvert.SerializeObject(data.StateAfter)}'," +
+                        $"VALUES ('{data.SerialNumber.Replace("'", "''")}','{JsonConvert.SerializeObject(data.StateBefore)}','{JsonConvert.SerializeObject(data.StateAfter)}'," +
                         $"'{JsonConvert.SerializeObject(data.ActionTaken)}','{data.CalibrationDate.Value.ToString(dateFormat)}','{data.DueDate.Value.ToString(dateFormat)}'," +
-                        $"'{data.Procedure}','{data.StandardEquipment}','{JsonConvert.SerializeObject(data.findings)}','{data.Remarks}','{data.Technician}'," +
+                        $"'{data.Procedure.Replace("'", "''")}','{data.StandardEquipment.Replace("'", "''")}','{JsonConvert.SerializeObject(data.findings).Replace("'", "''")}','{data.Remarks.Replace("'", "''")}','{data.Technician.Replace("'", "''")}'," +
                         $"'{DateTime.UtcNow.ToString(timestampFormat, CultureInfo.InvariantCulture)}')";
                     Execute(command);
                     return true;

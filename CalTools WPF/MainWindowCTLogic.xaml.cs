@@ -12,7 +12,7 @@ namespace CalTools_WPF
     //Other main window code-behind logic that doesn't directly interact with the GUI elements.
     public partial class MainWindow : Window
     {
-        public readonly string version = "4.1.1";
+        public readonly string version = "4.2.0";
         private CTDatabase database;
         private CTConfig config = new CTConfig();
         private Dictionary<string, string> searchModes = new Dictionary<string, string>() {
@@ -72,6 +72,7 @@ namespace CalTools_WPF
                             if (calItem.NextCal != calItem.LastCal.Value.AddMonths(calItem.Interval))
                             { calItem.NextCal = calItem.LastCal.Value.AddMonths(calItem.Interval); changesMade = true; }
                         }
+                        else { if (calItem.NextCal != null) { calItem.NextCal = null; changesMade = true; } }
                         if (calItem.NextCal != null)
                         {
                             if (((calItem.NextCal - DateTime.Today).Value.TotalDays < config.MarkCalDue) & calItem.Mandatory)

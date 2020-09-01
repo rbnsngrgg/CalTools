@@ -1,5 +1,10 @@
 [Changes]
 
+--4.2.0
+	--Fixed bug that still showed a "Next Calibration" date when there are no longer any calibration records.
+	--Fixed bug that caused the " ' " character to crash the software with an SQLite error. (Issue 58)
+
+
 --4.1.1 (2020-08-28)
 	--Fixed bug that caused the program to crash when selecting a calendar menu item without a table item selected (Issue 54)
 	--Fixed bug that caused the next calibration date to not update when the interval of an item was changed (Issue 55)

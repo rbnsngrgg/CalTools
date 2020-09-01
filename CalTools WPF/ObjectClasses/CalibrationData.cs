@@ -50,5 +50,6 @@ namespace CalTools_WPF.ObjectClasses
         public bool Verification;
         public bool Adjusted;
         public bool Repaired;
+        public bool Maintenance;
     }
 }

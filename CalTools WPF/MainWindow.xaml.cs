@@ -1,4 +1,5 @@
 ﻿using CalTools_WPF.ObjectClasses;
+using Microsoft.Data.Sqlite;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -385,7 +386,12 @@ namespace CalTools_WPF
             if (dataEntry.ShowDialog() == true)
             {
                 dataEntry.data.DueDate = dataEntry.data.CalibrationDate.Value.AddMonths(calItem.Interval);
-                dataEntry.data.StandardEquipment = JsonConvert.SerializeObject(database.GetCalItem("calibration_items", "serial_number", dataEntry.EquipmentBox.Text));
+                try
+                {
+                    dataEntry.data.StandardEquipment = JsonConvert.SerializeObject(database.GetCalItem("calibration_items", "serial_number", dataEntry.EquipmentBox.Text));
+                }
+                catch
+                { MessageBox.Show($"Invalid \"Standard Equipment\" entry.","Invalid Entry",MessageBoxButton.OK,MessageBoxImage.Error); }
                 database.SaveCalData(dataEntry.data);
                 UpdateItemList();
             }
