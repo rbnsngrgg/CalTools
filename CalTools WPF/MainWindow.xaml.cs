@@ -377,9 +377,15 @@ namespace CalTools_WPF
         {
             CalDataEntry dataEntry = new CalDataEntry();
             dataEntry.SerialNumberBox.Text = calItem.SerialNumber;
+            dataEntry.MaintenanceSerialNumberBox.Text = calItem.SerialNumber;
             dataEntry.DateBox.Text = DateTime.UtcNow.ToString(database.dateFormat);
+            dataEntry.MaintenanceDateBox.Text = DateTime.UtcNow.ToString(database.dateFormat);
             dataEntry.ProcedureBox.ItemsSource = config.Procedures;
+            dataEntry.MaintenanceProcedureBox.ItemsSource = config.Procedures;
             dataEntry.EquipmentBox.ItemsSource = standardEquipment;
+            dataEntry.MaintenanceEquipmentBox.ItemsSource = standardEquipment;
+            if(calItem.VerifyOrCalibrate == "MAINTENANCE")
+            { dataEntry.MaintenanceSelection.IsSelected = true; }
             if (config.Procedures.Count > 0) { dataEntry.ProcedureBox.SelectedIndex = 0; }
             if (standardEquipment.Count > 0) { dataEntry.EquipmentBox.SelectedIndex = 0; }
             dataEntry.findings.parameters.Add(new Param($"Parameter {dataEntry.findings.parameters.Count + 1}"));

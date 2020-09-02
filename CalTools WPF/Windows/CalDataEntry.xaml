@@ -18,7 +18,7 @@
             <ComboBoxItem x:Name="MaintenanceSelection" Content="Maintenance" Selected="MaintenanceSelection_Selected"/>
         </ComboBox>
         <!--Calibration form-->
-        <Grid Grid.Row="1" x:Name="CalibrationDataPanel" Visibility="Collapsed">
+        <Grid Grid.Row="1" x:Name="CalibrationDataPanel" Visibility="Visible">
             <Grid.RowDefinitions>
                 <RowDefinition Height="10"/>
                 <RowDefinition/>
@@ -96,7 +96,7 @@
             </Grid>
         </Grid>
         <!--Maintenance form-->
-        <Grid Grid.Row="1" x:Name="MaintenanceDataPanel" Visibility="Visible">
+        <Grid Grid.Row="1" x:Name="MaintenanceDataPanel" Visibility="Collapsed">
             <Grid.RowDefinitions>
                 <RowDefinition Height="10"/>
                 <RowDefinition/>
@@ -130,16 +130,16 @@
                 <Label Content="Serial Number:" Grid.Row="0" Grid.Column="1" HorizontalAlignment="Center" FontSize="14"/>
                 <TextBox x:Name="MaintenanceSerialNumberBox" Grid.Row="0" Grid.Column="2" FontSize="16" Grid.ColumnSpan="4" IsEnabled="False"/>
                 <Label Content="Before Action:" Grid.Row="1" Grid.Column="1" HorizontalAlignment="Center" FontSize="14"/>
-                <CheckBox x:Name="MaintenanceMalfunctioningBox1" Grid.Row="1" Grid.Column="2" Content="Malfunctioning" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14" Checked="MalfunctioningBox1_Checked" Unchecked="MalfunctioningBox1_Checked"/>
-                <CheckBox x:Name="MaintenanceOperationalBox1" Grid.Row="1" Grid.Column="3" Content="Operational" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14" Checked="OperationalBox1_Checked" Unchecked="OperationalBox1_Checked"/>
+                <CheckBox x:Name="MaintenanceMalfunctioningBox1" Grid.Row="1" Grid.Column="2" Content="Malfunctioning" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14" Checked="MaintenanceMalfunctioningBox1_Checked" Unchecked="MaintenanceMalfunctioningBox1_Checked"/>
+                <CheckBox x:Name="MaintenanceOperationalBox1" Grid.Row="1" Grid.Column="3" Content="Operational" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14" IsChecked="True" Checked="MaintenanceOperationalBox1_Checked" Unchecked="MaintenanceOperationalBox1_Checked"/>
                 <Label Content="After Action:" Grid.Row="2" Grid.Column="1" HorizontalAlignment="Center" FontSize="14"/>
-                <CheckBox x:Name="MaintenanceMalfunctioningBox2" Grid.Row="2" Grid.Column="2" Content="Malfunctioning" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14" Checked="MalfunctioningBox2_Checked" Unchecked="MalfunctioningBox2_Checked"/>
-                <CheckBox x:Name="MaintenanceOperationalBox2" Grid.Row="2" Grid.Column="3" Content="Operational" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14" Checked="OperationalBox2_Checked" Unchecked="OperationalBox2_Checked"/>
+                <CheckBox x:Name="MaintenanceMalfunctioningBox2" Grid.Row="2" Grid.Column="2" Content="Malfunctioning" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14" Checked="MaintenanceMalfunctioningBox2_Checked" Unchecked="MaintenanceMalfunctioningBox2_Checked"/>
+                <CheckBox x:Name="MaintenanceOperationalBox2" Grid.Row="2" Grid.Column="3" Content="Operational" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14" IsChecked="True" Checked="MaintenanceOperationalBox2_Checked" Unchecked="MaintenanceOperationalBox2_Checked"/>
                 <Label Content="Action Taken:" Grid.Row="3" Grid.Column="1" HorizontalAlignment="Center" FontSize="14"/>
                 <CheckBox x:Name="MaintenanceBox" Grid.Row="3" Grid.Column="2" Content="Maintenance" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14" IsChecked="True"/>
                 <CheckBox x:Name="MaintenanceRepairedBox" Grid.Row="3" Grid.Column="3" Content="Repaired" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14"/>
                 <Label Content="Date:" Grid.Row="4" Grid.Column="1" HorizontalAlignment="Center" FontSize="14"/>
-                <TextBox x:Name="MaintenanceDateBox" Grid.Row="4" Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="16" Height="25" Width="140" PreviewKeyDown="DateBox_PreviewKeyDown" PreviewTextInput="DateBox_PreviewTextInput"/>
+                <TextBox x:Name="MaintenanceDateBox" Grid.Row="4" Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="16" Height="25" Width="140" PreviewKeyDown="MaintenanceDateBox_PreviewKeyDown" PreviewTextInput="MaintenanceDateBox_PreviewTextInput"/>
                 <Label Content="Procedure:" Grid.Row="5" Grid.Column="1" HorizontalAlignment="Center" FontSize="14"/>
                 <ComboBox x:Name="MaintenanceProcedureBox" Grid.Row="5" Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center" Height="25" Width="140" IsEditable="True"/>
                 <Label Content="Standard Equipment:" Grid.Row="6" Grid.Column="1" HorizontalAlignment="Center" FontSize="14"/>

@@ -220,6 +220,7 @@ namespace CalTools_WPF
             calVendors.Sort();
             locations.Sort();
             itemGroups.Sort();
+            standardEquipment.Add("");
             standardEquipment.Sort();
         }
         //Single-item list update that doesn't require DB query

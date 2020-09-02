@@ -1,5 +1,6 @@
 ﻿using CalTools_WPF.ObjectClasses;
 using System;
+using System.Diagnostics;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
@@ -51,11 +52,12 @@ namespace CalTools_WPF
                 Calibration = (bool)CalibrationBox.IsChecked,
                 Verification = (bool)VerificationBox.IsChecked,
                 Adjusted = (bool)AdjustedBox.IsChecked,
-                Repaired = (bool)RepairedBox.IsChecked
+                Repaired = (bool)RepairedBox.IsChecked,
+                Maintenance = false
             };
             DateTime calDate;
             if (!DateTime.TryParseExact(DateBox.Text, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out calDate))
-            { MessageBox.Show("The calibration date entered isn't in a valid \"yyyy-MM-dd\" format.", "Date Format", MessageBoxButton.OK, MessageBoxImage.Exclamation); return false; }
+            { MessageBox.Show("The calibration date entered isn't valid.", "Date Format", MessageBoxButton.OK, MessageBoxImage.Exclamation); return false; }
 
             if (calDate > DateTime.UtcNow)
             { MessageBox.Show("Entries for future dates are not allowed.", "Future Date", MessageBoxButton.OK, MessageBoxImage.Exclamation); return false; }
@@ -77,47 +79,46 @@ namespace CalTools_WPF
         }
         private bool SaveMaintenanceData()
         {
-            data.SerialNumber = SerialNumberBox.Text;
+            data.SerialNumber = MaintenanceSerialNumberBox.Text;
             data.StateBefore = new State
             {
-                InTolerance = (bool)InToleranceBox1.IsChecked,
-                OutOfTolerance = (bool)OutOfToleranceBox1.IsChecked,
-                Malfunctioning = (bool)MalfunctioningBox1.IsChecked,
-                Operational = (bool)OperationalBox1.IsChecked
+                InTolerance = false,
+                OutOfTolerance = false,
+                Malfunctioning = (bool)MaintenanceMalfunctioningBox1.IsChecked,
+                Operational = (bool)MaintenanceOperationalBox1.IsChecked
             };
             data.StateAfter = new State
             {
-                InTolerance = (bool)InToleranceBox2.IsChecked,
-                OutOfTolerance = (bool)OutOfToleranceBox2.IsChecked,
-                Malfunctioning = (bool)MalfunctioningBox2.IsChecked,
-                Operational = (bool)OperationalBox2.IsChecked
+                InTolerance = false,
+                OutOfTolerance = false,
+                Malfunctioning = (bool)MaintenanceMalfunctioningBox2.IsChecked,
+                Operational = (bool)MaintenanceOperationalBox2.IsChecked
             };
             data.ActionTaken = new ActionTaken
             {
-                Calibration = (bool)CalibrationBox.IsChecked,
-                Verification = (bool)VerificationBox.IsChecked,
-                Adjusted = (bool)AdjustedBox.IsChecked,
-                Repaired = (bool)RepairedBox.IsChecked
+                Calibration = false,
+                Verification = false,
+                Adjusted = false,
+                Repaired = (bool)MaintenanceRepairedBox.IsChecked,
+                Maintenance = (bool)MaintenanceBox.IsChecked
             };
             DateTime calDate;
-            if (!DateTime.TryParseExact(DateBox.Text, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out calDate))
-            { MessageBox.Show("The calibration date entered isn't in a valid \"yyyy-MM-dd\" format.", "Date Format", MessageBoxButton.OK, MessageBoxImage.Exclamation); return false; }
+            if (!DateTime.TryParseExact(MaintenanceDateBox.Text, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out calDate))
+            { MessageBox.Show("The calibration date entered isn't valid.", "Date Format", MessageBoxButton.OK, MessageBoxImage.Exclamation); return false; }
 
             if (calDate > DateTime.UtcNow)
             { MessageBox.Show("Entries for future dates are not allowed.", "Future Date", MessageBoxButton.OK, MessageBoxImage.Exclamation); return false; }
             data.CalibrationDate = calDate;
-            if (ProcedureBox.Text.Length == 0) { MessageBox.Show("\"Procedure\" is required.", "Required Field", MessageBoxButton.OK, MessageBoxImage.Exclamation); return false; }
-            else { data.Procedure = ProcedureBox.Text; }
+            if (MaintenanceProcedureBox.Text.Length == 0) { MessageBox.Show("\"Procedure\" is required.", "Required Field", MessageBoxButton.OK, MessageBoxImage.Exclamation); return false; }
+            else { data.Procedure = MaintenanceProcedureBox.Text; }
 
-            if (EquipmentBox.Text.Length == 0)
-            { if (MessageBox.Show("\"Standard Equipment\" is blank. Continue?", "Blank Field", MessageBoxButton.YesNo, MessageBoxImage.Exclamation) == MessageBoxResult.No) { return false; } }
-            else { data.StandardEquipment = EquipmentBox.Text; }
-            data.findings = findings;
-            if (RemarksBox.Text.Length == 0 & findings.parameters.Count == 0)
-            { MessageBox.Show("Remarks are required if there are no findings parameters.", "Remarks", MessageBoxButton.OK, MessageBoxImage.Exclamation); return false; }
-            data.Remarks = RemarksBox.Text;
-            if (TechnicianBox.Text.Length == 0) { MessageBox.Show("A technician name is required", "Technician Required", MessageBoxButton.OK, MessageBoxImage.Exclamation); return false; }
-            data.Technician = TechnicianBox.Text;
+            data.StandardEquipment = MaintenanceEquipmentBox.Text;
+            data.findings = null;
+            if (MaintenanceRemarksBox.Text.Length == 0)
+            { MessageBox.Show("Remarks are required for maintenance actions.", "Remarks", MessageBoxButton.OK, MessageBoxImage.Exclamation); return false; }
+            data.Remarks = MaintenanceRemarksBox.Text;
+            if (MaintenanceTechnicianBox.Text.Length == 0) { MessageBox.Show("A technician name is required", "Technician Required", MessageBoxButton.OK, MessageBoxImage.Exclamation); return false; }
+            data.Technician = MaintenanceTechnicianBox.Text;
             //ID is auto-generated by sqlite, duedate is calculated upon database entry using the interval
             return true;
         }
@@ -162,6 +163,26 @@ namespace CalTools_WPF
                 {
                     DateBox.Text = DateBox.Text.Remove(DateBox.Text.Length - 2, 1);
                     DateBox.CaretIndex = DateBox.Text.Length;
+                }
+            }
+        }
+
+        //Maintenance date box
+        private void MaintenanceDateBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
+        {
+            if (!IsNumber(e.Text) | MaintenanceDateBox.Text.Length == 10) { e.Handled = true; }
+            if (MaintenanceDateBox.Text.Length == 4 | MaintenanceDateBox.Text.Length == 7) { MaintenanceDateBox.Text += "-"; MaintenanceDateBox.CaretIndex = MaintenanceDateBox.Text.Length; }
+        }
+
+        private void MaintenanceDateBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Space) { e.Handled = true; }
+            else if (e.Key == Key.Back)
+            {
+                if (MaintenanceDateBox.Text.Length == 6 | MaintenanceDateBox.Text.Length == 9)
+                {
+                    MaintenanceDateBox.Text = MaintenanceDateBox.Text.Remove(MaintenanceDateBox.Text.Length - 2, 1);
+                    MaintenanceDateBox.CaretIndex = MaintenanceDateBox.Text.Length;
                 }
             }
         }
@@ -218,26 +239,42 @@ namespace CalTools_WPF
         {
             if (e.Key == Key.Enter)
             {
-                if (SaveCalibrationData()) { e.Handled = true; this.DialogResult = true; }
+                if (CalibrationSelection.IsSelected)
+                { if (SaveCalibrationData()) { e.Handled = true; this.DialogResult = true; } }
+                else if (MaintenanceSelection.IsSelected)
+                { if (SaveMaintenanceData()) { this.DialogResult = true; } }
             }
         }
 
-        private void ComboBoxItem_Selected(object sender, RoutedEventArgs e)
+        //Flip mutually-exclusives for maintenance form
+        private void MaintenanceMalfunctioningBox1_Checked(object sender, RoutedEventArgs e)
         {
-
+            MaintenanceOperationalBox1.IsChecked = !(bool)MaintenanceMalfunctioningBox1.IsChecked;
+        }
+        private void MaintenanceOperationalBox1_Checked(object sender, RoutedEventArgs e)
+        {
+            MaintenanceMalfunctioningBox1.IsChecked = !(bool)MaintenanceOperationalBox1.IsChecked;
+        }
+        private void MaintenanceMalfunctioningBox2_Checked(object sender, RoutedEventArgs e)
+        {
+            MaintenanceOperationalBox2.IsChecked = !(bool)MaintenanceMalfunctioningBox2.IsChecked;
+        }
+        private void MaintenanceOperationalBox2_Checked(object sender, RoutedEventArgs e)
+        {
+            MaintenanceMalfunctioningBox2.IsChecked = !(bool)MaintenanceOperationalBox2.IsChecked;
         }
 
         //Change the displayed form
         private void CalibrationSelection_Selected(object sender, RoutedEventArgs e)
         {
             if (CalibrationDataPanel != null)
-            { CalibrationDataPanel.Visibility = Visibility.Visible; }
+            { CalibrationDataPanel.Visibility = Visibility.Visible; MaintenanceDataPanel.Visibility = Visibility.Collapsed; }
         }
 
         private void MaintenanceSelection_Selected(object sender, RoutedEventArgs e)
         {
             if (CalibrationDataPanel != null)
-            { CalibrationDataPanel.Visibility = Visibility.Collapsed; }
+            { CalibrationDataPanel.Visibility = Visibility.Collapsed; MaintenanceDataPanel.Visibility = Visibility.Visible; }
         }
     }
 }
