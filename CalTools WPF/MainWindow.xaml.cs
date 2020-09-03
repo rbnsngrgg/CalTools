@@ -527,5 +527,41 @@ namespace CalTools_WPF
                 DetailsCalDataTable.ItemsSource = ListCalData(SelectedSN());
             }
         }
+
+        private void ContextViewData_Click(object sender, RoutedEventArgs e)
+        {
+            if (DetailsCalDataTable.SelectedItem != null)
+            {
+                Dictionary<string, string> item = (Dictionary<string, string>)DetailsCalDataTable.SelectedItem;
+                if(File.Exists(item["location"]))
+                {
+                    new Process{StartInfo = new ProcessStartInfo(item["location"]){ UseShellExecute = true }}.Start();
+                }
+                else
+                {
+                    CalibrationData data = database.GetData("id", item["id"]);
+                    if (data != null)
+                    {
+                        //Open with in-app data viewer, plug in information using "data" object
+                        CalDataViewer viewer = new CalDataViewer(data);
+                        if (viewer.ShowDialog() == true)
+                        {
+                            database.RemoveCalData(data.ID.ToString());
+                            UpdateItemList();
+                        }
+                    }
+                }
+            }
+        }
+
+        private void ContextOpenLocation_Click(object sender, RoutedEventArgs e)
+        {
+            if (DetailsCalDataTable.SelectedItem != null)
+            {
+                Dictionary<string, string> item = (Dictionary<string, string>)DetailsCalDataTable.SelectedItem;
+                if (Directory.Exists(Path.GetDirectoryName(item["location"]))) { Process.Start("explorer",Path.GetDirectoryName(item["location"])); }
+                else { Process.Start("explorer",config.CalListDir); }
+            }
+        }
     }
 }

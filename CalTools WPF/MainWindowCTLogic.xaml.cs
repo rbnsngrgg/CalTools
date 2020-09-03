@@ -120,6 +120,7 @@ namespace CalTools_WPF
                 Dictionary<string, string> cal = new Dictionary<string, string>();
                 cal.Add("date", data.CalibrationDate.Value.ToString(database.dateFormat));
                 cal.Add("location", $"{config.DbName}, \"calibration_data\" Row {data.ID}");
+                cal.Add("id", data.ID.ToString());
                 calDataList.Add(cal);
             }
             foreach (string filePath in Directory.GetFiles(database.GetCalItem("calibration_items", "serial_number", sn).Directory))
@@ -135,7 +136,12 @@ namespace CalTools_WPF
                     if (DateTime.TryParseExact(split, database.dateFormat, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out tryDate))
                     { dateFound = true; fileDate = tryDate; }
                     else if (sn == split) { snFound = true; }
-                    if (dateFound & snFound) { cal.Add("date", fileDate.ToString(database.dateFormat, CultureInfo.InvariantCulture)); cal.Add("location", filePath); calDataList.Add(cal); break; }
+                    if (dateFound & snFound) 
+                    { 
+                        cal.Add("date", fileDate.ToString(database.dateFormat, CultureInfo.InvariantCulture));
+                        cal.Add("location", filePath); calDataList.Add(cal);
+                        cal.Add("id", "");
+                        break; }
                 }
             }
             return calDataList;

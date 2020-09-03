@@ -28,4 +28,16 @@
     </None>
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Update="Windows\CalDataViewer.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Page Update="Windows\CalDataViewer.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+  </ItemGroup>
+
 </Project>

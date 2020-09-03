@@ -160,6 +160,12 @@
                                 <DataGridTextColumn Header="Date" MinWidth="130" Binding="{Binding [date]}"/>
                                 <DataGridTextColumn Header="Location" MinWidth="350" Binding="{Binding [location]}"/>
                             </DataGrid.Columns>
+                            <DataGrid.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem x:Name="ContextViewData" Header="View Data" Click="ContextViewData_Click"/>
+                                    <MenuItem x:Name="ContextOpenLocation" Header="Open File Location" Click="ContextOpenLocation_Click"/>
+                                </ContextMenu>
+                            </DataGrid.ContextMenu>
                         </DataGrid>
                     </Grid>
                 </GroupBox>

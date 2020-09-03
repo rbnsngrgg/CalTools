@@ -1,8 +1,10 @@
 [Changes]
 
 --4.2.0
+	--Changed verbiage of some of the labels in the item details area.
 	--Fixed bug that still showed a "Next Calibration" date when there are no longer any calibration records.
 	--Fixed bug that caused the " ' " character to crash the software with an SQLite error. (Issue 58)
+	--Added a combo box in the Data Entry window to allow switching between calibration/verification data and maintenance logging. (Issue 59)
 
 
 --4.1.1 (2020-08-28)

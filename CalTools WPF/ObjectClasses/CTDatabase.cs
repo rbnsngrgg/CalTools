@@ -105,6 +105,21 @@ namespace CalTools_WPF
             Disconnect();
             return null;
         }
+        public CalibrationData? GetData(string col, string item)
+        {
+            string command = $" SELECT * FROM calibration_data WHERE {col}='{item}'";
+            if (!Connect()) return null;
+            Execute(command);
+            if (reader.Read())
+            {
+                CalibrationData returnItem = new CalibrationData();
+                AssignDataValues(ref returnItem);
+                Disconnect();
+                return returnItem;
+            }
+            Disconnect();
+            return null;
+        }
 #nullable disable
         //Save data------------------------------------------------------------------------------------------------------------------------
         public bool CreateCalItem(string sn)
@@ -233,6 +248,25 @@ namespace CalTools_WPF
                 return false;
             }
             catch (System.Exception ex)
+            {
+                MessageBox.Show($"Error while removing item from the database: {ex.Message}", "Database Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
+            }
+        }
+        public bool RemoveCalData(string id)
+        {
+            try
+            {
+                if(Connect())
+                {
+                    string command = $"DELETE FROM calibration_data WHERE id='{id}'";
+                    Execute(command);
+                    Disconnect();
+                    return true;
+                }
+                return false;
+            }
+            catch(System.Exception ex)
             {
                 MessageBox.Show($"Error while removing item from the database: {ex.Message}", "Database Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
