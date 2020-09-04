@@ -328,7 +328,6 @@ namespace CalTools_WPF
                 //Reset connection to prevent db table from being locked.
                 ResetConnection();
                 command = "DROP TABLE IF EXISTS item_groups";
-                Debug.WriteLine("Dropping item_groups table");
                 Execute(command);
                 if (dbVersion < currentVersion)
                 {
