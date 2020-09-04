@@ -591,7 +591,7 @@ namespace CalTools_WPF
                         DropFileInfo info = new DropFileInfo();
                         if (IsItemSelected()) { info.SerialNumberBox.Text = SelectedSN(); }
                         info.DateBox.Text = DateTime.UtcNow.ToString(database.dateFormat);
-                        if (info.ShowDialog() == false) { if (File.Exists(filePath)) { File.Delete(filePath); } break; }
+                        if (info.ShowDialog() == false) { if (File.Exists(filePath)) { File.Delete(filePath); } return; }
                         else
                         {
                             newFileName = $"{info.DateBox.Text}_{info.SerialNumberBox.Text}{Path.GetExtension(file)}";
@@ -614,7 +614,7 @@ namespace CalTools_WPF
                         DropFileInfo info = new DropFileInfo();
                         if (IsItemSelected()) { info.SerialNumberBox.Text = SelectedSN(); }
                         info.DateBox.Text = DateTime.UtcNow.ToString(database.dateFormat);
-                        if(info.ShowDialog() == false) { break; }
+                        if(info.ShowDialog() == false) { return; }
                         else
                         {
                             newFileName = $"{info.DateBox.Text}_{info.SerialNumberBox.Text}{Path.GetExtension(file)}";
