@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         Title="CalTools" Height="660" Width="1000" MinHeight="640" MinWidth="1000"
         x:Name="CalToolsMainWindow" WindowStyle="SingleBorderWindow" Background="WhiteSmoke"
-        Icon="C:\Users\grobinson\source\repos\CalTools\CalTools WPF\images\CalToolsIcon.ico">
+        Icon="C:\Users\grobinson\source\repos\CalTools\CalTools WPF\images\CalToolsIcon.ico" AllowDrop="True" Drop="MainWindow_Drop">
     <Window.Resources>
         <Style TargetType="Image">
             <Setter Property="RenderOptions.BitmapScalingMode" Value="HighQuality"/>

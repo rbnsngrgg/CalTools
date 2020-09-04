@@ -173,19 +173,35 @@ namespace CalTools_WPF
             {
                 foreach (string file in files)
                 {
-                    Dictionary<string, string> fileInfo = ParseFileName(file);
-                    Debug.WriteLine($"{fileInfo["SN"]}\n{fileInfo["Date"]}");
-                    CalibrationItem calItem = database.GetCalItem("calibration_items", "serial_number", fileInfo["SN"]);
-                    if (calItem != null)
-                    {
-                        if (Directory.Exists(calItem.Directory))
-                        {
-                            File.Move(file, $"{calItem.Directory}\\{System.IO.Path.GetFileName(file)}");
-                        }
-                    }
+                    MoveToItemFolder(file);
                 }
             }
         }
+        private bool MoveToItemFolder(string file, string newFileName = "")
+        {
+            Dictionary<string, string> fileInfo;
+            CalibrationItem calItem;
+            if (newFileName == "")
+            {  fileInfo = ParseFileName(file); calItem = database.GetCalItem("calibration_items", "serial_number", fileInfo["SN"]); }
+            else { fileInfo = ParseFileName(newFileName); calItem = database.GetCalItem("calibration_items", "serial_number", fileInfo["SN"]); }
+            if (calItem != null)
+            {
+                if (Directory.Exists(calItem.Directory))
+                {
+                    if (newFileName == "")
+                    { File.Move(file, $"{calItem.Directory}\\{System.IO.Path.GetFileName(file)}"); }
+                    else
+                    {
+                        try { File.Move(file, $"{calItem.Directory}\\{newFileName}"); }
+                        catch (System.IO.IOException) { MessageBox.Show($"The file \"{calItem.Directory}\\{newFileName}\" already exists", "File Already Exists", MessageBoxButton.OK, MessageBoxImage.Error); }
+                        catch (System.Exception ex) {MessageBox.Show($"{ex.Message}","Error",MessageBoxButton.OK,MessageBoxImage.Error); }
+                    }
+                    return true;
+                }
+            }
+            return false;
+        }
+
         //Create new xaml window for selecting a folder from those listed in the config file.
         private string GetNewItemFolder(string sn)
         {

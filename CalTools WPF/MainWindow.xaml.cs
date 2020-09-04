@@ -1,4 +1,6 @@
 ﻿using CalTools_WPF.ObjectClasses;
+using CalTools_WPF.Windows;
+using Helpers;
 using Microsoft.Data.Sqlite;
 using Newtonsoft.Json;
 using System;
@@ -562,6 +564,66 @@ namespace CalTools_WPF
                 if (Directory.Exists(Path.GetDirectoryName(item["location"]))) { Process.Start("explorer",Path.GetDirectoryName(item["location"])); }
                 else { Process.Start("explorer",config.CalListDir); }
             }
+        }
+
+        private void MainWindow_Drop(object sender, DragEventArgs e)
+        {
+            //Handle an Outlook attachment being dropped
+            if(e.Data.GetDataPresent("FileGroupDescriptorW"))
+            {
+                OutlookDataObject outlookData = new OutlookDataObject(e.Data);
+                string[] files = (string[])outlookData.GetData("FileGroupDescriptorW");
+                if (files.Length > 1) { MessageBox.Show("Only one item can be dropped into the window at a time.", "Multiple Items", MessageBoxButton.OK, MessageBoxImage.Exclamation); return; }
+                string file = files[0];
+                //Move file from memory to receiving folder
+                MemoryStream[] fileContents = (MemoryStream[])outlookData.GetData("FileContents");
+                FileStream fileStream = new FileStream($"{config.CalListDir}\\receiving\\{file}", FileMode.Create);
+
+                string filePath = $"{config.CalListDir}\\receiving\\{file}";
+                fileContents[0].CopyTo(fileStream);
+                fileStream.Close();
+                //Try to move the file to item folder
+                if (!MoveToItemFolder(filePath))
+                {
+                    string newFileName = "";
+                    do
+                    {
+                        DropFileInfo info = new DropFileInfo();
+                        if (IsItemSelected()) { info.SerialNumberBox.Text = SelectedSN(); }
+                        info.DateBox.Text = DateTime.UtcNow.ToString(database.dateFormat);
+                        if (info.ShowDialog() == false) { if (File.Exists(filePath)) { File.Delete(filePath); } break; }
+                        else
+                        {
+                            newFileName = $"{info.DateBox.Text}_{info.SerialNumberBox.Text}{Path.GetExtension(file)}";
+                        }
+                    }
+                    while (!MoveToItemFolder(filePath, newFileName));
+                }
+            }
+            //Handle a file on disk being dropped
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
+                if (files.Length > 1) { MessageBox.Show("Only one item can be dropped into the window at a time.", "Multiple Items", MessageBoxButton.OK, MessageBoxImage.Exclamation); return; }
+                string file = files[0];
+                if(!MoveToItemFolder(file))
+                {
+                    string newFileName = "";
+                    do
+                    {
+                        DropFileInfo info = new DropFileInfo();
+                        if (IsItemSelected()) { info.SerialNumberBox.Text = SelectedSN(); }
+                        info.DateBox.Text = DateTime.UtcNow.ToString(database.dateFormat);
+                        if(info.ShowDialog() == false) { break; }
+                        else
+                        {
+                            newFileName = $"{info.DateBox.Text}_{info.SerialNumberBox.Text}{Path.GetExtension(file)}";
+                        }
+                    }
+                    while (!MoveToItemFolder(file,newFileName));
+                }
+            }
+            UpdateItemList();
         }
     }
 }
