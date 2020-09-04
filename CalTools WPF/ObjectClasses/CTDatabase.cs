@@ -325,6 +325,11 @@ namespace CalTools_WPF
                 Execute(command);
                 if (reader.Read())
                 { dbVersion = reader.GetInt32(0); }
+                //Reset connection to prevent db table from being locked.
+                ResetConnection();
+                command = "DROP TABLE IF EXISTS item_groups";
+                Debug.WriteLine("Dropping item_groups table");
+                Execute(command);
                 if (dbVersion < currentVersion)
                 {
                     command = "CREATE TABLE IF NOT EXISTS calibration_items (" +
@@ -345,7 +350,6 @@ namespace CalTools_WPF
                             "model TEXT DEFAULT ''," +
                             "comment TEXT DEFAULT ''," +
                             "timestamp TEXT DEFAULT ''," +
-                            "item_group TEXT DEFAULT ''," +
                             "verify_or_calibrate TEXT DEFAULT 'CALIBRATE'," +
                             "standard_equipment INTEGER DEFAULT 0," +
                             "certificate_number TEXT DEFAULT '')";
@@ -376,11 +380,6 @@ namespace CalTools_WPF
                         Execute(command);
                         command = "ALTER TABLE calibration_items ADD certificate_number TEXT DEFAULT ''";
                         Execute(command);
-                        //Reset connection to prevent db table from being locked.
-                        conn.Close();
-                        conn.Open();
-                        command = "DROP TABLE item_groups";
-                        Execute(command);
                     }
                     command = "PRAGMA user_version = 4";
                     Execute(command);
@@ -399,7 +398,11 @@ namespace CalTools_WPF
                 return false;
             }
         }
-
+        private void ResetConnection()
+        {
+            conn.Close();
+            conn.Open();
+        }
         //Data parsing---------------------------------------------------------------------------------------------------------------------
         private void AssignDBValues(ref CalibrationItem item)
         {

@@ -5,6 +5,9 @@
 	--Fixed bug that still showed a "Next Calibration" date when there are no longer any calibration records.
 	--Fixed bug that caused the " ' " character to crash the software with an SQLite error. (Issue 58)
 	--Added a combo box in the Data Entry window to allow switching between calibration/verification data and maintenance logging. (Issue 59)
+	--Added a new window for viewing/deleting calibration/maintenance data. It is accessible from a context menu in the data table in the details area. (Issue 49)
+	--Added drag and drop functionality for the main view. Existing files, as well as Outlook attachments are able to be dropped. (Issue 46)
+	--Fixed bug that caused the "item_groups" table to be recreated, when it should have been dropped from the database.
 
 
 --4.1.1 (2020-08-28)
