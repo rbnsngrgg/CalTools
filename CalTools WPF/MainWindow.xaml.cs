@@ -1,4 +1,7 @@
 ﻿using CalTools_WPF.ObjectClasses;
+using CalTools_WPF.Windows;
+using Helpers;
+using Microsoft.Data.Sqlite;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -376,16 +379,27 @@ namespace CalTools_WPF
         {
             CalDataEntry dataEntry = new CalDataEntry();
             dataEntry.SerialNumberBox.Text = calItem.SerialNumber;
+            dataEntry.MaintenanceSerialNumberBox.Text = calItem.SerialNumber;
             dataEntry.DateBox.Text = DateTime.UtcNow.ToString(database.dateFormat);
+            dataEntry.MaintenanceDateBox.Text = DateTime.UtcNow.ToString(database.dateFormat);
             dataEntry.ProcedureBox.ItemsSource = config.Procedures;
+            dataEntry.MaintenanceProcedureBox.ItemsSource = config.Procedures;
             dataEntry.EquipmentBox.ItemsSource = standardEquipment;
+            dataEntry.MaintenanceEquipmentBox.ItemsSource = standardEquipment;
+            if(calItem.VerifyOrCalibrate == "MAINTENANCE")
+            { dataEntry.MaintenanceSelection.IsSelected = true; }
             if (config.Procedures.Count > 0) { dataEntry.ProcedureBox.SelectedIndex = 0; }
             if (standardEquipment.Count > 0) { dataEntry.EquipmentBox.SelectedIndex = 0; }
             dataEntry.findings.parameters.Add(new Param($"Parameter {dataEntry.findings.parameters.Count + 1}"));
             if (dataEntry.ShowDialog() == true)
             {
                 dataEntry.data.DueDate = dataEntry.data.CalibrationDate.Value.AddMonths(calItem.Interval);
-                dataEntry.data.StandardEquipment = JsonConvert.SerializeObject(database.GetCalItem("calibration_items", "serial_number", dataEntry.EquipmentBox.Text));
+                try
+                {
+                    dataEntry.data.StandardEquipment = JsonConvert.SerializeObject(database.GetCalItem("calibration_items", "serial_number", dataEntry.EquipmentBox.Text));
+                }
+                catch
+                { MessageBox.Show($"Invalid \"Standard Equipment\" entry.","Invalid Entry",MessageBoxButton.OK,MessageBoxImage.Error); }
                 database.SaveCalData(dataEntry.data);
                 UpdateItemList();
             }
@@ -514,6 +528,102 @@ namespace CalTools_WPF
                 DetailsCalDataTable.Visibility = Visibility.Visible;
                 DetailsCalDataTable.ItemsSource = ListCalData(SelectedSN());
             }
+        }
+
+        private void ContextViewData_Click(object sender, RoutedEventArgs e)
+        {
+            if (DetailsCalDataTable.SelectedItem != null)
+            {
+                Dictionary<string, string> item = (Dictionary<string, string>)DetailsCalDataTable.SelectedItem;
+                if(File.Exists(item["location"]))
+                {
+                    new Process{StartInfo = new ProcessStartInfo(item["location"]){ UseShellExecute = true }}.Start();
+                }
+                else
+                {
+                    CalibrationData data = database.GetData("id", item["id"]);
+                    if (data != null)
+                    {
+                        //Open with in-app data viewer, plug in information using "data" object
+                        CalDataViewer viewer = new CalDataViewer(data);
+                        if (viewer.ShowDialog() == true)
+                        {
+                            database.RemoveCalData(data.ID.ToString());
+                            UpdateItemList();
+                        }
+                    }
+                }
+            }
+        }
+
+        private void ContextOpenLocation_Click(object sender, RoutedEventArgs e)
+        {
+            if (DetailsCalDataTable.SelectedItem != null)
+            {
+                Dictionary<string, string> item = (Dictionary<string, string>)DetailsCalDataTable.SelectedItem;
+                if (Directory.Exists(Path.GetDirectoryName(item["location"]))) { Process.Start("explorer",Path.GetDirectoryName(item["location"])); }
+                else { Process.Start("explorer",config.CalListDir); }
+            }
+        }
+
+        private void MainWindow_Drop(object sender, DragEventArgs e)
+        {
+            //Handle an Outlook attachment being dropped
+            if(e.Data.GetDataPresent("FileGroupDescriptorW"))
+            {
+                OutlookDataObject outlookData = new OutlookDataObject(e.Data);
+                string[] files = (string[])outlookData.GetData("FileGroupDescriptorW");
+                if (files.Length > 1) { MessageBox.Show("Only one item can be dropped into the window at a time.", "Multiple Items", MessageBoxButton.OK, MessageBoxImage.Exclamation); return; }
+                string file = files[0];
+                //Move file from memory to receiving folder
+                MemoryStream[] fileContents = (MemoryStream[])outlookData.GetData("FileContents");
+                FileStream fileStream = new FileStream($"{config.CalListDir}\\receiving\\{file}", FileMode.Create);
+
+                string filePath = $"{config.CalListDir}\\receiving\\{file}";
+                fileContents[0].CopyTo(fileStream);
+                fileStream.Close();
+                //Try to move the file to item folder
+                if (!MoveToItemFolder(filePath))
+                {
+                    string newFileName = "";
+                    do
+                    {
+                        DropFileInfo info = new DropFileInfo();
+                        if (IsItemSelected()) { info.SerialNumberBox.Text = SelectedSN(); }
+                        info.DateBox.Text = DateTime.UtcNow.ToString(database.dateFormat);
+                        if (info.ShowDialog() == false) { if (File.Exists(filePath)) { File.Delete(filePath); } break; }
+                        else
+                        {
+                            newFileName = $"{info.DateBox.Text}_{info.SerialNumberBox.Text}{Path.GetExtension(file)}";
+                        }
+                    }
+                    while (!MoveToItemFolder(filePath, newFileName));
+                }
+            }
+            //Handle a file on disk being dropped
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
+                if (files.Length > 1) { MessageBox.Show("Only one item can be dropped into the window at a time.", "Multiple Items", MessageBoxButton.OK, MessageBoxImage.Exclamation); return; }
+                string file = files[0];
+                if(!MoveToItemFolder(file))
+                {
+                    string newFileName = "";
+                    do
+                    {
+                        DropFileInfo info = new DropFileInfo();
+                        if (IsItemSelected()) { info.SerialNumberBox.Text = SelectedSN(); }
+                        info.DateBox.Text = DateTime.UtcNow.ToString(database.dateFormat);
+                        if(info.ShowDialog() == false) { break; }
+                        else
+                        {
+                            newFileName = $"{info.DateBox.Text}_{info.SerialNumberBox.Text}{Path.GetExtension(file)}";
+                        }
+                    }
+                    while (!MoveToItemFolder(file,newFileName));
+                }
+            }
+            UpdateItemList();
         }
     }
 }

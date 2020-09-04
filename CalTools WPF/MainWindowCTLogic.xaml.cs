@@ -12,7 +12,7 @@ namespace CalTools_WPF
     //Other main window code-behind logic that doesn't directly interact with the GUI elements.
     public partial class MainWindow : Window
     {
-        public readonly string version = "4.1.1";
+        public readonly string version = "4.2.0";
         private CTDatabase database;
         private CTConfig config = new CTConfig();
         private Dictionary<string, string> searchModes = new Dictionary<string, string>() {
@@ -72,6 +72,7 @@ namespace CalTools_WPF
                             if (calItem.NextCal != calItem.LastCal.Value.AddMonths(calItem.Interval))
                             { calItem.NextCal = calItem.LastCal.Value.AddMonths(calItem.Interval); changesMade = true; }
                         }
+                        else { if (calItem.NextCal != null) { calItem.NextCal = null; changesMade = true; } }
                         if (calItem.NextCal != null)
                         {
                             if (((calItem.NextCal - DateTime.Today).Value.TotalDays < config.MarkCalDue) & calItem.Mandatory)
@@ -119,6 +120,7 @@ namespace CalTools_WPF
                 Dictionary<string, string> cal = new Dictionary<string, string>();
                 cal.Add("date", data.CalibrationDate.Value.ToString(database.dateFormat));
                 cal.Add("location", $"{config.DbName}, \"calibration_data\" Row {data.ID}");
+                cal.Add("id", data.ID.ToString());
                 calDataList.Add(cal);
             }
             foreach (string filePath in Directory.GetFiles(database.GetCalItem("calibration_items", "serial_number", sn).Directory))
@@ -134,7 +136,12 @@ namespace CalTools_WPF
                     if (DateTime.TryParseExact(split, database.dateFormat, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out tryDate))
                     { dateFound = true; fileDate = tryDate; }
                     else if (sn == split) { snFound = true; }
-                    if (dateFound & snFound) { cal.Add("date", fileDate.ToString(database.dateFormat, CultureInfo.InvariantCulture)); cal.Add("location", filePath); calDataList.Add(cal); break; }
+                    if (dateFound & snFound) 
+                    { 
+                        cal.Add("date", fileDate.ToString(database.dateFormat, CultureInfo.InvariantCulture));
+                        cal.Add("location", filePath); calDataList.Add(cal);
+                        cal.Add("id", "");
+                        break; }
                 }
             }
             return calDataList;
@@ -166,19 +173,35 @@ namespace CalTools_WPF
             {
                 foreach (string file in files)
                 {
-                    Dictionary<string, string> fileInfo = ParseFileName(file);
-                    Debug.WriteLine($"{fileInfo["SN"]}\n{fileInfo["Date"]}");
-                    CalibrationItem calItem = database.GetCalItem("calibration_items", "serial_number", fileInfo["SN"]);
-                    if (calItem != null)
-                    {
-                        if (Directory.Exists(calItem.Directory))
-                        {
-                            File.Move(file, $"{calItem.Directory}\\{System.IO.Path.GetFileName(file)}");
-                        }
-                    }
+                    MoveToItemFolder(file);
                 }
             }
         }
+        private bool MoveToItemFolder(string file, string newFileName = "")
+        {
+            Dictionary<string, string> fileInfo;
+            CalibrationItem calItem;
+            if (newFileName == "")
+            {  fileInfo = ParseFileName(file); calItem = database.GetCalItem("calibration_items", "serial_number", fileInfo["SN"]); }
+            else { fileInfo = ParseFileName(newFileName); calItem = database.GetCalItem("calibration_items", "serial_number", fileInfo["SN"]); }
+            if (calItem != null)
+            {
+                if (Directory.Exists(calItem.Directory))
+                {
+                    if (newFileName == "")
+                    { File.Move(file, $"{calItem.Directory}\\{System.IO.Path.GetFileName(file)}"); }
+                    else
+                    {
+                        try { File.Move(file, $"{calItem.Directory}\\{newFileName}"); }
+                        catch (System.IO.IOException) { MessageBox.Show($"The file \"{calItem.Directory}\\{newFileName}\" already exists", "File Already Exists", MessageBoxButton.OK, MessageBoxImage.Error); }
+                        catch (System.Exception ex) {MessageBox.Show($"{ex.Message}","Error",MessageBoxButton.OK,MessageBoxImage.Error); }
+                    }
+                    return true;
+                }
+            }
+            return false;
+        }
+
         //Create new xaml window for selecting a folder from those listed in the config file.
         private string GetNewItemFolder(string sn)
         {
@@ -219,6 +242,7 @@ namespace CalTools_WPF
             calVendors.Sort();
             locations.Sort();
             itemGroups.Sort();
+            standardEquipment.Add("");
             standardEquipment.Sort();
         }
         //Single-item list update that doesn't require DB query

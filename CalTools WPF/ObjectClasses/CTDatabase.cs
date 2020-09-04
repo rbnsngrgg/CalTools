@@ -3,6 +3,7 @@ using Microsoft.Data.Sqlite;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Windows;
 
@@ -104,6 +105,21 @@ namespace CalTools_WPF
             Disconnect();
             return null;
         }
+        public CalibrationData? GetData(string col, string item)
+        {
+            string command = $" SELECT * FROM calibration_data WHERE {col}='{item}'";
+            if (!Connect()) return null;
+            Execute(command);
+            if (reader.Read())
+            {
+                CalibrationData returnItem = new CalibrationData();
+                AssignDataValues(ref returnItem);
+                Disconnect();
+                return returnItem;
+            }
+            Disconnect();
+            return null;
+        }
 #nullable disable
         //Save data------------------------------------------------------------------------------------------------------------------------
         public bool CreateCalItem(string sn)
@@ -134,19 +150,29 @@ namespace CalTools_WPF
             {
                 if (Connect())
                 {
-                    string command = $"INSERT OR IGNORE INTO calibration_items (serial_number) VALUES ('{item.SerialNumber}')";
+                    string command = $"INSERT OR IGNORE INTO calibration_items (serial_number) VALUES ('{item.SerialNumber.Replace("'", "''")}')";
                     Execute(command);
-                    command = $"UPDATE calibration_items SET serial_number='{item.SerialNumber}', model='{item.Model}',description='{item.Description}',location='{item.Location}'," +
-                                        $"manufacturer='{item.Manufacturer}',cal_vendor='{item.CalVendor}',interval='{item.Interval}',mandatory='{(item.Mandatory == true ? 1 : 0)}'," +
-                                        $"directory='{item.Directory}',inservice='{(item.InService == true ? 1 : 0)}'," +
-                                        $"inservicedate='{(item.InServiceDate == null ? "" : item.InServiceDate.Value.ToString(dateFormat, CultureInfo.InvariantCulture))}'," +
-                                        $"lastcal='{(item.LastCal == null ? "" : item.LastCal.Value.ToString(dateFormat, CultureInfo.InvariantCulture))}'," +
-                                        $"nextcal='{(item.NextCal == null ? "" : item.NextCal.Value.ToString(dateFormat, CultureInfo.InvariantCulture))}'," +
-                                        $"outofservicedate='{(item.OutOfServiceDate == null ? "" : item.OutOfServiceDate.Value.ToString(dateFormat, CultureInfo.InvariantCulture))}'," +
-                                        $"comment='{item.Comment}',timestamp='{DateTime.UtcNow.ToString(timestampFormat, CultureInfo.InvariantCulture)}',item_group='{item.ItemGroup}'," +
-                                        $"verify_or_calibrate='{item.VerifyOrCalibrate}',certificate_number='{item.CertificateNumber}'," +
-                                        $"standard_equipment='{(item.StandardEquipment == true ? 1 : 0)}', certificate_number='{item.CertificateNumber}' " +
-                                        $"WHERE serial_number='{item.SerialNumber}'";
+                    command = $"UPDATE calibration_items SET serial_number='{item.SerialNumber.Replace("'", "''")}'," +
+                        $"model='{item.Model.Replace("'", "''")}'," +
+                        $"description='{item.Description.Replace("'", "''")}'," +
+                        $"location='{item.Location.Replace("'", "''")}'," +
+                        $"manufacturer='{item.Manufacturer.Replace("'", "''")}'," +
+                        $"cal_vendor='{item.CalVendor.Replace("'", "''")}'," +
+                        $"interval='{item.Interval}'," +
+                        $"mandatory='{(item.Mandatory == true ? 1 : 0)}'," +
+                        $"directory='{item.Directory.Replace("'", "''")}'," +
+                        $"inservice='{(item.InService == true ? 1 : 0)}'," +
+                        $"inservicedate='{(item.InServiceDate == null ? "" : item.InServiceDate.Value.ToString(dateFormat, CultureInfo.InvariantCulture))}'," +
+                        $"lastcal='{(item.LastCal == null ? "" : item.LastCal.Value.ToString(dateFormat, CultureInfo.InvariantCulture))}'," +
+                        $"nextcal='{(item.NextCal == null ? "" : item.NextCal.Value.ToString(dateFormat, CultureInfo.InvariantCulture))}'," +
+                        $"outofservicedate='{(item.OutOfServiceDate == null ? "" : item.OutOfServiceDate.Value.ToString(dateFormat, CultureInfo.InvariantCulture))}'," +
+                        $"comment='{item.Comment.Replace("'", "''")}'," +
+                        $"timestamp='{DateTime.UtcNow.ToString(timestampFormat, CultureInfo.InvariantCulture)}'," +
+                        $"item_group='{item.ItemGroup.Replace("'", "''")}'," +
+                        $"verify_or_calibrate='{item.VerifyOrCalibrate}'," +
+                        $"certificate_number='{item.CertificateNumber.Replace("'", "''")}'," +
+                        $"standard_equipment='{(item.StandardEquipment == true ? 1 : 0)}' " +
+                        $"WHERE serial_number='{item.SerialNumber.Replace("'", "''")}'";
                     Execute(command);
                     Disconnect();
                     return true;
@@ -192,9 +218,9 @@ namespace CalTools_WPF
                 {
                     string command = $"INSERT INTO calibration_data (serial_number,state_before_action,state_after_action,action_taken,calibration_date,due_date,procedure,standard_equipment," +
                         $"findings,remarks,technician,entry_timestamp) " +
-                        $"VALUES ('{data.SerialNumber}','{JsonConvert.SerializeObject(data.StateBefore)}','{JsonConvert.SerializeObject(data.StateAfter)}'," +
+                        $"VALUES ('{data.SerialNumber.Replace("'", "''")}','{JsonConvert.SerializeObject(data.StateBefore)}','{JsonConvert.SerializeObject(data.StateAfter)}'," +
                         $"'{JsonConvert.SerializeObject(data.ActionTaken)}','{data.CalibrationDate.Value.ToString(dateFormat)}','{data.DueDate.Value.ToString(dateFormat)}'," +
-                        $"'{data.Procedure}','{data.StandardEquipment}','{JsonConvert.SerializeObject(data.findings)}','{data.Remarks}','{data.Technician}'," +
+                        $"'{data.Procedure.Replace("'", "''")}','{data.StandardEquipment.Replace("'", "''")}','{JsonConvert.SerializeObject(data.findings).Replace("'", "''")}','{data.Remarks.Replace("'", "''")}','{data.Technician.Replace("'", "''")}'," +
                         $"'{DateTime.UtcNow.ToString(timestampFormat, CultureInfo.InvariantCulture)}')";
                     Execute(command);
                     return true;
@@ -222,6 +248,25 @@ namespace CalTools_WPF
                 return false;
             }
             catch (System.Exception ex)
+            {
+                MessageBox.Show($"Error while removing item from the database: {ex.Message}", "Database Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
+            }
+        }
+        public bool RemoveCalData(string id)
+        {
+            try
+            {
+                if(Connect())
+                {
+                    string command = $"DELETE FROM calibration_data WHERE id='{id}'";
+                    Execute(command);
+                    Disconnect();
+                    return true;
+                }
+                return false;
+            }
+            catch(System.Exception ex)
             {
                 MessageBox.Show($"Error while removing item from the database: {ex.Message}", "Database Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
@@ -280,6 +325,10 @@ namespace CalTools_WPF
                 Execute(command);
                 if (reader.Read())
                 { dbVersion = reader.GetInt32(0); }
+                //Reset connection to prevent db table from being locked.
+                ResetConnection();
+                command = "DROP TABLE IF EXISTS item_groups";
+                Execute(command);
                 if (dbVersion < currentVersion)
                 {
                     command = "CREATE TABLE IF NOT EXISTS calibration_items (" +
@@ -300,7 +349,6 @@ namespace CalTools_WPF
                             "model TEXT DEFAULT ''," +
                             "comment TEXT DEFAULT ''," +
                             "timestamp TEXT DEFAULT ''," +
-                            "item_group TEXT DEFAULT ''," +
                             "verify_or_calibrate TEXT DEFAULT 'CALIBRATE'," +
                             "standard_equipment INTEGER DEFAULT 0," +
                             "certificate_number TEXT DEFAULT '')";
@@ -331,11 +379,6 @@ namespace CalTools_WPF
                         Execute(command);
                         command = "ALTER TABLE calibration_items ADD certificate_number TEXT DEFAULT ''";
                         Execute(command);
-                        //Reset connection to prevent db table from being locked.
-                        conn.Close();
-                        conn.Open();
-                        command = "DROP TABLE item_groups";
-                        Execute(command);
                     }
                     command = "PRAGMA user_version = 4";
                     Execute(command);
@@ -354,7 +397,11 @@ namespace CalTools_WPF
                 return false;
             }
         }
-
+        private void ResetConnection()
+        {
+            conn.Close();
+            conn.Open();
+        }
         //Data parsing---------------------------------------------------------------------------------------------------------------------
         private void AssignDBValues(ref CalibrationItem item)
         {
