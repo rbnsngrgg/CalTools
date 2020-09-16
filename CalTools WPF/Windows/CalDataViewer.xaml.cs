@@ -14,9 +14,9 @@ namespace CalTools_WPF
     /// </summary>
     public partial class CalDataViewer : Window
     {
-        public CalibrationData data = new CalibrationData();
+        public TaskData data = new TaskData();
         public Findings findings = new Findings();
-        public CalDataViewer(CalibrationData inputData)
+        public CalDataViewer(TaskData inputData)
         {
             InitializeComponent();
             data = inputData;
@@ -63,9 +63,9 @@ namespace CalTools_WPF
             AdjustedBox.IsChecked = ((ActionTaken)data.ActionTaken).Adjusted;
             RepairedBox.IsChecked = ((ActionTaken)data.ActionTaken).Repaired;
 
-            DateBox.Text = data.CalibrationDate.Value.ToString("yyyy-MM-dd");
+            DateBox.Text = data.CompleteDate.Value.ToString("yyyy-MM-dd");
             ProcedureBox.Text = data.Procedure;
-            CalibrationItem standardEquipment = JsonConvert.DeserializeObject<CalibrationItem>(data.StandardEquipment);
+            CTItem standardEquipment = JsonConvert.DeserializeObject<CTItem>(data.StandardEquipment);
             EquipmentBox.Text = standardEquipment.SerialNumber;
             findings = data.findings;
             RemarksBox.Text = data.Remarks;
@@ -82,10 +82,10 @@ namespace CalTools_WPF
             MaintenanceBox.IsChecked = ((ActionTaken)data.ActionTaken).Maintenance;
             MaintenanceRepairedBox.IsChecked = ((ActionTaken)data.ActionTaken).Repaired;
 
-            MaintenanceDateBox.Text = data.CalibrationDate.Value.ToString("yyyy-MM-dd");
+            MaintenanceDateBox.Text = data.CompleteDate.Value.ToString("yyyy-MM-dd");
             MaintenanceProcedureBox.Text = data.Procedure;
 
-            CalibrationItem standardEquipment = JsonConvert.DeserializeObject<CalibrationItem>(data.StandardEquipment);
+            CTItem standardEquipment = JsonConvert.DeserializeObject<CTItem>(data.StandardEquipment);
             if (standardEquipment != null) { MaintenanceEquipmentBox.Text = standardEquipment.SerialNumber; }
 
             MaintenanceRemarksBox.Text = data.Remarks;

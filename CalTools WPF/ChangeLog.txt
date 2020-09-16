@@ -1,5 +1,27 @@
 [Changes]
+--5.0.0
+	TODO:
+		(DONE)Modify object classes for compatibility with new DB structure.
+		(DONE)Segmentation of DB creation functions.
+		(DONE)Update column name references.
+		(DONE)DBVersion4to5 upgrade function.
+			Each existing item's first task will be created as each calibration_item is processed.
+			for each table (calibration_items and calibration_data)
+				read information from old table
+				restructure
+					for calibration_items
+						CompleteDate, DueDate, interval, and ActionType are store in a new Tasks table entry. TaskID autoincrement, SerialNumber, make TaskTitle = ActionType, Due, comments blank.
+					for calibration_data (perform last)
+						DataID auto, TaskID (previously serial_number) assigned by referencing SerialNumber of task (only in this instance because each item only has one task),
+						all other data is copied 1:1.
+				write information to new table (Items, TaskData, Tasks)
 
+		Modify MainWIndowCTLogic.xaml.cs so that CTTask dates are checked, rather than dates of a CTItem (previously CalibrationItem)
+		Modify details view to show tasks.
+		Modify data entry to include task selection.
+		Modify data entry to assign dates to the CTTask instead of the TaskData object.
+		Add functionality for handling how files in an item's folder are assigned to tasks.
+			Each task gets a sub folder?
 --4.2.0
 	--Changed verbiage of some of the labels in the item details area.
 	--Fixed bug that still showed a "Next Calibration" date when there are no longer any calibration records.

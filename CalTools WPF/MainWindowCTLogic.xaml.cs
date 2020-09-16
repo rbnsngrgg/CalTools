@@ -12,7 +12,7 @@ namespace CalTools_WPF
     //Other main window code-behind logic that doesn't directly interact with the GUI elements.
     public partial class MainWindow : Window
     {
-        public readonly string version = "4.2.0";
+        public readonly string version = "5.0.0";
         private CTDatabase database;
         private CTConfig config = new CTConfig();
         private Dictionary<string, string> searchModes = new Dictionary<string, string>() {
@@ -32,11 +32,11 @@ namespace CalTools_WPF
         private List<string> calVendors = new List<string>();
         private List<string> itemGroups = new List<string>();
         private List<string> standardEquipment = new List<string>();
-        private List<CalibrationItem> weekTodoItems = new List<CalibrationItem>();
+        private List<CTItem> weekTodoItems = new List<CTItem>();
         private void ScanFolders()
         {
-            List<CalibrationItem> allItems = database.GetAllCalItems();
-            List<CalibrationData> calData = database.GetAllCalData();
+            List<CTItem> allItems = database.GetAllItems();
+            List<TaskData> calData = database.GetAllTaskData();
             DateTime defaultDate = new DateTime();
             string itemsFolder = $"{config.CalScansDir}\\Calibration Items\\";
             foreach (string folder in config.Folders)
@@ -46,15 +46,15 @@ namespace CalTools_WPF
                 {
                     foreach (string itemFolder in Directory.GetDirectories(scanFolder))
                     {
-                        CalibrationItem calItem = null;
+                        CTItem calItem = null;
                         bool newItem = false;
                         bool changesMade = false;
                         string itemSN = System.IO.Path.GetFileName(itemFolder);
-                        foreach (CalibrationItem item in allItems)
+                        foreach (CTItem item in allItems)
                         {
                             if (item.SerialNumber == itemSN) { calItem = item; break; }
                         }
-                        if (calItem == null) { calItem = new CalibrationItem(itemSN); newItem = true; }
+                        if (calItem == null) { calItem = new CTItem(itemSN); newItem = true; }
                         DateTime? latest = GetLatestCal(calItem.SerialNumber, itemFolder, ref calData);
                         if (latest == defaultDate) { latest = null; }
                         if (latest != calItem.LastCal | calItem.Directory != itemFolder)
@@ -64,7 +64,7 @@ namespace CalTools_WPF
 
                             if (calItem.LastCal != null)
                             { calItem.NextCal = calItem.LastCal.Value.AddMonths(calItem.Interval); }
-                            if (newItem) { database.CreateCalItem(calItem.SerialNumber); }
+                            if (newItem) { database.CreateItem(calItem.SerialNumber); }
                             changesMade = true;
                         }
                         if (latest != null)
@@ -77,20 +77,20 @@ namespace CalTools_WPF
                         {
                             if (((calItem.NextCal - DateTime.Today).Value.TotalDays < config.MarkCalDue) & calItem.Mandatory)
                             {
-                                if (!calItem.CalDue)
+                                if (!calItem.TaskDue)
                                 {
-                                    database.UpdateColumn(calItem.SerialNumber, "caldue", "1");
+                                    database.UpdateColumn(calItem.SerialNumber, "TaskDue", "1");
                                 }
                             }
-                            else { if (calItem.CalDue) { database.UpdateColumn(calItem.SerialNumber, "caldue", "0"); } }
+                            else { if (calItem.TaskDue) { database.UpdateColumn(calItem.SerialNumber, "TaskDue", "0"); } }
                         }
-                        else { if (calItem.CalDue) { database.UpdateColumn(calItem.SerialNumber, "caldue", "0"); } }
-                        if (changesMade) { database.SaveCalItem(calItem); }
+                        else { if (calItem.TaskDue) { database.UpdateColumn(calItem.SerialNumber, "TaskDue", "0"); } }
+                        if (changesMade) { database.SaveItem(calItem); }
                     }
                 }
             }
         }
-        private DateTime? GetLatestCal(string sn, string folder, ref List<CalibrationData> calData)
+        private DateTime? GetLatestCal(string sn, string folder, ref List<TaskData> calData)
         {
             DateTime? calDate = new DateTime();
             foreach (string filePath in Directory.GetFiles(folder))
@@ -107,23 +107,25 @@ namespace CalTools_WPF
                 }
                 if (snFound & fileDate > calDate) { calDate = fileDate; }
             }
-            foreach (CalibrationData data in calData)
-            { if (data.CalibrationDate > calDate & data.SerialNumber == sn) { calDate = data.CalibrationDate; } }
+            foreach (TaskData data in calData)
+            { if (data.CompleteDate > calDate & data.SerialNumber == sn) { calDate = data.CompleteDate; } }
             return calDate;
         }
         //Gets all calibration data for an item and lists them by (date,location)
-        private List<Dictionary<string, string>> ListCalData(string sn)
+        private List<Dictionary<string, string>> ListTaskData(string taskID)
         {
-            List<Dictionary<string, string>> calDataList = new List<Dictionary<string, string>>();
-            foreach (CalibrationData data in database.GetCalData(sn))
+            List<Dictionary<string, string>> taskDataList = new List<Dictionary<string, string>>();
+            foreach (TaskData data in database.GetTaskData(taskID))
             {
                 Dictionary<string, string> cal = new Dictionary<string, string>();
-                cal.Add("date", data.CalibrationDate.Value.ToString(database.dateFormat));
-                cal.Add("location", $"{config.DbName}, \"calibration_data\" Row {data.ID}");
-                cal.Add("id", data.ID.ToString());
-                calDataList.Add(cal);
+                cal.Add("date", data.CompleteDate.Value.ToString(database.dateFormat));
+                cal.Add("location", $"{config.DbName}, \"TaskData\", ID: {data.DataID}");
+                cal.Add("id", data.DataID.ToString());
+                taskDataList.Add(cal);
             }
-            foreach (string filePath in Directory.GetFiles(database.GetCalItem("calibration_items", "serial_number", sn).Directory))
+            string sn = database.GetTask("TaskID",taskID).SerialNumber;
+            //TODO: Add functionality for task sub folders
+            foreach (string filePath in Directory.GetFiles(database.GetItem("SerialNumber", sn).Directory))
             {
                 Dictionary<string, string> cal = new Dictionary<string, string>();
                 string file = System.IO.Path.GetFileNameWithoutExtension(filePath);
@@ -139,12 +141,12 @@ namespace CalTools_WPF
                     if (dateFound & snFound) 
                     { 
                         cal.Add("date", fileDate.ToString(database.dateFormat, CultureInfo.InvariantCulture));
-                        cal.Add("location", filePath); calDataList.Add(cal);
+                        cal.Add("location", filePath); taskDataList.Add(cal);
                         cal.Add("id", "");
                         break; }
                 }
             }
-            return calDataList;
+            return taskDataList;
         }
         private Dictionary<string, string> ParseFileName(string filePath)
         {
@@ -159,7 +161,7 @@ namespace CalTools_WPF
                 {
                     fileInfo["Date"] = split;
                 }
-                else if (database.GetCalItem("calibration_items", "serial_number", split) != null)
+                else if (database.GetItem("SerialNumber", split) != null)
                 {
                     fileInfo["SN"] = split;
                 }
@@ -180,10 +182,10 @@ namespace CalTools_WPF
         private bool MoveToItemFolder(string file, string newFileName = "")
         {
             Dictionary<string, string> fileInfo;
-            CalibrationItem calItem;
+            CTItem calItem;
             if (newFileName == "")
-            {  fileInfo = ParseFileName(file); calItem = database.GetCalItem("calibration_items", "serial_number", fileInfo["SN"]); }
-            else { fileInfo = ParseFileName(newFileName); calItem = database.GetCalItem("calibration_items", "serial_number", fileInfo["SN"]); }
+            {  fileInfo = ParseFileName(file); calItem = database.GetItem("SerialNumber", fileInfo["SN"]); }
+            else { fileInfo = ParseFileName(newFileName); calItem = database.GetItem("SerialNumber", fileInfo["SN"]); }
             if (calItem != null)
             {
                 if (Directory.Exists(calItem.Directory))
@@ -230,7 +232,7 @@ namespace CalTools_WPF
             locations.Clear();
             itemGroups.Clear();
             standardEquipment.Clear();
-            foreach (CalibrationItem calItem in database.GetAllCalItems())
+            foreach (CTItem calItem in database.GetAllItems())
             {
                 if (!manufacturers.Contains(calItem.Manufacturer)) { manufacturers.Add(calItem.Manufacturer); }
                 if (!calVendors.Contains(calItem.CalVendor)) { calVendors.Add(calItem.CalVendor); }
@@ -246,7 +248,7 @@ namespace CalTools_WPF
             standardEquipment.Sort();
         }
         //Single-item list update that doesn't require DB query
-        private void UpdateListsSingle(CalibrationItem calItem)
+        private void UpdateListsSingle(CTItem calItem)
         {
             if (!manufacturers.Contains(calItem.Manufacturer)) { manufacturers.Add(calItem.Manufacturer); }
             if (!calVendors.Contains(calItem.CalVendor)) { calVendors.Add(calItem.CalVendor); }
@@ -260,11 +262,11 @@ namespace CalTools_WPF
             standardEquipment.Sort();
         }
 
-        private List<CalibrationItem> ItemListFilter(string mode, string searchText)
+        private List<CTItem> ItemListFilter(string mode, string searchText)
         {
-            List<CalibrationItem> filteredItems = new List<CalibrationItem>();
-            var property = typeof(CalibrationItem).GetProperty(mode);
-            foreach (CalibrationItem calItem in database.GetAllCalItems())
+            List<CTItem> filteredItems = new List<CTItem>();
+            var property = typeof(CTItem).GetProperty(mode);
+            foreach (CTItem calItem in database.GetAllItems())
             {
                 if (mode == "CalDue") { if ((bool)property.GetValue(calItem) == true) { filteredItems.Add(calItem); } }
                 else if (mode == "Comment") { if (property.GetValue(calItem).ToString().Length > 0) { filteredItems.Add(calItem); } }

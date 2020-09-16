@@ -4,16 +4,16 @@ using System.Diagnostics;
 
 namespace CalTools_WPF
 {
-    class CalibrationItem
+    class CalibrationItemV4
     {
         public string SerialNumber { get; set; }
         public string Location { get; set; }
         public int Interval { get; set; } = 12;
         public string CalVendor { get; set; }
         public string Manufacturer { get; set; }
-        private DateTime? lastCal { get; set; } = null;
+        public DateTime? lastCal = null;
         public DateTime? LastCal { get { return lastCal; } set { lastCal = value; if (value != null) { CalDateFormat = lastCal.Value.ToString("yyyy-MM-dd"); } } }
-        private DateTime? nextCal = null;
+        public DateTime? nextCal = null;
         public DateTime? NextCal { get { return nextCal; } set { nextCal = value; if (value != null) { DueDateFormat = nextCal.Value.ToString("yyyy-MM-dd"); } } }
         public bool Mandatory { get; set; } = true;
         public string Directory { get; set; }
@@ -55,7 +55,7 @@ namespace CalTools_WPF
             standard_equipment,
             certificate_number
         }
-        public CalibrationItem(string sn)
+        public CalibrationItemV4(string sn)
         {
             this.SerialNumber = sn;
         }

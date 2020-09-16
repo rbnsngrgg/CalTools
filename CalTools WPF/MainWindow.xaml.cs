@@ -58,11 +58,11 @@ namespace CalTools_WPF
                 AddItemsToList(ItemListFilter(searchModes[SearchOptions.SelectedItem.ToString()], SearchBox.Text));
                 ExpandTreeItems();
             }
-            else { AddItemsToList(database.GetAllCalItems()); }
+            else { AddItemsToList(database.GetAllItems()); }
             UpdateLists();
             GoToItem(currentItem);
         }
-        private void AddItemsToList(List<CalibrationItem> items)
+        private void AddItemsToList(List<CTItem> items)
         {
             items.Sort((x, y) => x.SerialNumber.CompareTo(y.SerialNumber));
             CalibrationItemTree.Items.Clear();
@@ -85,7 +85,7 @@ namespace CalTools_WPF
         private void HighlightNonExistent()
         {
             List<string> nonExistent = new List<string>();
-            foreach (CalibrationItem calItem in database.GetAllCalItems())
+            foreach (CTItem calItem in database.GetAllItems())
             {
                 if (!Directory.Exists(calItem.Directory))
                 {
@@ -101,7 +101,7 @@ namespace CalTools_WPF
                 }
             }
         }
-        private void UpdateDetails(CalibrationItem item)
+        private void UpdateDetails(CTItem item)
         {
             if (item != null)
             {
@@ -244,7 +244,7 @@ namespace CalTools_WPF
             if (CalibrationItemTree.SelectedItem != null)
             {
                 selected = (TreeViewItem)CalibrationItemTree.SelectedItem;
-                UpdateDetails(database.GetCalItem("calibration_items", "serial_number", (string)selected.Header));
+                UpdateDetails(database.GetItem("SerialNumber", (string)selected.Header));
             }
         }
         //Prevent calendar from holding focus, requiring two clicks to escape
@@ -273,12 +273,12 @@ namespace CalTools_WPF
             string sn = "";
             if (DetailsSN.Text.Length > 0)
             {
-                CalibrationItem item;
-                item = database.GetCalItem("calibration_items", "serial_number", DetailsSN.Text);
+                CTItem item;
+                item = database.GetItem("SerialNumber", DetailsSN.Text);
                 MessageBoxResult result = MessageBoxResult.None;
                 if (item == null)
                 {
-                    item = new CalibrationItem(DetailsSN.Text);
+                    item = new CTItem(DetailsSN.Text);
                     result = MessageBox.Show($"Item SN: {DetailsSN.Text} does not exist in the database. Create this item?", "Item Not Found", MessageBoxButton.YesNo, MessageBoxImage.Information);
                 }
                 item.Model = DetailsModel.Text;
@@ -315,15 +315,15 @@ namespace CalTools_WPF
                         {
                             item.Directory = folder;
                             Directory.CreateDirectory(folder);
-                            database.SaveCalItem(item);
-                            UpdateDetails(database.GetCalItem("calibration_items", "serial_number", item.SerialNumber));
+                            database.SaveItem(item);
+                            UpdateDetails(database.GetItem("SerialNumber", item.SerialNumber));
                             UpdateItemList();
                             sn = item.SerialNumber;
                         }
                     }
                     else
                     {
-                        database.SaveCalItem(item);
+                        database.SaveItem(item);
                         SaveItemButton.Visibility = Visibility.Collapsed;
                         DetailsEditToggle();
                         EditItemButton.Visibility = Visibility.Visible;
@@ -341,7 +341,7 @@ namespace CalTools_WPF
             if (CalibrationItemTree.SelectedItem != null)
             {
                 selected = (TreeViewItem)CalibrationItemTree.SelectedItem;
-                string directory = database.GetCalItem("calibration_items", "serial_number", (string)selected.Header).Directory;
+                string directory = database.GetItem("SerialNumber", (string)selected.Header).Directory;
                 Process.Start("explorer", directory);
             }
         }
@@ -373,9 +373,9 @@ namespace CalTools_WPF
         private void NewReportButton_Click(object sender, RoutedEventArgs e)
         {
             if (!IsItemSelected()) { return; }
-            NewReport(database.GetCalItem("calibration_items", "serial_number", SelectedSN()));
+            NewReport(database.GetItem("SerialNumber", SelectedSN()));
         }
-        private void NewReport(CalibrationItem calItem)
+        private void NewReport(CTItem calItem)
         {
             CalDataEntry dataEntry = new CalDataEntry();
             dataEntry.SerialNumberBox.Text = calItem.SerialNumber;
@@ -393,14 +393,14 @@ namespace CalTools_WPF
             dataEntry.findings.parameters.Add(new Param($"Parameter {dataEntry.findings.parameters.Count + 1}"));
             if (dataEntry.ShowDialog() == true)
             {
-                dataEntry.data.DueDate = dataEntry.data.CalibrationDate.Value.AddMonths(calItem.Interval);
+                dataEntry.data.DueDate = dataEntry.data.CompleteDate.Value.AddMonths(calItem.Interval);
                 try
                 {
-                    dataEntry.data.StandardEquipment = JsonConvert.SerializeObject(database.GetCalItem("calibration_items", "serial_number", dataEntry.EquipmentBox.Text));
+                    dataEntry.data.StandardEquipment = JsonConvert.SerializeObject(database.GetItem("SerialNumber", dataEntry.EquipmentBox.Text));
                 }
                 catch
                 { MessageBox.Show($"Invalid \"Standard Equipment\" entry.","Invalid Entry",MessageBoxButton.OK,MessageBoxImage.Error); }
-                database.SaveCalData(dataEntry.data);
+                database.SaveTaskData(dataEntry.data);
                 UpdateItemList();
             }
         }
@@ -439,7 +439,7 @@ namespace CalTools_WPF
         {
             if (IsItemSelected())
             {
-                CalibrationItem selectedItem = database.GetCalItem("calibration_items", "serial_number", SelectedSN());
+                CTItem selectedItem = database.GetItem("SerialNumber", SelectedSN());
                 NewItemFolderSelect selection = new NewItemFolderSelect();
                 selection.FolderSelectComboBox.ItemsSource = config.Folders;
                 if ((bool)selection.ShowDialog() & selectedItem != null)
@@ -464,7 +464,7 @@ namespace CalTools_WPF
                 SearchBox.IsEnabled = false;
                 ExpandTreeItems();
             }
-            else { SearchBox.IsEnabled = true; AddItemsToList(database.GetAllCalItems()); }
+            else { SearchBox.IsEnabled = true; AddItemsToList(database.GetAllItems()); }
         }
         private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
         {
@@ -481,7 +481,7 @@ namespace CalTools_WPF
         {
             weekTodoItems.Clear();
             todoTable.Items.Refresh();
-            foreach (CalibrationItem calItem in database.GetAllCalItems())
+            foreach (CTItem calItem in database.GetAllItems())
             {
                 if (ItemCalendar.SelectedDate != null & calItem.NextCal != null)
                 {
@@ -510,12 +510,12 @@ namespace CalTools_WPF
         private void TableMenuGoto_Click(object sender, RoutedEventArgs e)
         {
             if (todoTable.SelectedItem != null)
-            { ToggleView(); GoToItem(((CalibrationItem)todoTable.SelectedItem).SerialNumber); }
+            { ToggleView(); GoToItem(((CTItem)todoTable.SelectedItem).SerialNumber); }
         }
         private void TableMenuCalData_Click(object sender, RoutedEventArgs e)
         {
             if (todoTable.SelectedItem != null)
-            { NewReport((CalibrationItem)todoTable.SelectedItem); }
+            { NewReport((CTItem)todoTable.SelectedItem); }
         }
 
         private void ShowDataButton_Click(object sender, RoutedEventArgs e)
@@ -526,7 +526,7 @@ namespace CalTools_WPF
             {
                 ShowDataButton.Content = "Hide Calibration Data";
                 DetailsCalDataTable.Visibility = Visibility.Visible;
-                DetailsCalDataTable.ItemsSource = ListCalData(SelectedSN());
+                DetailsCalDataTable.ItemsSource = ListTaskData(SelectedSN());
             }
         }
 
@@ -541,14 +541,14 @@ namespace CalTools_WPF
                 }
                 else
                 {
-                    CalibrationData data = database.GetData("id", item["id"]);
+                    TaskData data = database.GetData("DataID", item["id"]);
                     if (data != null)
                     {
                         //Open with in-app data viewer, plug in information using "data" object
                         CalDataViewer viewer = new CalDataViewer(data);
                         if (viewer.ShowDialog() == true)
                         {
-                            database.RemoveCalData(data.ID.ToString());
+                            database.RemoveCalData(data.DataID.ToString());
                             UpdateItemList();
                         }
                     }

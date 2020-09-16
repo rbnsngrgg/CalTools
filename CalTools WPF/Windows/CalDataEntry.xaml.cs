@@ -13,7 +13,7 @@ namespace CalTools_WPF
     /// </summary>
     public partial class CalDataEntry : Window
     {
-        public CalibrationData data = new CalibrationData();
+        public TaskData data = new TaskData();
         public Findings findings = new Findings();
         public CalDataEntry()
         {
@@ -61,7 +61,7 @@ namespace CalTools_WPF
 
             if (calDate > DateTime.UtcNow)
             { MessageBox.Show("Entries for future dates are not allowed.", "Future Date", MessageBoxButton.OK, MessageBoxImage.Exclamation); return false; }
-            data.CalibrationDate = calDate;
+            data.CompleteDate = calDate;
             if (ProcedureBox.Text.Length == 0) { MessageBox.Show("\"Procedure\" is required.", "Required Field", MessageBoxButton.OK, MessageBoxImage.Exclamation); return false; }
             else { data.Procedure = ProcedureBox.Text; }
 
@@ -108,7 +108,7 @@ namespace CalTools_WPF
 
             if (calDate > DateTime.UtcNow)
             { MessageBox.Show("Entries for future dates are not allowed.", "Future Date", MessageBoxButton.OK, MessageBoxImage.Exclamation); return false; }
-            data.CalibrationDate = calDate;
+            data.CompleteDate = calDate;
             if (MaintenanceProcedureBox.Text.Length == 0) { MessageBox.Show("\"Procedure\" is required.", "Required Field", MessageBoxButton.OK, MessageBoxImage.Exclamation); return false; }
             else { data.Procedure = MaintenanceProcedureBox.Text; }
 
