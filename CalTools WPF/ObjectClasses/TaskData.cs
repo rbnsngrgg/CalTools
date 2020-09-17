@@ -5,21 +5,35 @@ namespace CalTools_WPF.ObjectClasses
     public class TaskData
     {
 #nullable enable
-        public int? DataID { get; set; } = null;
-        public int? TaskID { get; set; } = null;
-        public string SerialNumber { get; set; } = "";
-        public State? StateBefore { get; set; } = null;
-        public State? StateAfter { get; set; } = null;
-        public ActionTaken? ActionTaken { get; set; } = null;
-        public DateTime? CompleteDate { get; set; } = null;
-        public DateTime? DueDate { get; set; } = null;
-        public string Procedure { get; set; } = "";
+        private int? dataID = null;
+        private int? taskID = null;
+        private string serialNumber = "";
+        private State? stateBefore = null;
+        private State? stateAfter = null;
+        private ActionTaken? actionTaken = null;
+        private DateTime? completeDate = null;
+        private string procedure = "";
+        private string standardEquipment = "";
+        private Findings? findings = new Findings();
+        private string remarks = "";
+        private string technician = "";
+        public string timestamp = "";
+
+        public int? DataID { get { return dataID; } set { dataID = value; ChangesMade = true; } }
+        public int? TaskID { get { return taskID; } set { taskID = value; ChangesMade = true; } }
+        public string SerialNumber { get { return serialNumber; } set { serialNumber = value; ChangesMade = true; } }
+        public State? StateBefore { get { return stateBefore; } set { stateBefore = value; ChangesMade = true; } }
+        public State? StateAfter { get { return stateAfter; } set { stateAfter = value; ChangesMade = true; } }
+        public ActionTaken? ActionTaken { get { return actionTaken; } set { actionTaken = value; ChangesMade = true; } }
+        public DateTime? CompleteDate { get { return completeDate; } set { completeDate = value; ChangesMade = true; } }
+        public string Procedure { get { return procedure; } set { procedure = value; ChangesMade = true; } }
         //StandardEquipment should be JSON serialization of CalibrationItem class. Certificate number is required.
-        public string StandardEquipment { get; set; } = "";
-        public Findings? findings = new Findings();
-        public string Remarks { get; set; } = "";
-        public string Technician { get; set; } = "";
-        public string Timestamp { get; set; } = "";
+        public string StandardEquipment { get { return standardEquipment; } set { standardEquipment = value; ChangesMade = true; } }
+        public Findings? Findings { get { return findings; } set { findings = value; ChangesMade = true; } }
+        public string Remarks { get { return remarks; } set { remarks = value; ChangesMade = true; } }
+        public string Technician { get { return technician; } set { technician = value; ChangesMade = true; } }
+        public string Timestamp { get { return timestamp; } set { timestamp = value; ChangesMade = true; } }
+        public bool ChangesMade { get; set; } = false;
         public enum DatabaseColumns
         {
             ColDataID,
@@ -29,7 +43,6 @@ namespace CalTools_WPF.ObjectClasses
             ColStateAfterAction,
             ColActionTaken,
             ColCompleteDate,
-            ColDueDate,
             ColProcedure,
             ColStandardEquipment,
             ColFindings,

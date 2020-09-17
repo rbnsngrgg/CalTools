@@ -1,4 +1,5 @@
 ﻿using CalTools_WPF.ObjectClasses;
+using IronXL.Xml.Spreadsheet;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -35,8 +36,9 @@ namespace CalTools_WPF
         private List<CTItem> weekTodoItems = new List<CTItem>();
         private void ScanFolders()
         {
+            List<CTTask> allTasks = database.GetAllTasks();
             List<CTItem> allItems = database.GetAllItems();
-            List<TaskData> calData = database.GetAllTaskData();
+            List<TaskData> taskData = database.GetAllTaskData();
             DateTime defaultDate = new DateTime();
             string itemsFolder = $"{config.CalScansDir}\\Calibration Items\\";
             foreach (string folder in config.Folders)
@@ -48,14 +50,13 @@ namespace CalTools_WPF
                     {
                         CTItem calItem = null;
                         bool newItem = false;
-                        bool changesMade = false;
                         string itemSN = System.IO.Path.GetFileName(itemFolder);
                         foreach (CTItem item in allItems)
                         {
                             if (item.SerialNumber == itemSN) { calItem = item; break; }
                         }
                         if (calItem == null) { calItem = new CTItem(itemSN); newItem = true; }
-                        DateTime? latest = GetLatestCal(calItem.SerialNumber, itemFolder, ref calData);
+                        DateTime? latest = CheckTasks(calItem.SerialNumber, itemFolder, ref taskData, ref allTasks);
                         if (latest == defaultDate) { latest = null; }
                         if (latest != calItem.LastCal | calItem.Directory != itemFolder)
                         {
@@ -65,14 +66,13 @@ namespace CalTools_WPF
                             if (calItem.LastCal != null)
                             { calItem.NextCal = calItem.LastCal.Value.AddMonths(calItem.Interval); }
                             if (newItem) { database.CreateItem(calItem.SerialNumber); }
-                            changesMade = true;
                         }
                         if (latest != null)
                         {
                             if (calItem.NextCal != calItem.LastCal.Value.AddMonths(calItem.Interval))
-                            { calItem.NextCal = calItem.LastCal.Value.AddMonths(calItem.Interval); changesMade = true; }
+                            { calItem.NextCal = calItem.LastCal.Value.AddMonths(calItem.Interval); }
                         }
-                        else { if (calItem.NextCal != null) { calItem.NextCal = null; changesMade = true; } }
+                        else { if (calItem.NextCal != null) { calItem.NextCal = null; } }
                         if (calItem.NextCal != null)
                         {
                             if (((calItem.NextCal - DateTime.Today).Value.TotalDays < config.MarkCalDue) & calItem.Mandatory)
@@ -85,42 +85,77 @@ namespace CalTools_WPF
                             else { if (calItem.TaskDue) { database.UpdateColumn(calItem.SerialNumber, "TaskDue", "0"); } }
                         }
                         else { if (calItem.TaskDue) { database.UpdateColumn(calItem.SerialNumber, "TaskDue", "0"); } }
-                        if (changesMade) { database.SaveItem(calItem); }
+                        if (calItem.ChangesMade) { database.SaveItem(calItem); }
                     }
                 }
             }
         }
-        private DateTime? GetLatestCal(string sn, string folder, ref List<TaskData> calData)
+        private void CheckTasks(string sn, string folder, ref List<TaskData> taskData, ref List<CTTask> tasks)
         {
-            DateTime? calDate = new DateTime();
-            foreach (string filePath in Directory.GetFiles(folder))
+            List<CTTask> currentTasks = new List<CTTask>();
+            foreach(CTTask task in tasks)
             {
-                string file = System.IO.Path.GetFileNameWithoutExtension(filePath);
-                bool snFound = false;
-                DateTime fileDate = new DateTime();
-                DateTime currentFileDate;
-                foreach (string split in file.Split("_"))
-                {
-                    if (DateTime.TryParseExact(split, database.dateFormat, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out currentFileDate))
-                    { if (currentFileDate > fileDate) { fileDate = currentFileDate; } }
-                    else if (sn == split) { snFound = true; }
-                }
-                if (snFound & fileDate > calDate) { calDate = fileDate; }
+                if(task.SerialNumber == sn) { currentTasks.Add(task); }
             }
-            foreach (TaskData data in calData)
-            { if (data.CompleteDate > calDate & data.SerialNumber == sn) { calDate = data.CompleteDate; } }
-            return calDate;
+            foreach (string taskFolder in Directory.GetDirectories(folder))
+            {
+                foreach (CTTask task in currentTasks)
+                {
+                    if (Path.GetFileName(taskFolder).Split("_")[0] == task.TaskID.ToString())
+                    {
+                        DateTime latestDate = new DateTime();
+                        foreach (string filePath in Directory.GetFiles(taskFolder))
+                        {
+                            string file = System.IO.Path.GetFileNameWithoutExtension(filePath);
+                            bool snFound = false;
+                            DateTime currentFileDate = new DateTime();
+                            foreach (string split in file.Split("_"))
+                            {
+                                DateTime.TryParseExact(split, database.dateFormat, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out currentFileDate);
+                                if(sn == split) { snFound = true; }
+                            }
+                            if (snFound & currentFileDate > latestDate) { latestDate = currentFileDate; }
+                        }
+                        if(latestDate > task.CompleteDate)
+                        {
+                            task.CompleteDate = latestDate;
+                            if ((task.DueDate - DateTime.UtcNow).Value.Days < config.MarkCalDue) { task.Due = true; }
+                            else { task.Due = false; }
+                        }
+                        break;
+                    }
+                }
+            }
+            //Test to make sure that a later date here will overwrite a date from the previous section.
+            foreach (CTTask task in currentTasks)
+            {
+                DateTime? latestTaskDate = task.CompleteDate;
+                foreach (TaskData data in taskData)
+                { 
+                    if (data.CompleteDate > latestTaskDate & data.TaskID == task.TaskID) 
+                    { latestTaskDate = data.CompleteDate; } 
+                }
+                if(latestTaskDate > task.CompleteDate)
+                {
+                    task.CompleteDate = latestTaskDate;
+                    if((task.DueDate - DateTime.UtcNow).Value.Days < config.MarkCalDue) { task.Due = true; }
+                    else { task.Due = false; }
+                }
+                if (task.ChangesMade) { database.SaveTask(task); }
+            }
         }
-        //Gets all calibration data for an item and lists them by (date,location)
+        //Gets all task data for an item and lists them by (date,location)
         private List<Dictionary<string, string>> ListTaskData(string taskID)
         {
             List<Dictionary<string, string>> taskDataList = new List<Dictionary<string, string>>();
             foreach (TaskData data in database.GetTaskData(taskID))
             {
-                Dictionary<string, string> cal = new Dictionary<string, string>();
-                cal.Add("date", data.CompleteDate.Value.ToString(database.dateFormat));
-                cal.Add("location", $"{config.DbName}, \"TaskData\", ID: {data.DataID}");
-                cal.Add("id", data.DataID.ToString());
+                Dictionary<string, string> cal = new Dictionary<string, string>
+                {
+                    { "date", data.CompleteDate.Value.ToString(database.dateFormat) },
+                    { "location", $"{config.DbName}, \"TaskData\", ID: {data.DataID}" },
+                    { "id", data.DataID.ToString() }
+                };
                 taskDataList.Add(cal);
             }
             string sn = database.GetTask("TaskID",taskID).SerialNumber;
@@ -150,9 +185,11 @@ namespace CalTools_WPF
         }
         private Dictionary<string, string> ParseFileName(string filePath)
         {
-            Dictionary<string, string> fileInfo = new Dictionary<string, string>();
-            fileInfo.Add("Date", "");
-            fileInfo.Add("SN", "");
+            Dictionary<string, string> fileInfo = new Dictionary<string, string>
+            {
+                { "Date", "" },
+                { "SN", "" }
+            };
             string file = System.IO.Path.GetFileNameWithoutExtension(filePath);
             DateTime fileDate;
             foreach (string split in file.Split("_"))

@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Documents;
@@ -60,6 +61,21 @@ namespace CalTools_WPF
             Disconnect();
             return allItems;
         }
+        public List<CTTask> GetAllTasks()
+        {
+            List<CTTask> allTasks = new List<CTTask>();
+            string command = "SELECT * FROM Tasks";
+            if (!Connect()) { return allTasks; }
+            Execute(command);
+            while (reader.Read())
+            {
+                CTTask task = new CTTask();
+                AssignTaskValues(ref task);
+                allTasks.Add(task);
+            }
+            Disconnect();
+            return allTasks;
+        }
         public List<TaskData> GetTaskData(string taskID)
         {
             List<TaskData> calData = new List<TaskData>();
@@ -110,7 +126,7 @@ namespace CalTools_WPF
             Disconnect();
             return null;
         }
-        public CTTask? GetTask(string col, string item)
+        public CTTask? GetTask(string col, string item, bool disconnect = true)
         {
             string command = $"SELECT * FROM Tasks WHERE {col}='{item}'";
             if (!Connect()) return null;
@@ -119,10 +135,10 @@ namespace CalTools_WPF
             {
                 CTTask returnItem = new CTTask();
                 AssignTaskValues(ref returnItem);
-                Disconnect();
+                if (disconnect) { Disconnect(); }
                 return returnItem;
             }
-            Disconnect();
+            if (disconnect) { Disconnect(); }
             return null;
         }
         public TaskData? GetData(string col, string item)
@@ -164,7 +180,7 @@ namespace CalTools_WPF
                 return false;
             }
         }
-        public bool SaveItem(CTItem item)
+        public bool SaveItem(CTItem item, bool disconnect = true)
         {
             try
             {
@@ -187,7 +203,7 @@ namespace CalTools_WPF
                         $"StandardEquipment='{(item.StandardEquipment == true ? 1 : 0)}' " +
                         $"WHERE SerialNumber='{item.SerialNumber.Replace("'", "''")}'";
                     Execute(command);
-                    Disconnect();
+                    if (disconnect) { Disconnect(); }
                     return true;
                 }
                 else
@@ -223,7 +239,7 @@ namespace CalTools_WPF
                 return false;
             }
         }
-        public bool SaveTask(CTTask task)
+        public bool SaveTask(CTTask task, bool disconnect = false)
         {
             try 
             {
@@ -233,6 +249,7 @@ namespace CalTools_WPF
                         $"VALUES ('{task.SerialNumber}','{task.TaskTitle}','{task.ServiceVendor}','{task.Mandatory}','{task.Interval}','{task.CompleteDateString}'," +
                         $"'{task.DueDateString}','{(task.Due == true ? 1 : 0)}','{task.ActionType}','{task.Comments}')";
                     Execute(command);
+                    if (disconnect) { Disconnect(); }
                     return true;
                 }
             else { return false; }
@@ -243,19 +260,20 @@ namespace CalTools_WPF
                 return false;
             }
 }
-        public bool SaveTaskData(TaskData data, bool timestampOverride = false)
+        public bool SaveTaskData(TaskData data, bool timestampOverride = false, bool disconnect = false)
         {
             try
             {
                 if (Connect())
                 {
-                    string command = $"INSERT INTO TaskData (TaskID,SerialNumber,StateBeforeAction,StateAfterAction,ActionTaken,CompleteDate,DueDate,Procedure,StandardEquipment," +
+                    string command = $"INSERT INTO TaskData (TaskID,SerialNumber,StateBeforeAction,StateAfterAction,ActionTaken,CompleteDate,Procedure,StandardEquipment," +
                         $"Findings,Remarks,Technician,EntryTimeStamp) " +
                         $"VALUES ('{data.TaskID}','{data.SerialNumber.Replace("'", "''")}','{JsonConvert.SerializeObject(data.StateBefore)}','{JsonConvert.SerializeObject(data.StateAfter)}'," +
-                        $"'{JsonConvert.SerializeObject(data.ActionTaken)}','{data.CompleteDate.Value.ToString(dateFormat)}','{data.DueDate.Value.ToString(dateFormat)}'," +
+                        $"'{JsonConvert.SerializeObject(data.ActionTaken)}','{data.CompleteDate.Value.ToString(dateFormat)}'," +
                         $"'{data.Procedure.Replace("'", "''")}','{data.StandardEquipment.Replace("'", "''")}','{JsonConvert.SerializeObject(data.findings).Replace("'", "''")}','{data.Remarks.Replace("'", "''")}','{data.Technician.Replace("'", "''")}'," +
                         $"'{(timestampOverride ? data.Timestamp : DateTime.UtcNow.ToString(timestampFormat, CultureInfo.InvariantCulture))}')";
                     Execute(command);
+                    if (disconnect) { Disconnect(); }
                     return true;
                 }
                 else { return false; }
@@ -352,28 +370,29 @@ namespace CalTools_WPF
             try
             {
                 //Check DB version
-                string command = "PRAGMA user_version";
                 int currentVersion = 5;
-                int dbVersion = 0;
-                Execute(command);
-                if (reader.Read())
-                { dbVersion = reader.GetInt32(0); }
+                int dbVersion = GetDatabaseVersion();
+                if (dbVersion == 5)
+                {
+                    return true;
+                }
                 //Reset connection to prevent db table from being locked.
                 ResetConnection();
-                command = "DROP TABLE IF EXISTS item_groups";
+                string command = "DROP TABLE IF EXISTS item_groups";
                 Execute(command);
                 CreateCurrentTables();
                 while (dbVersion < currentVersion)
                 {
                     if (dbVersion == 3) { FromVersion3(); }
                     if (dbVersion == 4) { FromVersion4(); }
+                    ResetConnection();
+                    dbVersion = GetDatabaseVersion();
                 }
                 if (dbVersion > currentVersion)
                 {
                     MessageBox.Show($"This version of CalTools is outdated and uses database version {currentVersion}. The current database version is {dbVersion}");
                     return false;
                 }
-                tablesExist = true;
                 return true;
             }
             catch (System.Exception ex)
@@ -405,6 +424,7 @@ namespace CalTools_WPF
             item.ItemGroup = reader.GetString((int)CTItem.DatabaseColumns.ItemGroup);
             item.StandardEquipment = reader.GetString((int)CTItem.DatabaseColumns.StandardEquipment) == "1";
             item.CertificateNumber = reader.GetString((int)CTItem.DatabaseColumns.CertificateNumber);
+            item.ChangesMade = false;
         }
         //Parse DB columns to CTTask Object
         private void AssignTaskValues(ref CTTask task)
@@ -422,6 +442,7 @@ namespace CalTools_WPF
             task.Due = reader.GetInt32((int)CTTask.DatabaseColumns.Due) == 1;
             task.ActionType = reader.GetString((int)CTTask.DatabaseColumns.ActionType);
             task.Comments = reader.GetString((int)CTTask.DatabaseColumns.Comments);
+            task.ChangesMade = false;
         }
         //Parse DB columns to TaskData object
         private void AssignDataValues(ref TaskData data)
@@ -434,16 +455,24 @@ namespace CalTools_WPF
             data.ActionTaken = JsonConvert.DeserializeObject<ActionTaken>(reader.GetString((int)TaskData.DatabaseColumns.ColActionTaken));
             if (reader.GetString((int)TaskData.DatabaseColumns.ColCompleteDate).Length > 0)
             { data.CompleteDate = DateTime.ParseExact(reader.GetString((int)TaskData.DatabaseColumns.ColCompleteDate), dateFormat, CultureInfo.InvariantCulture); }
-            if (reader.GetString((int)TaskData.DatabaseColumns.ColDueDate).Length > 0)
-            { data.DueDate = DateTime.ParseExact(reader.GetString((int)TaskData.DatabaseColumns.ColDueDate), dateFormat, CultureInfo.InvariantCulture); }
             data.Procedure = reader.GetString((int)TaskData.DatabaseColumns.ColProcedure);
             data.StandardEquipment = reader.GetString((int)TaskData.DatabaseColumns.ColStandardEquipment);
             data.findings = JsonConvert.DeserializeObject<Findings>(reader.GetString((int)TaskData.DatabaseColumns.ColFindings));
             data.Remarks = reader.GetString((int)TaskData.DatabaseColumns.ColRemarks);
             data.Technician = reader.GetString((int)TaskData.DatabaseColumns.ColTechnician);
+            data.ChangesMade = false;
         }
 
         //Methods for forming and checking the current database structure. The methods assume an open connection.
+        private int GetDatabaseVersion()
+        {
+            string command = "PRAGMA user_version";
+            Execute(command);
+            if (reader.Read())
+            { return reader.GetInt32(0); }
+            else
+            { return 0; }
+        }
         private void CreateCurrentTables()
         {
             //Assumes open connection, create the current structure if it isn't present.
@@ -454,7 +483,7 @@ namespace CalTools_WPF
                     "Directory TEXT DEFAULT ''," +
                     "Description TEXT DEFAULT ''," +
                     "InService INTEGER DEFAULT 1," +
-                    "InServiceDate DEFAULT ''," +
+                    "InServiceDate TEXT DEFAULT ''," +
                     "TaskDue INTEGER DEFAULT 0," +
                     "Model TEXT DEFAULT ''," +
                     "Comment TEXT DEFAULT ''," +
@@ -465,32 +494,33 @@ namespace CalTools_WPF
             Execute(command);
             command = "CREATE TABLE IF NOT EXISTS Tasks (" +
                     "TaskID INTEGER PRIMARY KEY AUTOINCREMENT," +
-                    "FOREIGN KEY(SerialNumber) REFERENCES Items(SerialNumber)," +
+                    "SerialNumber TEXT," +
                     "TaskTitle TEXT DEFAULT ''," +
                     "ServiceVendor TEXT DEFAULT ''," +
-                    "Mandatory INTEGER DEFAULT 1" +
+                    "Mandatory INTEGER DEFAULT 1," +
                     "Interval INTEGER DEFAULT 12," +
                     "CompleteDate TEXT DEFAULT ''," +
                     "DueDate TEXT DEFAULT ''," +
                     "Due INTEGER DEFAULT 0," +
                     "ActionType TEXT DEFAULT 'CALIBRATION'," +
-                    "Comments TEXT DEFAULT '')";
+                    "Comments TEXT DEFAULT ''," +
+                    "FOREIGN KEY(SerialNumber) REFERENCES Items(SerialNumber))";
             Execute(command);
             command = "CREATE TABLE IF NOT EXISTS TaskData (" +
                     "DataID INTEGER PRIMARY KEY AUTOINCREMENT," +
-                    "FOREIGN KEY(TaskID) REFERENCES Tasks(TaskID)," +
+                    "TaskID INTEGER," +
                     "SerialNumber TEXT," +
                     "StateBeforeAction TEXT DEFAULT ''," +
                     "StateAfterAction TEXT DEFAULT ''," +
                     "ActionTaken TEXT DEFAULT ''," +
                     "CompleteDate TEXT DEFAULT ''," +
-                    "DueDate TEXT DEFAULT ''," +
                     "Procedure TEXT DEFAULT ''," +
                     "StandardEquipment TEXT DEFAULT ''," +
                     "Findings TEXT DEFAULT ''," +
                     "Remarks TEXT DEFAULT ''," +
                     "Technician TEXT DEFAULT ''," +
-                    "EntryTimestamp TEXT DEFAULT '')";
+                    "EntryTimestamp TEXT DEFAULT ''," +
+                    "FOREIGN KEY(TaskID) REFERENCES Tasks(TaskID))";
             Execute(command);
         }
         private void FromVersion3()
@@ -504,7 +534,9 @@ namespace CalTools_WPF
         }
         private void FromVersion4()
         {
-            foreach(CalibrationItemV4 calItem in GetAllItemsLegacy())
+            List<CalibrationItemV4> legacyItems = GetAllItemsLegacy();
+            if (!IsConnected()) { conn.Open(); }
+            foreach (CalibrationItemV4 calItem in legacyItems)
             {
                 CTItem item = new CTItem(calItem.SerialNumber);
                 item.Location = calItem.Location;
@@ -531,14 +563,13 @@ namespace CalTools_WPF
                 task.Due = calItem.CalDue;
                 task.ActionType = calItem.VerifyOrCalibrate;
 
-                SaveItem(item);
+                SaveItem(item, false);
                 SaveTask(task);
             }
-            ResetConnection();
-            foreach(CalibrationDataV4 calData in GetAllCalDataLegacy())
+            foreach (CalibrationDataV4 calData in GetAllCalDataLegacy())
             {
                 TaskData taskData = new TaskData();
-                taskData.TaskID = GetTask("SerialNumber", calData.SerialNumber).TaskID;
+                taskData.TaskID = GetTask("SerialNumber", calData.SerialNumber,false).TaskID;
                 taskData.SerialNumber = calData.SerialNumber;
                 taskData.StateBefore = calData.StateBefore;
                 taskData.StateAfter = calData.StateAfter;
@@ -554,12 +585,16 @@ namespace CalTools_WPF
 
                 SaveTaskData(taskData, true);
             }
+            ResetConnection();
             string command = "DROP TABLE IF EXISTS calibration_items";
             Execute(command);
+            ResetConnection();
             command = "DROP TABLE IF EXISTS calibration_data";
             Execute(command);
+            ResetConnection();
             command = "PRAGMA user_version = 5";
             Execute(command);
+            ResetConnection();
         }
         private void AssignItemValuesLegacy(ref CalibrationItemV4 item)
         {
@@ -614,7 +649,6 @@ namespace CalTools_WPF
                 AssignItemValuesLegacy(ref item);
                 allItems.Add(item);
             }
-            Disconnect();
             return allItems;
         }
         public List<CalibrationDataV4> GetAllCalDataLegacy()
@@ -630,7 +664,6 @@ namespace CalTools_WPF
                     AssignDataValuesLegacy(ref data);
                     calData.Add(data);
                 }
-                Disconnect();
             }
             return calData;
         }

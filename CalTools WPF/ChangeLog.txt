@@ -22,6 +22,7 @@
 		Modify data entry to assign dates to the CTTask instead of the TaskData object.
 		Add functionality for handling how files in an item's folder are assigned to tasks.
 			Each task gets a sub folder?
+		Update drag and drop to handle task selection
 --4.2.0
 	--Changed verbiage of some of the labels in the item details area.
 	--Fixed bug that still showed a "Next Calibration" date when there are no longer any calibration records.
