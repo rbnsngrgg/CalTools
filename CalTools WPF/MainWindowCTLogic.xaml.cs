@@ -30,16 +30,16 @@ namespace CalTools_WPF
             { "Standard Equipment","StandardEquipment"} };
         private List<string> manufacturers = new List<string>();
         private List<string> locations = new List<string>();
-        private List<string> calVendors = new List<string>();
+        private List<string> serviceVendors = new List<string>();
         private List<string> itemGroups = new List<string>();
         private List<string> standardEquipment = new List<string>();
         private List<CTItem> weekTodoItems = new List<CTItem>();
+        private List<CTTask> detailsTasks = new List<CTTask>();
         private void ScanFolders()
         {
             List<CTTask> allTasks = database.GetAllTasks();
             List<CTItem> allItems = database.GetAllItems();
             List<TaskData> taskData = database.GetAllTaskData();
-            DateTime defaultDate = new DateTime();
             string itemsFolder = $"{config.CalScansDir}\\Calibration Items\\";
             foreach (string folder in config.Folders)
             {
@@ -56,132 +56,35 @@ namespace CalTools_WPF
                             if (item.SerialNumber == itemSN) { calItem = item; break; }
                         }
                         if (calItem == null) { calItem = new CTItem(itemSN); newItem = true; }
-                        DateTime? latest = CheckTasks(calItem.SerialNumber, itemFolder, ref taskData, ref allTasks);
-                        if (latest == defaultDate) { latest = null; }
-                        if (latest != calItem.LastCal | calItem.Directory != itemFolder)
+                        if (calItem.Directory != itemFolder)
                         {
                             calItem.Directory = itemFolder;
-                            calItem.LastCal = latest;
-
-                            if (calItem.LastCal != null)
-                            { calItem.NextCal = calItem.LastCal.Value.AddMonths(calItem.Interval); }
                             if (newItem) { database.CreateItem(calItem.SerialNumber); }
                         }
-                        if (latest != null)
-                        {
-                            if (calItem.NextCal != calItem.LastCal.Value.AddMonths(calItem.Interval))
-                            { calItem.NextCal = calItem.LastCal.Value.AddMonths(calItem.Interval); }
-                        }
-                        else { if (calItem.NextCal != null) { calItem.NextCal = null; } }
-                        if (calItem.NextCal != null)
-                        {
-                            if (((calItem.NextCal - DateTime.Today).Value.TotalDays < config.MarkCalDue) & calItem.Mandatory)
-                            {
-                                if (!calItem.TaskDue)
-                                {
-                                    database.UpdateColumn(calItem.SerialNumber, "TaskDue", "1");
-                                }
-                            }
-                            else { if (calItem.TaskDue) { database.UpdateColumn(calItem.SerialNumber, "TaskDue", "0"); } }
-                        }
-                        else { if (calItem.TaskDue) { database.UpdateColumn(calItem.SerialNumber, "TaskDue", "0"); } }
                         if (calItem.ChangesMade) { database.SaveItem(calItem); }
                     }
                 }
             }
         }
+        //Checks completion dates and due dates on all tasks.
         private void CheckTasks(string sn, string folder, ref List<TaskData> taskData, ref List<CTTask> tasks)
         {
-            List<CTTask> currentTasks = new List<CTTask>();
-            foreach(CTTask task in tasks)
-            {
-                if(task.SerialNumber == sn) { currentTasks.Add(task); }
-            }
             foreach (string taskFolder in Directory.GetDirectories(folder))
             {
-                foreach (CTTask task in currentTasks)
+                string folderTaskID = taskFolder.Split("_")[0];
+                foreach (CTTask task in tasks)
                 {
-                    if (Path.GetFileName(taskFolder).Split("_")[0] == task.TaskID.ToString())
+                    if (folderTaskID == task.TaskID.ToString() & folder == task.SerialNumber)
                     {
-                        DateTime latestDate = new DateTime();
-                        foreach (string filePath in Directory.GetFiles(taskFolder))
-                        {
-                            string file = System.IO.Path.GetFileNameWithoutExtension(filePath);
-                            bool snFound = false;
-                            DateTime currentFileDate = new DateTime();
-                            foreach (string split in file.Split("_"))
-                            {
-                                DateTime.TryParseExact(split, database.dateFormat, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out currentFileDate);
-                                if(sn == split) { snFound = true; }
-                            }
-                            if (snFound & currentFileDate > latestDate) { latestDate = currentFileDate; }
-                        }
-                        if(latestDate > task.CompleteDate)
-                        {
-                            task.CompleteDate = latestDate;
-                            if ((task.DueDate - DateTime.UtcNow).Value.Days < config.MarkCalDue) { task.Due = true; }
-                            else { task.Due = false; }
-                        }
-                        break;
+                        //May be faster to pass entire list that's in memory than to ping the database each time.
+                        task.CheckDates(taskFolder, database.GetTaskData(task.TaskID.ToString()));
                     }
                 }
             }
-            //Test to make sure that a later date here will overwrite a date from the previous section.
-            foreach (CTTask task in currentTasks)
+            foreach (CTTask task in tasks)
             {
-                DateTime? latestTaskDate = task.CompleteDate;
-                foreach (TaskData data in taskData)
-                { 
-                    if (data.CompleteDate > latestTaskDate & data.TaskID == task.TaskID) 
-                    { latestTaskDate = data.CompleteDate; } 
-                }
-                if(latestTaskDate > task.CompleteDate)
-                {
-                    task.CompleteDate = latestTaskDate;
-                    if((task.DueDate - DateTime.UtcNow).Value.Days < config.MarkCalDue) { task.Due = true; }
-                    else { task.Due = false; }
-                }
                 if (task.ChangesMade) { database.SaveTask(task); }
             }
-        }
-        //Gets all task data for an item and lists them by (date,location)
-        private List<Dictionary<string, string>> ListTaskData(string taskID)
-        {
-            List<Dictionary<string, string>> taskDataList = new List<Dictionary<string, string>>();
-            foreach (TaskData data in database.GetTaskData(taskID))
-            {
-                Dictionary<string, string> cal = new Dictionary<string, string>
-                {
-                    { "date", data.CompleteDate.Value.ToString(database.dateFormat) },
-                    { "location", $"{config.DbName}, \"TaskData\", ID: {data.DataID}" },
-                    { "id", data.DataID.ToString() }
-                };
-                taskDataList.Add(cal);
-            }
-            string sn = database.GetTask("TaskID",taskID).SerialNumber;
-            //TODO: Add functionality for task sub folders
-            foreach (string filePath in Directory.GetFiles(database.GetItem("SerialNumber", sn).Directory))
-            {
-                Dictionary<string, string> cal = new Dictionary<string, string>();
-                string file = System.IO.Path.GetFileNameWithoutExtension(filePath);
-                bool snFound = false;
-                bool dateFound = false;
-                DateTime fileDate = new DateTime();
-                DateTime tryDate;
-                foreach (string split in file.Split("_"))
-                {
-                    if (DateTime.TryParseExact(split, database.dateFormat, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out tryDate))
-                    { dateFound = true; fileDate = tryDate; }
-                    else if (sn == split) { snFound = true; }
-                    if (dateFound & snFound) 
-                    { 
-                        cal.Add("date", fileDate.ToString(database.dateFormat, CultureInfo.InvariantCulture));
-                        cal.Add("location", filePath); taskDataList.Add(cal);
-                        cal.Add("id", "");
-                        break; }
-                }
-            }
-            return taskDataList;
         }
         private Dictionary<string, string> ParseFileName(string filePath)
         {
@@ -265,40 +168,42 @@ namespace CalTools_WPF
         private void UpdateLists()
         {
             manufacturers.Clear();
-            calVendors.Clear();
+            serviceVendors.Clear();
             locations.Clear();
             itemGroups.Clear();
             standardEquipment.Clear();
             foreach (CTItem calItem in database.GetAllItems())
             {
                 if (!manufacturers.Contains(calItem.Manufacturer)) { manufacturers.Add(calItem.Manufacturer); }
-                if (!calVendors.Contains(calItem.CalVendor)) { calVendors.Add(calItem.CalVendor); }
                 if (!locations.Contains(calItem.Location)) { locations.Add(calItem.Location); }
                 if (!itemGroups.Contains(calItem.ItemGroup)) { itemGroups.Add(calItem.ItemGroup); }
                 if (calItem.StandardEquipment & !standardEquipment.Contains(calItem.SerialNumber)) { standardEquipment.Add(calItem.SerialNumber); }
             }
+            foreach(CTTask task in database.GetAllTasks())
+            { if (!serviceVendors.Contains(task.ServiceVendor)) { serviceVendors.Add(task.ServiceVendor); } }
             manufacturers.Sort();
-            calVendors.Sort();
+            serviceVendors.Sort();
             locations.Sort();
             itemGroups.Sort();
             standardEquipment.Add("");
             standardEquipment.Sort();
         }
-        //Single-item list update that doesn't require DB query
+        //Single-item list update that doesn't require CTItem DB query
         private void UpdateListsSingle(CTItem calItem)
         {
             if (!manufacturers.Contains(calItem.Manufacturer)) { manufacturers.Add(calItem.Manufacturer); }
-            if (!calVendors.Contains(calItem.CalVendor)) { calVendors.Add(calItem.CalVendor); }
             if (!locations.Contains(calItem.Location)) { locations.Add(calItem.Location); }
             if (!itemGroups.Contains(calItem.ItemGroup)) { itemGroups.Add(calItem.ItemGroup); }
             if (calItem.StandardEquipment & !standardEquipment.Contains(calItem.SerialNumber)) { standardEquipment.Add(calItem.SerialNumber); }
+            foreach (CTTask task in database.GetTasks("SerialNumber",calItem.SerialNumber))
+            { if (!serviceVendors.Contains(task.ServiceVendor)) { serviceVendors.Add(task.ServiceVendor); } }
             manufacturers.Sort();
-            calVendors.Sort();
+            serviceVendors.Sort();
             locations.Sort();
             itemGroups.Sort();
             standardEquipment.Sort();
         }
-
+        //Filters items when search is used
         private List<CTItem> ItemListFilter(string mode, string searchText)
         {
             List<CTItem> filteredItems = new List<CTItem>();

@@ -4,6 +4,8 @@ using System.IO;
 using System.Collections.Generic;
 using System.Text;
 using System.Windows.Documents;
+using System.IO.Enumeration;
+using CalTools_WPF.ObjectClasses;
 
 namespace CalTools_WPF
 {
@@ -19,8 +21,7 @@ namespace CalTools_WPF
         private DateTime? dueDate = null;
         private bool due = false;
         private string actionType = "";
-        private string comments = "";
-
+        private string comment = "";
 
         public int TaskID { get { return taskID; } set { taskID = value; ChangesMade = true; } }
         public string SerialNumber { get { return serialNumber; } set { serialNumber = value; ChangesMade = true; } }
@@ -32,9 +33,10 @@ namespace CalTools_WPF
             set 
             { 
                 completeDate = value;
-                DueDate = value.Value.AddMonths(Interval);
-                if (value != null) 
-                { CompleteDateString = completeDate.Value.ToString("yyyy-MM-dd"); }
+
+                if (value != null)
+                { DueDate = value.Value.AddMonths(Interval); CompleteDateString = completeDate.Value.ToString("yyyy-MM-dd"); }
+                else { DueDate = null;CompleteDateString = ""; }
                 ChangesMade = true;
             } 
         }
@@ -46,14 +48,15 @@ namespace CalTools_WPF
                 if (value != null)
                 { 
                     DueDateString = dueDate.Value.ToString("yyyy-MM-dd");
-                } 
+                }
+                else { DueDateString = ""; }
                 ChangesMade = true;
             }
         }
-        public bool Due { get { return due; } set { due = value; ChangesMade = true; } }
+        public bool Due { get { return due; } set { if (due != value) { due = value; ChangesMade = true; } } }
         public string DueDateString { get; private set; }
         public string ActionType { get { return actionType; } set { actionType = value; ChangesMade = true; } }
-        public string Comments { get { return comments; } set { comments = value; ChangesMade = true; } }
+        public string Comment { get { return comment; } set { comment = value; ChangesMade = true; } }
         public bool ChangesMade { get; set; } = false;
         public enum DatabaseColumns
         {
@@ -77,21 +80,52 @@ namespace CalTools_WPF
             return Due;
         }
 
-        public void CheckFolder(string taskFolder)
+        //Methods for checking the completion dates of TaskData and task folders
+        public void CheckDates(string taskFolder, List<TaskData> taskDataList)
         {
-            if (taskFolder.Split("_")[0] != TaskID.ToString()) { return; }
+            DateTime latestFileDate = CheckFolder(taskFolder);
+            DateTime latestDataDate = CheckTaskData(ref taskDataList);
+            if (latestFileDate == latestDataDate & latestDataDate == new DateTime()) { CompleteDate = null; }
+            else if(latestFileDate > latestDataDate) { CompleteDate = latestFileDate; }
+            else if (latestDataDate > latestFileDate) { CompleteDate = latestDataDate; }
+
+        }
+
+        private DateTime CheckFolder(string taskFolder)
+        {
+            if (taskFolder.Split("_")[0] != TaskID.ToString()) { return new DateTime(); }
             DateTime latestFileDate = new DateTime();
             foreach(string file in Directory.GetFiles(taskFolder))
             {
                 string fileName = Path.GetFileNameWithoutExtension(file);
-                string[] fileSplit = fileName.Split("_");
-                bool snMatch = false;
-
-                foreach (string split in fileSplit)
-                {
-                    DateTime.TryParseExact(split, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out currentFileDate);
-                }
+                DateTime fileDate = CheckFile(fileName);
+                if(fileDate > latestFileDate) { latestFileDate = fileDate; }
             }
+            return latestFileDate;
+        }
+        private DateTime CheckFile(string file)
+        {
+            DateTime fileDate = new DateTime();
+            string[] fileSplit = file.Split("_");
+            bool snMatch = false;
+
+            foreach (string split in fileSplit)
+            {
+                DateTime.TryParseExact(split, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out fileDate);
+                if(split == SerialNumber)
+                { snMatch = true; }
+            }
+            if (snMatch) { return fileDate; }
+            else { return new DateTime(); }
+        }
+        private DateTime CheckTaskData(ref List<TaskData> taskDataList)
+        {
+            DateTime latestData = new DateTime();
+            foreach(TaskData data in taskDataList)
+            {
+                if (data.CompleteDate != null) { if (data.CompleteDate > latestData) { latestData = (DateTime)data.CompleteDate; } }
+            }
+            return latestData;
         }
     }
 }

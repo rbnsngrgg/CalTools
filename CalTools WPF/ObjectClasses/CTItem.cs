@@ -45,7 +45,6 @@ namespace CalTools_WPF
             Description,
             InService,
             InServiceDate,
-            TaskDue,
             Model,
             Comments,
             Timestamp,

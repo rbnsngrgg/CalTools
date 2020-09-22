@@ -42,7 +42,7 @@ namespace CalTools_WPF
             }
             DetailsManufacturer.ItemsSource = manufacturers;
             DetailsLocation.ItemsSource = locations;
-            DetailsVendor.ItemsSource = calVendors;
+            TaskVendorCol.ItemsSource = serviceVendors;
             DetailsItemGroup.ItemsSource = itemGroups;
             todoTable.ItemsSource = weekTodoItems;
         }
@@ -110,30 +110,7 @@ namespace CalTools_WPF
                 DetailsDescription.Text = item.Description;
                 DetailsLocation.Text = item.Location;
                 DetailsManufacturer.Text = item.Manufacturer;
-                switch (item.VerifyOrCalibrate)
-                {
-                    case "MAINTENANCE":
-                        {
-                            DetailsAction.SelectedItem = ActionMaintenance;
-                            break;
-                        }
-                    case "VERIFICATION":
-                        {
-                            DetailsAction.SelectedItem = ActionVerification;
-                            break;
-                        }
-                    default:
-                        {
-                            DetailsAction.SelectedItem = ActionCalibration;
-                            break;
-                        }
-                }
-                DetailsVendor.Text = item.CalVendor;
-                DetailsIntervalBox.Text = item.Interval.ToString();
-                if (item.LastCal != null) { DetailsLastCal.Content = item.LastCal.Value.ToString("yyyy-MM-dd"); } else { DetailsLastCal.Content = ""; }
                 if (item.InServiceDate != null) { DetailsOperationDate.Text = item.InServiceDate.Value.ToString("yyyy-MM-dd"); } else { DetailsOperationDate.Clear(); }
-                if (item.NextCal != null) { DetailsNextCal.Content = item.NextCal.Value.ToString("yyyy-MM-dd"); } else { DetailsNextCal.Content = ""; }
-                DetailsMandatory.IsChecked = item.Mandatory;
                 DetailsInOperation.IsChecked = item.InService;
                 DetailsItemGroup.Text = item.ItemGroup;
                 DetailsComments.Text = item.Comment;
@@ -149,13 +126,8 @@ namespace CalTools_WPF
             {
                 child.IsEnabled = enable;
             }
-            DetailsIntervalBox.IsEnabled = enable;
-            DetailsIntervalUp.IsEnabled = enable;
-            DetailsIntervalDown.IsEnabled = enable;
             DetailsComments.IsEnabled = enable;
-            ShowDataButton.IsEnabled = enable;
-            DetailsCalDataTable.IsEnabled = enable;
-            if (!enable) { DetailsCalDataTable.Visibility = Visibility.Collapsed; ShowDataButton.Content = "Show Calibration Data"; }
+            DetailsTasksTable.IsEnabled = enable;
         }
 
         private void GoToItem(string sn)
@@ -285,13 +257,9 @@ namespace CalTools_WPF
                 item.Description = DetailsDescription.Text;
                 item.Location = DetailsLocation.Text;
                 item.Manufacturer = DetailsManufacturer.Text;
-                item.VerifyOrCalibrate = DetailsAction.Text;
-                item.CalVendor = DetailsVendor.Text;
-                item.Interval = int.Parse(DetailsIntervalBox.Text);
                 DateTime inservice;
                 if (DateTime.TryParseExact(DetailsOperationDate.Text, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out inservice))
                 { item.InServiceDate = inservice; };
-                item.Mandatory = DetailsMandatory.IsChecked == true;
                 item.InService = DetailsInOperation.IsChecked == true;
                 item.ItemGroup = DetailsItemGroup.Text;
                 item.Comment = DetailsComments.Text;
@@ -343,26 +311,6 @@ namespace CalTools_WPF
                 selected = (TreeViewItem)CalibrationItemTree.SelectedItem;
                 string directory = database.GetItem("SerialNumber", (string)selected.Header).Directory;
                 Process.Start("explorer", directory);
-            }
-        }
-        private void DetailsIntervalUp_Click(object sender, RoutedEventArgs e)
-        {
-            if (!DetailsIntervalBox.IsEnabled) { return; }
-            int num;
-            if (int.TryParse(DetailsIntervalBox.Text, out num))
-            {
-                num++;
-                DetailsIntervalBox.Text = num.ToString();
-            }
-        }
-        private void DetailsIntervalDown_Click(object sender, RoutedEventArgs e)
-        {
-            if (!DetailsIntervalBox.IsEnabled) { return; }
-            int num;
-            if (int.TryParse(DetailsIntervalBox.Text, out num))
-            {
-                num--;
-                DetailsIntervalBox.Text = num.ToString();
             }
         }
         private void UpdateButton_Click(object sender, RoutedEventArgs e)
@@ -518,50 +466,22 @@ namespace CalTools_WPF
             { NewReport((CTItem)todoTable.SelectedItem); }
         }
 
-        private void ShowDataButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (DetailsCalDataTable.Visibility == Visibility.Visible)
-            { ShowDataButton.Content = "Show Calibration Data"; DetailsCalDataTable.Visibility = Visibility.Collapsed; }
-            else if (DetailsSN.IsEnabled)
-            {
-                ShowDataButton.Content = "Hide Calibration Data";
-                DetailsCalDataTable.Visibility = Visibility.Visible;
-                DetailsCalDataTable.ItemsSource = ListTaskData(SelectedSN());
-            }
-        }
-
         private void ContextViewData_Click(object sender, RoutedEventArgs e)
         {
-            if (DetailsCalDataTable.SelectedItem != null)
+            //Open Data Viewer window
+            if (DetailsTasksTable.SelectedItem != null)
             {
-                Dictionary<string, string> item = (Dictionary<string, string>)DetailsCalDataTable.SelectedItem;
-                if(File.Exists(item["location"]))
-                {
-                    new Process{StartInfo = new ProcessStartInfo(item["location"]){ UseShellExecute = true }}.Start();
-                }
-                else
-                {
-                    TaskData data = database.GetData("DataID", item["id"]);
-                    if (data != null)
-                    {
-                        //Open with in-app data viewer, plug in information using "data" object
-                        CalDataViewer viewer = new CalDataViewer(data);
-                        if (viewer.ShowDialog() == true)
-                        {
-                            database.RemoveCalData(data.DataID.ToString());
-                            UpdateItemList();
-                        }
-                    }
-                }
             }
         }
 
         private void ContextOpenLocation_Click(object sender, RoutedEventArgs e)
         {
-            if (DetailsCalDataTable.SelectedItem != null)
+            if (DetailsTasksTable.SelectedItem != null)
             {
-                Dictionary<string, string> item = (Dictionary<string, string>)DetailsCalDataTable.SelectedItem;
-                if (Directory.Exists(Path.GetDirectoryName(item["location"]))) { Process.Start("explorer",Path.GetDirectoryName(item["location"])); }
+                CTTask task = (CTTask)DetailsTasksTable.SelectedItem;
+                CTItem item = database.GetItem("SerialNumber", task.SerialNumber);
+                if (Directory.Exists(Path.GetDirectoryName(item.Directory)))
+                { Process.Start("explorer",Path.GetDirectoryName(item.Directory)); }
                 else { Process.Start("explorer",config.CalListDir); }
             }
         }

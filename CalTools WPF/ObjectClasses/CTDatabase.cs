@@ -126,20 +126,35 @@ namespace CalTools_WPF
             Disconnect();
             return null;
         }
-        public CTTask? GetTask(string col, string item, bool disconnect = true)
+        public CTItem? GetItemFromTask(CTTask task)
         {
-            string command = $"SELECT * FROM Tasks WHERE {col}='{item}'";
+            string command = $"SELECT * FROM Items WHERE SerialNumber='{task.SerialNumber}'";
             if (!Connect()) return null;
             Execute(command);
             if (reader.Read())
             {
-                CTTask returnItem = new CTTask();
-                AssignTaskValues(ref returnItem);
-                if (disconnect) { Disconnect(); }
+                CTItem returnItem = new CTItem(reader.GetString(0));
+                AssignItemValues(ref returnItem);
+                Disconnect();
                 return returnItem;
             }
-            if (disconnect) { Disconnect(); }
+            Disconnect();
             return null;
+        }
+        public List<CTTask> GetTasks(string col, string item, bool disconnect = true)
+        {
+            List<CTTask> tasks = new List<CTTask>();
+            string command = $"SELECT * FROM Tasks WHERE {col}='{item}'";
+            if (!Connect()) return tasks;
+            Execute(command);
+            while (reader.Read())
+            {
+                CTTask task = new CTTask();
+                AssignTaskValues(ref task);
+                tasks.Add(task);
+            }
+            if (disconnect) { Disconnect(); }
+            return tasks;
         }
         public TaskData? GetData(string col, string item)
         {
@@ -247,7 +262,7 @@ namespace CalTools_WPF
                 {
                     string command = $"INSERT INTO Tasks (SerialNumber,TaskTitle,ServiceVendor,Mandatory,Interval,CompleteDate,DueDate,Due,ActionType,Comments) " +
                         $"VALUES ('{task.SerialNumber}','{task.TaskTitle}','{task.ServiceVendor}','{task.Mandatory}','{task.Interval}','{task.CompleteDateString}'," +
-                        $"'{task.DueDateString}','{(task.Due == true ? 1 : 0)}','{task.ActionType}','{task.Comments}')";
+                        $"'{task.DueDateString}','{(task.Due == true ? 1 : 0)}','{task.ActionType}','{task.Comment}')";
                     Execute(command);
                     if (disconnect) { Disconnect(); }
                     return true;
@@ -270,7 +285,7 @@ namespace CalTools_WPF
                         $"Findings,Remarks,Technician,EntryTimeStamp) " +
                         $"VALUES ('{data.TaskID}','{data.SerialNumber.Replace("'", "''")}','{JsonConvert.SerializeObject(data.StateBefore)}','{JsonConvert.SerializeObject(data.StateAfter)}'," +
                         $"'{JsonConvert.SerializeObject(data.ActionTaken)}','{data.CompleteDate.Value.ToString(dateFormat)}'," +
-                        $"'{data.Procedure.Replace("'", "''")}','{data.StandardEquipment.Replace("'", "''")}','{JsonConvert.SerializeObject(data.findings).Replace("'", "''")}','{data.Remarks.Replace("'", "''")}','{data.Technician.Replace("'", "''")}'," +
+                        $"'{data.Procedure.Replace("'", "''")}','{data.StandardEquipment.Replace("'", "''")}','{JsonConvert.SerializeObject(data.Findings).Replace("'", "''")}','{data.Remarks.Replace("'", "''")}','{data.Technician.Replace("'", "''")}'," +
                         $"'{(timestampOverride ? data.Timestamp : DateTime.UtcNow.ToString(timestampFormat, CultureInfo.InvariantCulture))}')";
                     Execute(command);
                     if (disconnect) { Disconnect(); }
@@ -416,7 +431,6 @@ namespace CalTools_WPF
             item.InService = reader.GetString((int)CTItem.DatabaseColumns.InService) == "1";
             if (reader.GetString((int)CTItem.DatabaseColumns.InServiceDate).Length > 0)
             { item.InServiceDate = DateTime.ParseExact(reader.GetString((int)CTItem.DatabaseColumns.InServiceDate), dateFormat, CultureInfo.InvariantCulture); }
-            item.TaskDue = reader.GetString((int)CTItem.DatabaseColumns.TaskDue) == "1";
             item.Model = reader.GetString((int)CTItem.DatabaseColumns.Model);
             item.Comment = reader.GetString((int)CTItem.DatabaseColumns.Comments);
             if (reader.GetString((int)CTItem.DatabaseColumns.Timestamp).Length > 0) 
@@ -441,7 +455,7 @@ namespace CalTools_WPF
             { task.DueDate = DateTime.ParseExact(reader.GetString((int)CTTask.DatabaseColumns.DueDate), dateFormat, CultureInfo.InvariantCulture); }
             task.Due = reader.GetInt32((int)CTTask.DatabaseColumns.Due) == 1;
             task.ActionType = reader.GetString((int)CTTask.DatabaseColumns.ActionType);
-            task.Comments = reader.GetString((int)CTTask.DatabaseColumns.Comments);
+            task.Comment = reader.GetString((int)CTTask.DatabaseColumns.Comments);
             task.ChangesMade = false;
         }
         //Parse DB columns to TaskData object
@@ -457,7 +471,7 @@ namespace CalTools_WPF
             { data.CompleteDate = DateTime.ParseExact(reader.GetString((int)TaskData.DatabaseColumns.ColCompleteDate), dateFormat, CultureInfo.InvariantCulture); }
             data.Procedure = reader.GetString((int)TaskData.DatabaseColumns.ColProcedure);
             data.StandardEquipment = reader.GetString((int)TaskData.DatabaseColumns.ColStandardEquipment);
-            data.findings = JsonConvert.DeserializeObject<Findings>(reader.GetString((int)TaskData.DatabaseColumns.ColFindings));
+            data.Findings = JsonConvert.DeserializeObject<Findings>(reader.GetString((int)TaskData.DatabaseColumns.ColFindings));
             data.Remarks = reader.GetString((int)TaskData.DatabaseColumns.ColRemarks);
             data.Technician = reader.GetString((int)TaskData.DatabaseColumns.ColTechnician);
             data.ChangesMade = false;
@@ -484,7 +498,6 @@ namespace CalTools_WPF
                     "Description TEXT DEFAULT ''," +
                     "InService INTEGER DEFAULT 1," +
                     "InServiceDate TEXT DEFAULT ''," +
-                    "TaskDue INTEGER DEFAULT 0," +
                     "Model TEXT DEFAULT ''," +
                     "Comment TEXT DEFAULT ''," +
                     "Timestamp TEXT DEFAULT ''," +
@@ -569,16 +582,15 @@ namespace CalTools_WPF
             foreach (CalibrationDataV4 calData in GetAllCalDataLegacy())
             {
                 TaskData taskData = new TaskData();
-                taskData.TaskID = GetTask("SerialNumber", calData.SerialNumber,false).TaskID;
+                taskData.TaskID = GetTasks("SerialNumber", calData.SerialNumber,false)[0].TaskID;
                 taskData.SerialNumber = calData.SerialNumber;
                 taskData.StateBefore = calData.StateBefore;
                 taskData.StateAfter = calData.StateAfter;
                 taskData.ActionTaken = calData.ActionTaken;
                 taskData.CompleteDate = calData.CalibrationDate;
-                taskData.DueDate = calData.DueDate;
                 taskData.Procedure = calData.Procedure;
                 taskData.StandardEquipment = calData.Procedure;
-                taskData.findings = calData.findings;
+                taskData.Findings = calData.findings;
                 taskData.Remarks = calData.Remarks;
                 taskData.Technician = calData.Technician;
                 taskData.Timestamp = calData.Timestamp;
