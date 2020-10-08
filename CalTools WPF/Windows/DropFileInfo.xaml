@@ -11,6 +11,7 @@
             <RowDefinition Height="50"/>
             <RowDefinition/>
             <RowDefinition/>
+            <RowDefinition/>
             <RowDefinition Height="70"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
@@ -22,10 +23,12 @@
         <Label Content="Enter information for the dropped file:" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3" HorizontalAlignment="Center" VerticalAlignment="Bottom" FontSize="18"/>
         <Label Content="Serial Number:" Grid.Row="1" Grid.Column="0" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="14"/>
         <TextBox x:Name="SerialNumberBox" Grid.Row="1" Grid.Column="2" HorizontalAlignment="Left" VerticalAlignment="Center" FontSize="14" Height="25" Width="250"/>
-        <Label Content="Date:" Grid.Row="2" Grid.Column="0" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="14"/>
-        <TextBox x:Name="DateBox" Grid.Row="2" Grid.Column="2" HorizontalAlignment="Left" VerticalAlignment="Center" FontSize="14" Height="25" Width="250"/>
+        <Label Content="Task: " Grid.Row="2" Grid.Column="0" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="14"/>
+        <ComboBox x:Name="TaskBox" Grid.Row="2" Grid.Column="2" HorizontalAlignment="Left" VerticalAlignment="Center" FontSize="14" Height="25" Width="250" DisplayMemberPath="TaskTitle"/>
+        <Label Content="Date:" Grid.Row="3" Grid.Column="0" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="14"/>
+        <TextBox x:Name="DateBox" Grid.Row="3" Grid.Column="2" HorizontalAlignment="Left" VerticalAlignment="Center" FontSize="14" Height="25" Width="250"/>
 
-        <DockPanel HorizontalAlignment="Center" Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="3">
+        <DockPanel HorizontalAlignment="Center" Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="3">
             <Button x:Name="InfoOKButton" Content="OK" Width="100" Height="23" Click="InfoOKButton_Click"/>
             <Separator Width="50" Opacity="0"/>
             <Button x:Name="InfoCancelButton" Content="Cancel" Width="100" Height="23" Click="InfoCancelButton_Click"/>

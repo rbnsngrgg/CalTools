@@ -1,5 +1,4 @@
 ﻿using CalTools_WPF.ObjectClasses;
-using IronXL.Xml.Spreadsheet;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -17,30 +16,30 @@ namespace CalTools_WPF
         private CTDatabase database;
         private CTConfig config = new CTConfig();
         private Dictionary<string, string> searchModes = new Dictionary<string, string>() {
-            { "Serial Number","SerialNumber"},
-            {"Location","Location"},
-            { "Calibration Vendor","CalVendor" },
+            { "Serial Number","SerialNumber" },
+            { "Location","Location" },
+            { "Service Vendor","Vendor" },
             { "Manufacturer","Manufacturer" },
             { "Description","Description" },
-            { "Calibration Due","CalDue" },
+            { "Action Due","Due" },
             { "Model","Model" },
             { "Has Comment","Comment" },
             { "Item Group","ItemGroup" },
-            { "Action","VerifyOrCalibrate" },
+            { "Action","ActionType" },
             { "Standard Equipment","StandardEquipment"} };
         private List<string> manufacturers = new List<string>();
         private List<string> locations = new List<string>();
         private List<string> serviceVendors = new List<string>();
         private List<string> itemGroups = new List<string>();
         private List<string> standardEquipment = new List<string>();
-        private List<CTItem> weekTodoItems = new List<CTItem>();
+        private List<Dictionary<string, string>> weekTodoItems = new List<Dictionary<string, string>>();
         private List<CTTask> detailsTasks = new List<CTTask>();
         private void ScanFolders()
         {
             List<CTTask> allTasks = database.GetAllTasks();
             List<CTItem> allItems = database.GetAllItems();
             List<TaskData> taskData = database.GetAllTaskData();
-            string itemsFolder = $"{config.CalScansDir}\\Calibration Items\\";
+            string itemsFolder = $"{config.ItemScansDir}\\";
             foreach (string folder in config.Folders)
             {
                 string scanFolder = $"{itemsFolder}{folder}";
@@ -61,6 +60,7 @@ namespace CalTools_WPF
                             calItem.Directory = itemFolder;
                             if (newItem) { database.CreateItem(calItem.SerialNumber); }
                         }
+                        CheckTasks(calItem.SerialNumber, itemFolder, ref taskData, ref allTasks);
                         if (calItem.ChangesMade) { database.SaveItem(calItem); }
                     }
                 }
@@ -71,19 +71,19 @@ namespace CalTools_WPF
         {
             foreach (string taskFolder in Directory.GetDirectories(folder))
             {
-                string folderTaskID = taskFolder.Split("_")[0];
+                string folderTaskID = Path.GetFileName(taskFolder).Split("_")[0];
                 foreach (CTTask task in tasks)
                 {
-                    if (folderTaskID == task.TaskID.ToString() & folder == task.SerialNumber)
+                    if (folderTaskID == task.TaskID.ToString() & Path.GetFileName(folder) == task.SerialNumber)
                     {
-                        //May be faster to pass entire list that's in memory than to ping the database each time.
+                        task.TaskDirectory = taskFolder;
                         task.CheckDates(taskFolder, database.GetTaskData(task.TaskID.ToString()));
                     }
                 }
             }
             foreach (CTTask task in tasks)
             {
-                if (task.ChangesMade) { database.SaveTask(task); }
+                if (task.ChangesMade) { database.SaveTask(task); task.ChangesMade = false; }
             }
         }
         private Dictionary<string, string> ParseFileName(string filePath)
@@ -110,7 +110,9 @@ namespace CalTools_WPF
         }
         private void CheckReceiving()
         {
-            List<string> files = new List<string>(Directory.GetFiles($"{config.CalListDir}\\receiving"));
+            string receivingFolder = $"{config.ListDir}\\receiving";
+            if (!Directory.Exists(receivingFolder) & Directory.Exists(config.ListDir)) { Directory.CreateDirectory(receivingFolder); }
+            List<string> files = new List<string>(Directory.GetFiles(receivingFolder));
             if (files.Count > 0)
             {
                 foreach (string file in files)
@@ -124,7 +126,7 @@ namespace CalTools_WPF
             Dictionary<string, string> fileInfo;
             CTItem calItem;
             if (newFileName == "")
-            {  fileInfo = ParseFileName(file); calItem = database.GetItem("SerialNumber", fileInfo["SN"]); }
+            { fileInfo = ParseFileName(file); calItem = database.GetItem("SerialNumber", fileInfo["SN"]); }
             else { fileInfo = ParseFileName(newFileName); calItem = database.GetItem("SerialNumber", fileInfo["SN"]); }
             if (calItem != null)
             {
@@ -136,14 +138,31 @@ namespace CalTools_WPF
                     {
                         try { File.Move(file, $"{calItem.Directory}\\{newFileName}"); }
                         catch (System.IO.IOException) { MessageBox.Show($"The file \"{calItem.Directory}\\{newFileName}\" already exists", "File Already Exists", MessageBoxButton.OK, MessageBoxImage.Error); }
-                        catch (System.Exception ex) {MessageBox.Show($"{ex.Message}","Error",MessageBoxButton.OK,MessageBoxImage.Error); }
+                        catch (System.Exception ex) { MessageBox.Show($"{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error); }
                     }
                     return true;
                 }
             }
             return false;
         }
-
+        //Take original path, destination (without file name), and an optional new file name to move the file.
+        private bool MoveToTaskFolder(string filePath, string destination, string newFileName = "")
+        {
+            Debug.WriteLine("MoveToTaskFolder called");
+            bool isFolder = false;
+            if (Directory.Exists(filePath)) { isFolder = true; }
+            if ((File.Exists(filePath) | isFolder) & Directory.Exists(destination))
+            {
+                Debug.WriteLine("Folder exists, File exists");
+                string newFilePath;
+                if (newFileName == "") { newFilePath = Path.Combine(destination, Path.GetFileName(filePath)); }
+                else { newFilePath = Path.Combine(destination, newFileName); }
+                if (isFolder) { File.Copy(filePath, newFilePath);  }
+                else { File.Move(filePath, newFilePath, true); }
+                return true;
+            }
+            else { return false; }
+        }
         //Create new xaml window for selecting a folder from those listed in the config file.
         private string GetNewItemFolder(string sn)
         {
@@ -151,15 +170,14 @@ namespace CalTools_WPF
             NewItemFolderSelect folderDialog = new NewItemFolderSelect();
             foreach (string configFolder in config.Folders)
             {
-                ComboBoxItem boxItem = new ComboBoxItem();
-                boxItem.Content = configFolder;
+                ComboBoxItem boxItem = new ComboBoxItem{ Content = configFolder };
                 folderDialog.FolderSelectComboBox.Items.Add(boxItem);
             }
             if (folderDialog.ShowDialog() == true)
             {
                 //Check that the folder from the config exists before the new item folder is allowed to be created.
-                if (Directory.Exists($"{config.CalScansDir}\\Calibration Items\\{folderDialog.FolderSelectComboBox.Text}"))
-                { folder = $"{config.CalScansDir}\\Calibration Items\\{folderDialog.FolderSelectComboBox.Text}\\{sn}"; Directory.CreateDirectory(folder); }
+                if (Directory.Exists($"{config.ItemScansDir}\\{folderDialog.FolderSelectComboBox.Text}"))
+                { folder = $"{config.ItemScansDir}\\{folderDialog.FolderSelectComboBox.Text}\\{sn}"; Directory.CreateDirectory(folder); }
             }
             return folder;
         }
@@ -179,7 +197,7 @@ namespace CalTools_WPF
                 if (!itemGroups.Contains(calItem.ItemGroup)) { itemGroups.Add(calItem.ItemGroup); }
                 if (calItem.StandardEquipment & !standardEquipment.Contains(calItem.SerialNumber)) { standardEquipment.Add(calItem.SerialNumber); }
             }
-            foreach(CTTask task in database.GetAllTasks())
+            foreach (CTTask task in database.GetAllTasks())
             { if (!serviceVendors.Contains(task.ServiceVendor)) { serviceVendors.Add(task.ServiceVendor); } }
             manufacturers.Sort();
             serviceVendors.Sort();
@@ -195,7 +213,7 @@ namespace CalTools_WPF
             if (!locations.Contains(calItem.Location)) { locations.Add(calItem.Location); }
             if (!itemGroups.Contains(calItem.ItemGroup)) { itemGroups.Add(calItem.ItemGroup); }
             if (calItem.StandardEquipment & !standardEquipment.Contains(calItem.SerialNumber)) { standardEquipment.Add(calItem.SerialNumber); }
-            foreach (CTTask task in database.GetTasks("SerialNumber",calItem.SerialNumber))
+            foreach (CTTask task in database.GetTasks("SerialNumber", calItem.SerialNumber))
             { if (!serviceVendors.Contains(task.ServiceVendor)) { serviceVendors.Add(task.ServiceVendor); } }
             manufacturers.Sort();
             serviceVendors.Sort();
@@ -207,18 +225,85 @@ namespace CalTools_WPF
         private List<CTItem> ItemListFilter(string mode, string searchText)
         {
             List<CTItem> filteredItems = new List<CTItem>();
+            List<CTTask> allTasks = database.GetAllTasks();
             var property = typeof(CTItem).GetProperty(mode);
-            foreach (CTItem calItem in database.GetAllItems())
+            foreach (CTItem item in database.GetAllItems())
             {
-                if (mode == "CalDue") { if ((bool)property.GetValue(calItem) == true) { filteredItems.Add(calItem); } }
-                else if (mode == "Comment") { if (property.GetValue(calItem).ToString().Length > 0) { filteredItems.Add(calItem); } }
-                else if (mode == "StandardEquipment") { if ((bool)property.GetValue(calItem) == true) { filteredItems.Add(calItem); } }
-                else if (property.GetValue(calItem).ToString().ToLower().Contains(searchText.ToLower()))
+                if (mode == "ActionType")
                 {
-                    filteredItems.Add(calItem);
+                    foreach (CTTask task in allTasks)
+                    {
+                        if (task.ActionType.Contains(searchText.ToUpper()) & task.SerialNumber == item.SerialNumber)
+                        {
+                            filteredItems.Add(item);
+                            break;
+                        }
+                    }
+                }
+                else if (mode == "Comment") { if (property.GetValue(item).ToString().Length > 0) { filteredItems.Add(item); } }
+                else if (mode == "StandardEquipment") { if ((bool)property.GetValue(item) == true) { filteredItems.Add(item); } }
+                else if (mode == "Due")
+                {
+                    foreach (CTTask task in allTasks)
+                    {
+                        if (task.SerialNumber == item.SerialNumber & task.CheckDue(config.MarkDueDays)) { filteredItems.Add(item); break; }
+                    }
+                }
+                else if (mode == "Vendor")
+                {
+                    foreach (CTTask task in allTasks)
+                    {
+                        if (task.SerialNumber == item.SerialNumber & task.ServiceVendor.ToLower().Contains(searchText.ToLower()))
+                        {
+                            filteredItems.Add(item);
+                            break;
+                        }
+                    }
+                }
+                else if (property.GetValue(item).ToString().ToLower().Contains(searchText.ToLower()))
+                {
+                    filteredItems.Add(item);
                 }
             }
             return filteredItems;
+        }
+        //Generate list for calendar item source
+        private List<Dictionary<string, string>> CreateCalendarList(bool mandatoryOnly)
+        {
+            List<Dictionary<string, string>> compositeList = new List<Dictionary<string, string>>();
+            List<CTTask> allTasks = database.GetAllTasks();
+            List<CTItem> allItems = database.GetAllItems();
+            foreach (CTTask task in allTasks)
+            {
+                if (ItemCalendar.SelectedDate != null & task.DueDate != null)
+                {
+                    if ((task.Mandatory & mandatoryOnly) | (!mandatoryOnly))
+                    {
+                        foreach (CTItem item in allItems)
+                        {
+                            if (item.InService & item.SerialNumber == task.SerialNumber)
+                            {
+                                if (task.CheckDue(config.MarkDueDays))
+                                {
+                                    Dictionary<string, string> compositeItem = new Dictionary<string, string>
+                                    {
+                                        {"SerialNumber",item.SerialNumber},
+                                        {"Model", item.Model},
+                                        {"TaskID", task.TaskID.ToString()},
+                                        {"TaskTitle",$"({task.TaskID}){task.TaskTitle}" },
+                                        {"Description",item.Description},
+                                        {"Location",item.Location},
+                                        {"ServiceVendor",task.ServiceVendor},
+                                        {"DueDateString",task.DueDateString}
+                                    };
+                                    compositeList.Add(compositeItem);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            return compositeList;
         }
     }
 }

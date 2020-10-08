@@ -11,11 +11,11 @@ namespace CalTools_WPF
         //Values to be loaded from config
         public string DbName { get; set; }
         public string DbPath { get; set; }
-        public string CalListDir { get; set; }
+        public string ListDir { get; set; }
         public string TempFilesDir { get; set; }
-        public string CalScansDir { get; set; }
+        public string ItemScansDir { get; set; }
         public string Theme { get; set; }
-        public int MarkCalDue { get; set; }
+        public int MarkDueDays { get; set; }
         public int DueInCalendar { get; set; }
         public string CerificateFileName { get; set; }
         public Dictionary<string, string> ReportCells { get; set; } = new Dictionary<string, string>();
@@ -29,11 +29,11 @@ namespace CalTools_WPF
                 //Generate file and write first lines
                 string[] lines = { "<CalTools_Config Theme = \"Light\" Folders = \"PRODUCTION EQUIPMENT,ENGINEERING EQUIPMENT,QUALITY EQUIPMENT,Ref Only,Removed from Service\"" +
                         " Procedures = \"019-0065\">",
-                        "\t<Database DbName = \"Test Equipment Calibration List.db\"/>",
-                        "\t<Directories CalListDir = \"\\\\artemis\\Hardware Development Projects\\Manufacturing Engineering\\Test Equipment\" " +
+                        "\t<Database DbName = \"debug_Test Equipment Calibration List.db\"/>",
+                        "\t<Directories ListDir = \"\\\\artemis\\Hardware Development Projects\\Manufacturing Engineering\\Test Equipment\" " +
                         "TempFilesDir = \"\\\\artemis\\Hardware Development Projects\\Manufacturing Engineering\\Test Equipment\\Template Files\" " +
-                        "CalScansDir = \"\\\\artemis\\Hardware Development Projects\\Manufacturing Engineering\\Test Equipment\\Calibration Scans\"/>",
-                        "\t<DueItems MarkCalDue = \"30\" DueInCalendar = \"60\"/>",
+                        "ItemScansDir = \"\\\\artemis\\Hardware Development Projects\\Manufacturing Engineering\\Test Equipment\\Item Scans\"/>",
+                        "\t<DueItems MarkDueDays = \"30\" DueInCalendar = \"60\"/>",
                         "\t<Report_Template " +
                         "CertificateFileName = \"ReportTemplate.xlsx\" " +
                         "ManufacturerCell = \"C5\" " +
@@ -73,10 +73,10 @@ namespace CalTools_WPF
                 Procedures.AddRange(config.LastChild.Attributes[2].Value.Split(","));
                 Theme = config.LastChild.Attributes[0].Value;
                 DbName = config.LastChild.ChildNodes[0].Attributes[0].Value;
-                CalListDir = config.LastChild.ChildNodes[1].Attributes[0].Value;
+                ListDir = config.LastChild.ChildNodes[1].Attributes[0].Value;
                 TempFilesDir = config.LastChild.ChildNodes[1].Attributes[1].Value;
-                CalScansDir = config.LastChild.ChildNodes[1].Attributes[2].Value;
-                MarkCalDue = int.Parse(config.LastChild.ChildNodes[2].Attributes[0].Value);
+                ItemScansDir = config.LastChild.ChildNodes[1].Attributes[2].Value;
+                MarkDueDays = int.Parse(config.LastChild.ChildNodes[2].Attributes[0].Value);
                 DueInCalendar = int.Parse(config.LastChild.ChildNodes[2].Attributes[1].Value);
 
                 ReportCells.Add("CerificateFileName", config.LastChild.ChildNodes[3].Attributes[0].Value);
@@ -93,7 +93,7 @@ namespace CalTools_WPF
                 ReportCells.Add("LocationCell", config.LastChild.ChildNodes[3].Attributes[11].Value);
                 ReportCells.Add("CertDateCell", config.LastChild.ChildNodes[3].Attributes[12].Value);
 
-                DbPath = Path.Combine(CalListDir, DbName);
+                DbPath = Path.Combine(ListDir, DbName);
             }
             catch (System.Exception ex)
             {

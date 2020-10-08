@@ -1,8 +1,8 @@
 ﻿using CalTools_WPF.ObjectClasses;
 using Newtonsoft.Json;
-using System;
+using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -14,40 +14,59 @@ namespace CalTools_WPF
     /// </summary>
     public partial class CalDataViewer : Window
     {
-        public TaskData data = new TaskData();
+        List<TaskData> taskDataList;
+        private CTTask currentTask;
         public Findings findings = new Findings();
-        public CalDataViewer(TaskData inputData)
+        public CalDataViewer(ref List<TaskData> inputData, CTTask task)
         {
             InitializeComponent();
-            data = inputData;
-
-            if (data.findings != null)
+            taskDataList = inputData;
+            currentTask = task;
+            taskDataList.Sort((y, x) => x.CompleteDateString.CompareTo(y.CompleteDateString));
+            foreach (TaskData data in taskDataList)
+            {
+                TreeViewItem newItem = new TreeViewItem();
+                newItem.Header = data.CompleteDateString;
+                TaskDataTree.Items.Add(newItem);
+            }
+            TaskDataTree.Items.Refresh();
+            foreach (string file in Directory.GetFiles(currentTask.TaskDirectory))
+            {
+                TreeViewItem newItem = new TreeViewItem();
+                newItem.Header = Path.GetFileName(file);
+                TaskFilesTree.Items.Add(newItem);
+            }
+            TaskFilesTree.Items.Refresh();
+        }
+        private void OpenForm(TaskData data)
+        {
+            if (data.Findings != null)
             {
                 Binding paramBinding = new Binding();
-                paramBinding.Source = data.findings.parameters;
+                paramBinding.Source = data.Findings.parameters;
                 paramBinding.UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged;
                 FindingsDataGrid.SetBinding(DataGrid.ItemsSourceProperty, paramBinding);
             }
 
-            if (((ActionTaken)data.ActionTaken).Maintenance) 
+            if (((ActionTaken)data.ActionTaken).Maintenance)
             {
                 MaintenanceSelection.IsSelected = true;
                 CalibrationDataPanel.Visibility = Visibility.Collapsed;
                 MaintenanceDataPanel.Visibility = Visibility.Visible;
-                FillMaintenanceForm(); 
+                FillMaintenanceForm(data);
             }
-            else if(((ActionTaken)data.ActionTaken).Calibration | ((ActionTaken)data.ActionTaken).Verification) 
+            else if (((ActionTaken)data.ActionTaken).Calibration | ((ActionTaken)data.ActionTaken).Verification)
             {
                 CalibrationSelection.IsSelected = true;
                 CalibrationDataPanel.Visibility = Visibility.Visible;
                 MaintenanceDataPanel.Visibility = Visibility.Collapsed;
-                FillCalForm();
+                FillCalForm(data);
             }
         }
-
-        private void FillCalForm()
+        private void FillCalForm(TaskData data)
         {
             SerialNumberBox.Text = data.SerialNumber;
+            TaskBox.Text = $"({data.TaskID})";
             InToleranceBox1.IsChecked = ((State)data.StateBefore).InTolerance;
             OutOfToleranceBox1.IsChecked = ((State)data.StateBefore).OutOfTolerance;
             MalfunctioningBox1.IsChecked = ((State)data.StateBefore).Malfunctioning;
@@ -67,13 +86,14 @@ namespace CalTools_WPF
             ProcedureBox.Text = data.Procedure;
             CTItem standardEquipment = JsonConvert.DeserializeObject<CTItem>(data.StandardEquipment);
             EquipmentBox.Text = standardEquipment.SerialNumber;
-            findings = data.findings;
+            findings = data.Findings;
             RemarksBox.Text = data.Remarks;
             TechnicianBox.Text = data.Technician;
         }
-        private void FillMaintenanceForm()
+        private void FillMaintenanceForm(TaskData data)
         {
             MaintenanceSerialNumberBox.Text = data.SerialNumber;
+            MaintenanceTaskBox.Text = $"({data.TaskID})";
             MaintenanceMalfunctioningBox1.IsChecked = ((State)data.StateBefore).Malfunctioning;
             MaintenanceOperationalBox1.IsChecked = ((State)data.StateBefore).Operational;
             MaintenanceMalfunctioningBox2.IsChecked = ((State)data.StateAfter).Malfunctioning;
@@ -97,11 +117,75 @@ namespace CalTools_WPF
             this.DialogResult = false;
         }
 
-        private void DeleteButton_Click(object sender, RoutedEventArgs e)
+        private void SaveButton_Click(object sender, RoutedEventArgs e)
         {
-            if (MessageBox.Show($"Delete this calibration/maintenance data from the database?", "Delete Data", MessageBoxButton.YesNo, MessageBoxImage.Exclamation) == MessageBoxResult.Yes) 
-            { this.DialogResult = true; } 
-            
+            if (MessageBox.Show($"Save all changes?", "Save Data", MessageBoxButton.YesNo, MessageBoxImage.Exclamation) == MessageBoxResult.Yes)
+            { this.DialogResult = true; }
+        }
+
+        private void TaskDataTree_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+        {
+            if (((TreeView)sender).SelectedItem != null)
+            {
+                foreach (TaskData data in taskDataList)
+                {
+                    {
+                        string currentItemCompleteDate = ((TreeViewItem)((TreeView)sender).SelectedItem).Header.ToString();
+                        if (data.CompleteDateString == currentItemCompleteDate)
+                        { OpenForm(data); break; }
+                    }
+                }
+            }
+        }
+
+        private void TaskFilesTree_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            if (((TreeView)sender).SelectedItem != null)
+            {
+                string fileName = ((TreeViewItem)((TreeView)sender).SelectedItem).Header.ToString();
+                foreach (string file in Directory.GetFiles(currentTask.TaskDirectory))
+                {
+                    if (file.Contains(fileName)) { Process.Start("explorer", file); }
+                }
+            }
+        }
+
+        private void TaskDataDeleteContext_Click(object sender, RoutedEventArgs e)
+        {
+            if (TaskDataTree.SelectedItem != null)
+            {
+                foreach (TaskData data in taskDataList)
+                {
+                    {
+                        string currentItemCompleteDate = ((TreeViewItem)TaskDataTree.SelectedItem).Header.ToString();
+                        if (data.CompleteDateString == currentItemCompleteDate)
+                        {
+                            taskDataList.Remove(data);
+                            TaskDataTree.Items.Remove(TaskDataTree.SelectedItem);
+                            TaskDataTree.Items.Refresh();
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        private void TaskFilesDeleteContext_Click(object sender, RoutedEventArgs e)
+        {
+            if (MessageBox.Show("Delete this file? This operation cannot be undone after this point.", "Delete File", MessageBoxButton.YesNo, MessageBoxImage.Warning)
+                 != MessageBoxResult.Yes) { return; }
+            if (TaskFilesTree.SelectedItem != null)
+            {
+                foreach (string file in Directory.GetFiles(currentTask.TaskDirectory))
+                {
+                    if (file.Contains(((TreeViewItem)TaskFilesTree.SelectedItem).Header.ToString()))
+                    {
+                        TaskFilesTree.Items.Remove(TaskFilesTree.SelectedItem);
+                        TaskFilesTree.Items.Refresh();
+                        File.Delete(file);
+                    }
+                }
+            }
         }
     }
 }

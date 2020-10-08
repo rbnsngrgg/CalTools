@@ -5,9 +5,9 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:CalTools_WPF"
         mc:Ignorable="d"
-        Title="CalTools" Height="660" Width="1000" MinHeight="640" MinWidth="1000"
+        Title="CalTools" Height="760" Width="1100" MinHeight="640" MinWidth="1000"
         x:Name="CalToolsMainWindow" WindowStyle="SingleBorderWindow" Background="WhiteSmoke"
-        Icon="C:\Users\grobinson\source\repos\CalTools\CalTools WPF\images\CalToolsIcon.ico" AllowDrop="True" Drop="MainWindow_Drop">
+        Icon="C:\Users\grobinson\source\repos\CalTools\CalTools WPF\images\CalToolsIcon.ico" AllowDrop="True" Drop="MainWindow_Drop" Closing="CalToolsMainWindow_Closing">
     <Window.Resources>
         <Style TargetType="Image">
             <Setter Property="RenderOptions.BitmapScalingMode" Value="HighQuality"/>
@@ -71,8 +71,7 @@
                     </Button>
                 </StackPanel>
                 <GroupBox Header="Items">
-                    <TreeView MinWidth="220" VerticalAlignment="Stretch" x:Name="CalibrationItemTree" SelectedItemChanged="CalibrationItemTree_SelectedItemChanged">
-                    </TreeView>
+                    <TreeView MinWidth="220" VerticalAlignment="Stretch" x:Name="CalibrationItemTree" SelectedItemChanged="CalibrationItemTree_SelectedItemChanged"/>
                 </GroupBox>
                 <GroupBox Header="Item Details" HorizontalAlignment="Stretch" MinWidth="650" Width="Auto">
                     <Grid x:Name="DetailsGrid">
@@ -116,18 +115,30 @@
                         <Label Content="Comments:" HorizontalAlignment="Left" Grid.Row="8" Grid.Column="0"/>
                             <TextBox x:Name="DetailsComments" Background="#FFFBFBFB" IsEnabled="False" Grid.Row="8" Grid.Column="1" Margin="0,0,0,5"/>
                         <DataGrid x:Name="DetailsTasksTable" CanUserAddRows="False" CanUserDeleteRows="False" AutoGenerateColumns="False"
-                                  Grid.Row="9" Grid.Column="0" MinHeight="100" Height="Auto" Visibility="Visible" Grid.ColumnSpan="2">
+                                  Grid.Row="9" Grid.Column="0" MinHeight="100" Height="Auto" Visibility="Visible" Grid.ColumnSpan="2" IsEnabled="False">
                             <DataGrid.Columns>
-                                <DataGridTextColumn Header="Task ID" MinWidth="20" Binding="{Binding TaskID}"/>
-                                <DataGridTextColumn Header="Title" MinWidth="100" Binding="{Binding TaskTitle}"/>
-                                <DataGridComboBoxColumn Header="Vendor" x:Name="TaskVendorCol" MinWidth="75"/>
-                                <DataGridCheckBoxColumn Header="Mandatory" MinWidth="20" Binding="{Binding Mandatory}"/>
-                                <DataGridTextColumn Header="Interval" MinWidth="20" Binding="{Binding Interval}"/>
-                                <DataGridTextColumn Header="Date" MinWidth="50" Binding="{Binding CompleteDate}"/>
-                                <DataGridTextColumn Header="Due Date" MinWidth="50" Binding="{Binding DueDate}"/>
-                                <DataGridCheckBoxColumn Header="Due" MinWidth="20" Binding="{Binding Due}"/>
-                                <DataGridTextColumn Header="Action" MinWidth="50" Binding="{Binding ActionType}"/>
-                                <DataGridTextColumn Header="Comment" MinWidth="165" Binding="{Binding Comment}"/>
+                                <DataGridTextColumn Header="Task ID" MinWidth="20" Binding="{Binding TaskID}" IsReadOnly="True"/>
+                                <DataGridTextColumn Header="Title" MinWidth="100" Binding="{Binding TaskTitle, Mode=TwoWay}"/>
+                                <DataGridTemplateColumn Header="Vendor" x:Name="TaskVendorCol">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <ComboBox x:Name="TaskVendorColBox" ItemsSource="{Binding ServiceVendorList}" IsEditable="True" Text="{Binding ServiceVendor, Mode=TwoWay}" SelectionChanged="TaskVendorColBox_SelectionChanged"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridCheckBoxColumn Header="Mandatory" MinWidth="20" Binding="{Binding Mandatory, Mode=TwoWay}"/>
+                                <DataGridTextColumn Header="Interval" MinWidth="20" Binding="{Binding Interval, Mode=TwoWay}"/>
+                                <DataGridTextColumn Header="Date" MinWidth="50" Binding="{Binding CompleteDateString, Mode=OneWay}" IsReadOnly="True"/>
+                                <DataGridTextColumn Header="Due Date" MinWidth="50" Binding="{Binding DueDateString, Mode=OneWay}" IsReadOnly="True"/>
+                                <DataGridCheckBoxColumn Header="Due" MinWidth="20" Binding="{Binding Due, Mode=OneWay}" IsReadOnly="True"/>
+                                <DataGridTemplateColumn Header="Action" x:Name="TaskActionCol">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <ComboBox x:Name="TaskActionColBox" ItemsSource="{Binding ActionTypes}" IsEditable="False" Text="{Binding ActionType, Mode=TwoWay}" SelectionChanged="TaskActionColBox_SelectionChanged"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTextColumn Header="Comment" MinWidth="165" Binding="{Binding Comment, Mode=TwoWay}"/>
                             </DataGrid.Columns>
                             <DataGrid.ContextMenu>
                                 <ContextMenu>
@@ -164,12 +175,13 @@
                 <DataGrid x:Name="todoTable" Height="480" VerticalAlignment="Stretch" CanUserResizeColumns="True" Width="Auto" 
                           AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" IsReadOnly="True" Margin="5,0,5,0">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="SN" Width="100" Binding="{Binding SerialNumber}"/>
-                        <DataGridTextColumn Header="Model" Width="100" Binding="{Binding Model}"/>
-                        <DataGridTextColumn Header="Description" Width="*" Binding="{Binding Description}"/>
-                        <DataGridTextColumn Header="Location" Width="100" Binding="{Binding Location}"/>
-                        <DataGridTextColumn Header="Cal Vendor" Width="100" Binding="{Binding CalVendor}"/>
-                        <DataGridTextColumn x:Name="CalDueCol" Header="Cal Due By" Width="75" Binding="{Binding DueDateFormat}"/>
+                        <DataGridTextColumn Header="SN" Width="100" Binding="{Binding [SerialNumber]}"/>
+                        <DataGridTextColumn Header="Model" Width="100" Binding="{Binding [Model]}"/>
+                        <DataGridTextColumn Header="Task" Width="100" Binding="{Binding [TaskTitle]}"/>
+                        <DataGridTextColumn Header="Description" Width="*" Binding="{Binding [Description]}"/>
+                        <DataGridTextColumn Header="Location" Width="100" Binding="{Binding [Location]}"/>
+                        <DataGridTextColumn Header="Vendor" Width="100" Binding="{Binding [ServiceVendor]}"/>
+                        <DataGridTextColumn Header="Due By" Width="75" Binding="{Binding [DueDateString]}"/>
                     </DataGrid.Columns>
                     <DataGrid.ContextMenu>
                         <ContextMenu>

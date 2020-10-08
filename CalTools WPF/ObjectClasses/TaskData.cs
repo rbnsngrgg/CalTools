@@ -25,7 +25,21 @@ namespace CalTools_WPF.ObjectClasses
         public State? StateBefore { get { return stateBefore; } set { stateBefore = value; ChangesMade = true; } }
         public State? StateAfter { get { return stateAfter; } set { stateAfter = value; ChangesMade = true; } }
         public ActionTaken? ActionTaken { get { return actionTaken; } set { actionTaken = value; ChangesMade = true; } }
-        public DateTime? CompleteDate { get { return completeDate; } set { completeDate = value; ChangesMade = true; } }
+        public DateTime? CompleteDate
+        {
+            get { return completeDate; }
+            set
+            {
+                if (completeDate != value) { ChangesMade = true; }
+                completeDate = value;
+#pragma warning disable CS8629 // Nullable value type may be null.
+                if (value != null)
+                { CompleteDateString = completeDate.Value.ToString("yyyy-MM-dd"); }
+#pragma warning restore CS8629 // Nullable value type may be null.
+                else { CompleteDateString = ""; }
+            }
+        }
+        public string CompleteDateString { get; private set; } = "";
         public string Procedure { get { return procedure; } set { procedure = value; ChangesMade = true; } }
         //StandardEquipment should be JSON serialization of CalibrationItem class. Certificate number is required.
         public string StandardEquipment { get { return standardEquipment; } set { standardEquipment = value; ChangesMade = true; } }

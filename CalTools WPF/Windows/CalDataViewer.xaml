@@ -5,20 +5,44 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:CalTools_WPF"
         mc:Ignorable="d"
-        Title="Calibration Data Viewer" Height="600" Width="800" MinHeight="600" MinWidth="800"
+        Title="Calibration Data Viewer" Height="600" Width="950" MinHeight="600" MinWidth="800"
         Icon="C:\Users\grobinson\source\repos\CalTools\CalTools WPF\images\CalToolsIcon.ico">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="33"/>
             <RowDefinition/>
+            <RowDefinition/>
             <RowDefinition Height="40"/>
         </Grid.RowDefinitions>
-        <ComboBox x:Name="PanelSelectBox" Width="150" Height="23" IsEditable="False" Grid.Row="0" HorizontalAlignment="Left" Margin="30,0,0,0" IsEnabled="False">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="150"/>
+            <ColumnDefinition Width="800"/>
+        </Grid.ColumnDefinitions>
+        <ComboBox x:Name="PanelSelectBox" Width="150" Height="23" IsEditable="False" Grid.Row="0" HorizontalAlignment="Left" Margin="0,0,0,0" IsEnabled="False">
             <ComboBoxItem x:Name="CalibrationSelection" Content="Calibration/Verification" IsSelected="True"/>
             <ComboBoxItem x:Name="MaintenanceSelection" Content="Maintenance"/>
         </ComboBox>
+        <!--Tree for viewing data associated with current task-->
+        <GroupBox Grid.Row="1" Grid.Column="0" Header="Database Task Data">
+            <TreeView x:Name="TaskDataTree" VerticalAlignment="Stretch" SelectedItemChanged="TaskDataTree_SelectedItemChanged">
+                <TreeView.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem x:Name="TaskDataDeleteContext" Header="Delete Data" Click="TaskDataDeleteContext_Click"/>
+                    </ContextMenu>
+                </TreeView.ContextMenu>
+            </TreeView>
+        </GroupBox>
+        <GroupBox Grid.Row="2" Grid.Column="0" Header="Task Data Files">
+            <TreeView x:Name="TaskFilesTree" VerticalAlignment="Stretch" MouseDoubleClick="TaskFilesTree_MouseDoubleClick">
+                <TreeView.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem x:Name="TaskFilesDeleteContext" Header="Delete Data" Click="TaskFilesDeleteContext_Click"/>
+                    </ContextMenu>
+                </TreeView.ContextMenu>
+            </TreeView>
+        </GroupBox>
         <!--Calibration form-->
-        <Grid Grid.Row="1" x:Name="CalibrationDataPanel" Visibility="Visible">
+        <Grid Grid.Row="1" Grid.Column="1" Grid.RowSpan="2" x:Name="CalibrationDataPanel" Visibility="Visible">
             <Grid.RowDefinitions>
                 <RowDefinition Height="10"/>
                 <RowDefinition/>
@@ -53,7 +77,9 @@
                     <RowDefinition/>
                 </Grid.RowDefinitions>
                 <Label Content="Serial Number:" Grid.Row="0" Grid.Column="1" HorizontalAlignment="Center" FontSize="14"/>
-                    <TextBox x:Name="SerialNumberBox" Grid.Row="0" Grid.Column="2" FontSize="16" Grid.ColumnSpan="4" IsEnabled="False"/>
+                    <TextBox x:Name="SerialNumberBox" Grid.Row="0" Grid.Column="2" FontSize="16" Grid.ColumnSpan="2" IsEnabled="False"/>
+                <Label Content="Task:" Grid.Row="0" Grid.Column="4" HorizontalAlignment="Center" FontSize="14"/>
+                <TextBox x:Name="TaskBox" Grid.Row="0" Grid.Column="5" FontSize="16" IsEnabled="False"/>
                 <Label Content="Before Action:" Grid.Row="1" Grid.Column="1" HorizontalAlignment="Center" FontSize="14"/>
                 <CheckBox x:Name="InToleranceBox1" Grid.Row="1" Grid.Column="2" Content="In Tolerance" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14" IsEnabled="False"/>
                 <CheckBox x:Name="OutOfToleranceBox1" Grid.Row="1" Grid.Column="3" Content="Out of Tolerance" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14" IsEnabled="False"/>
@@ -69,7 +95,7 @@
                 <CheckBox x:Name="VerificationBox" Grid.Row="3" Grid.Column="3" Content="Verification" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14" IsEnabled="False"/>
                 <CheckBox x:Name="AdjustedBox" Grid.Row="3" Grid.Column="4" Content="Adjusted" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14" IsEnabled="False"/>
                 <CheckBox x:Name="RepairedBox" Grid.Row="3" Grid.Column="5" Content="Repaired" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14" IsEnabled="False"/>
-                <Label Content="Calibration Date:" Grid.Row="4" Grid.Column="1" HorizontalAlignment="Center" FontSize="14"/>
+                <Label Content="Completion Date:" Grid.Row="4" Grid.Column="1" HorizontalAlignment="Center" FontSize="14"/>
                 <TextBox x:Name="DateBox" Grid.Row="4" Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="16" Height="25" Width="140" IsReadOnly="True"/>
                 <Label Content="Procedure:" Grid.Row="5" Grid.Column="1" HorizontalAlignment="Center" FontSize="14"/>
                 <TextBox x:Name="ProcedureBox" Grid.Row="5" Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center" Height="25" Width="140" IsReadOnly="True"/>
@@ -94,7 +120,7 @@
             </Grid>
         </Grid>
         <!--Maintenance form-->
-        <Grid Grid.Row="1" x:Name="MaintenanceDataPanel" Visibility="Collapsed">
+        <Grid Grid.Row="1" Grid.Column="1" Grid.RowSpan="2" x:Name="MaintenanceDataPanel" Visibility="Collapsed">
             <Grid.RowDefinitions>
                 <RowDefinition Height="10"/>
                 <RowDefinition/>
@@ -126,7 +152,9 @@
                     <RowDefinition/>
                 </Grid.RowDefinitions>
                 <Label Content="Serial Number:" Grid.Row="0" Grid.Column="1" HorizontalAlignment="Center" FontSize="14"/>
-                <TextBox x:Name="MaintenanceSerialNumberBox" Grid.Row="0" Grid.Column="2" FontSize="16" Grid.ColumnSpan="4" IsReadOnly="True"/>
+                <TextBox x:Name="MaintenanceSerialNumberBox" Grid.Row="0" Grid.Column="2" FontSize="16" Grid.ColumnSpan="2" IsReadOnly="True"/>
+                <Label Content="Task:" Grid.Row="0" Grid.Column="4" HorizontalAlignment="Center" FontSize="14"/>
+                <TextBox x:Name="MaintenanceTaskBox" Grid.Row="0" Grid.Column="5" FontSize="16" IsEnabled="False"/>
                 <Label Content="Before Action:" Grid.Row="1" Grid.Column="1" HorizontalAlignment="Center" FontSize="14"/>
                 <CheckBox x:Name="MaintenanceMalfunctioningBox1" Grid.Row="1" Grid.Column="2" Content="Malfunctioning" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14" IsEnabled="False"/>
                 <CheckBox x:Name="MaintenanceOperationalBox1" Grid.Row="1" Grid.Column="3" Content="Operational" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14" IsEnabled="False"/>
@@ -136,7 +164,7 @@
                 <Label Content="Action Taken:" Grid.Row="3" Grid.Column="1" HorizontalAlignment="Center" FontSize="14"/>
                 <CheckBox x:Name="MaintenanceBox" Grid.Row="3" Grid.Column="2" Content="Maintenance" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14" IsEnabled="False"/>
                 <CheckBox x:Name="MaintenanceRepairedBox" Grid.Row="3" Grid.Column="3" Content="Repaired" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14" IsEnabled="False"/>
-                <Label Content="Date:" Grid.Row="4" Grid.Column="1" HorizontalAlignment="Center" FontSize="14"/>
+                <Label Content="Completion Date:" Grid.Row="4" Grid.Column="1" HorizontalAlignment="Center" FontSize="14"/>
                 <TextBox x:Name="MaintenanceDateBox" Grid.Row="4" Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="16" Height="25" Width="140" IsReadOnly="True"/>
                 <Label Content="Procedure:" Grid.Row="5" Grid.Column="1" HorizontalAlignment="Center" FontSize="14"/>
                 <TextBox x:Name="MaintenanceProcedureBox" Grid.Row="5" Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center" Height="25" Width="140" IsReadOnly="True"/>
@@ -148,10 +176,10 @@
                 <TextBox x:Name="MaintenanceTechnicianBox" Grid.Row="9" Grid.Column="2" Grid.ColumnSpan="2" VerticalAlignment="Center" FontSize="14" IsReadOnly="True"/>
             </Grid>
         </Grid>
-        <DockPanel Grid.Row="2" HorizontalAlignment="Center" Grid.ColumnSpan="2">
-            <Button x:Name="DeleteButton" Content="Delete" FontSize="16" Grid.Row="2" Width="150" Height="30" Click="DeleteButton_Click"/>
+        <DockPanel Grid.Row="3" HorizontalAlignment="Center" Grid.ColumnSpan="2">
+            <Button x:Name="SaveButton" Content="Save" FontSize="16" Grid.Row="3" Width="150" Height="30" Click="SaveButton_Click"/>
             <Separator Width="50"/>
-            <Button x:Name="CancelButton" Content ="Cancel" FontSize="16" Grid.Row="2" Width="150" Height="30" Click="CancelButton_Click"/>
+            <Button x:Name="CancelButton" Content ="Cancel" FontSize="16" Grid.Row="3" Width="150" Height="30" Click="CancelButton_Click"/>
         </DockPanel>
     </Grid>
 </Window>
