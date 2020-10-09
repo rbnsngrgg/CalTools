@@ -249,12 +249,12 @@ namespace CalTools_WPF
                     foreach(CTTask task in currentTaskList)
                     {
                         task.ServiceVendorList = serviceVendors;
-                        task.CheckDue(config.MarkDueDays);
+                        task.CheckDue(config.MarkDueDays, DateTime.UtcNow);
                     }
                     DetailsTasksTable.ItemsSource = currentTaskList;
                     return;
                 }
-                foreach (CTTask task in detailsTasks) { task.ServiceVendorList = serviceVendors; task.CheckDue(config.MarkDueDays); }
+                foreach (CTTask task in detailsTasks) { task.ServiceVendorList = serviceVendors; task.CheckDue(config.MarkDueDays, DateTime.UtcNow); }
                 DetailsTasksTable.ItemsSource = detailsTasks;
             }
         }
@@ -360,11 +360,9 @@ namespace CalTools_WPF
         }
         private void OpenFolderButton_Click(object sender, RoutedEventArgs e)
         {
-            TreeViewItem selected;
-            if (CalibrationItemTree.SelectedItem != null)
+            if (IsItemSelected())
             {
-                selected = (TreeViewItem)CalibrationItemTree.SelectedItem;
-                string directory = database.GetItem("SerialNumber", (string)selected.Header).Directory;
+                string directory = database.GetItem("SerialNumber", SelectedSN()).Directory;
                 Process.Start("explorer", directory);
             }
         }
@@ -502,9 +500,13 @@ namespace CalTools_WPF
             weekTodoItems.Clear();
             todoTable.Items.Refresh();
 
-            weekTodoItems = CreateCalendarList((bool)MandatoryOnlyBox.IsChecked);
-            todoTable.ItemsSource = weekTodoItems;
-            todoTable.Items.Refresh();
+            if (ItemCalendar.SelectedDate != null)
+            {
+                DateTime calendarDate = (DateTime)ItemCalendar.SelectedDate;
+                weekTodoItems = CreateCalendarList((bool)MandatoryOnlyBox.IsChecked, calendarDate);
+                todoTable.ItemsSource = weekTodoItems;
+                todoTable.Items.Refresh();
+            }
         }
         private void MandatoryOnlyBox_Checked(object sender, RoutedEventArgs e)
         {
@@ -666,10 +668,9 @@ namespace CalTools_WPF
                 database.SaveTask(new CTTask { SerialNumber = SelectedSN() }, true);
                 int taskID = database.GetLastTaskID();
                 if(taskID == -1) { return; }
-                string newPath = Path.Combine(currentItem.Directory,$"{taskID}_CALIBRATION");
-                Debug.WriteLine(newPath);
-                Directory.CreateDirectory(newPath);
                 CTTask task = database.GetTasks("TaskID", taskID.ToString())[0];
+                string newPath = Path.Combine(currentItem.Directory,$"{taskID}_{task.TaskTitle}");
+                Directory.CreateDirectory(newPath);
                 if (Directory.Exists(newPath)) { task.TaskDirectory = newPath; }
                 database.SaveTask(task);
             }

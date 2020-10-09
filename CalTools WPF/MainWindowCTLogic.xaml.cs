@@ -1,4 +1,5 @@
 ﻿using CalTools_WPF.ObjectClasses;
+using IronXL.Xml.Dml;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -81,9 +82,26 @@ namespace CalTools_WPF
                     }
                 }
             }
+            CreateTaskFolders(ref tasks);
             foreach (CTTask task in tasks)
             {
                 if (task.ChangesMade) { database.SaveTask(task); task.ChangesMade = false; }
+            }
+        }
+        private void CreateTaskFolders(ref List<CTTask> tasks)
+        {
+            foreach (CTTask task in tasks)
+            {
+                if (task.TaskDirectory == "")
+                {
+                    CTItem taskItem = database.GetItemFromTask(task);
+                    if (Directory.Exists(taskItem.Directory))
+                    {
+                        string newPath = Path.Combine(taskItem.Directory, $"{task.TaskID}_{task.TaskTitle}");
+                        Directory.CreateDirectory(newPath);
+                        task.TaskDirectory = newPath;
+                    }
+                }
             }
         }
         private Dictionary<string, string> ParseFileName(string filePath)
@@ -246,7 +264,7 @@ namespace CalTools_WPF
                 {
                     foreach (CTTask task in allTasks)
                     {
-                        if (task.SerialNumber == item.SerialNumber & task.CheckDue(config.MarkDueDays)) { filteredItems.Add(item); break; }
+                        if (task.SerialNumber == item.SerialNumber & task.CheckDue(config.MarkDueDays, DateTime.UtcNow)) { filteredItems.Add(item); break; }
                     }
                 }
                 else if (mode == "Vendor")
@@ -268,7 +286,7 @@ namespace CalTools_WPF
             return filteredItems;
         }
         //Generate list for calendar item source
-        private List<Dictionary<string, string>> CreateCalendarList(bool mandatoryOnly)
+        private List<Dictionary<string, string>> CreateCalendarList(bool mandatoryOnly, DateTime calendarDate)
         {
             List<Dictionary<string, string>> compositeList = new List<Dictionary<string, string>>();
             List<CTTask> allTasks = database.GetAllTasks();
@@ -283,7 +301,7 @@ namespace CalTools_WPF
                         {
                             if (item.InService & item.SerialNumber == task.SerialNumber)
                             {
-                                if (task.CheckDue(config.MarkDueDays))
+                                if (task.CheckDue(config.MarkDueDays, calendarDate))
                                 {
                                     Dictionary<string, string> compositeItem = new Dictionary<string, string>
                                     {

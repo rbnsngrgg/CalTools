@@ -82,10 +82,10 @@ namespace CalTools_WPF
 
         public List<string> ActionTypes { get; private set; } = new List<string> { "CALIBRATION", "MAINTENANCE", "VERIFICATION" };
 
-        public bool CheckDue(int days)
+        public bool CheckDue(int days, DateTime checkDate)
         {
             if (dueDate == null) { return true; }
-            if ((dueDate - DateTime.UtcNow).Value.Days < days) { Due = true; }
+            if ((dueDate - checkDate).Value.Days < days) { Due = true; }
             else { Due = false; }
             return Due;
         }

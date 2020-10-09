@@ -183,6 +183,7 @@ namespace CalTools_WPF
                         TaskFilesTree.Items.Remove(TaskFilesTree.SelectedItem);
                         TaskFilesTree.Items.Refresh();
                         File.Delete(file);
+                        break;
                     }
                 }
             }
