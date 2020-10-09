@@ -23,7 +23,7 @@
 		(DONE)Add functionality for handling how files in an item's folder are assigned to tasks. Subfolders.
 		(DONE)Update context menu options for the DetailsTasksTable (viewing data).
 		(DONE)Update drag and drop to handle task selection
-		Add buttons for adding and removing tasks.
+		(DONE)Add buttons for adding and removing tasks.
 --4.2.0
 	--Changed verbiage of some of the labels in the item details area.
 	--Fixed bug that still showed a "Next Calibration" date when there are no longer any calibration records.

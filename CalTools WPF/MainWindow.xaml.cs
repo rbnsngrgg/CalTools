@@ -1,6 +1,7 @@
 ﻿using CalTools_WPF.ObjectClasses;
 using CalTools_WPF.Windows;
 using Helpers;
+using IronXL.Xml.Dml;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -128,6 +129,8 @@ namespace CalTools_WPF
             }
             DetailsComments.IsEnabled = enable;
             DetailsTasksTable.IsEnabled = enable;
+            AddTaskButton.IsEnabled = enable;
+            RemoveTaskButton.IsEnabled = enable;
         }
 
         private void GoToItem(string sn)
@@ -165,6 +168,12 @@ namespace CalTools_WPF
                 { return true; }
             }
             return false;
+        }
+        //True if a task is selected in the details area
+        private bool IsTaskSelected()
+        {
+            if(DetailsTasksTable.SelectedItem == null) { return false; }
+            else { return true; }
         }
         //Return header(SN) of selected item in treeview, empty string if no item is selected.
         private string SelectedSN()
@@ -206,18 +215,45 @@ namespace CalTools_WPF
         }
         private void CalibrationItemTree_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
-            TreeViewItem selected;
             if (DetailsSN.IsEnabled)
             {
                 SaveItemButton.Visibility = Visibility.Collapsed;
                 DetailsEditToggle();
                 EditItemButton.Visibility = Visibility.Visible;
             }
-            if (CalibrationItemTree.SelectedItem != null)
+            UpdateTasksTable();
+        }
+        private void UpdateTasksTable(bool keepChanges = false)
+        {
+            if(IsItemSelected())
             {
-                selected = (TreeViewItem)CalibrationItemTree.SelectedItem;
-                UpdateDetails(database.GetItem("SerialNumber", (string)selected.Header));
-                List<CTTask> detailsTasks = database.GetTasks("SerialNumber", (string)selected.Header);
+                UpdateDetails(database.GetItem("SerialNumber", SelectedSN()));
+                List<CTTask> detailsTasks = database.GetTasks("SerialNumber", SelectedSN());
+                if(keepChanges)
+                {
+                    //Add new items to table without reverting changes made to existing items.
+                    List<CTTask> currentTaskList = new List<CTTask>();
+                    foreach(CTTask task in DetailsTasksTable.Items)
+                    {
+                        currentTaskList.Add(task);
+                    }
+                    foreach(CTTask task in detailsTasks)
+                    {
+                        bool found = false;
+                        foreach(CTTask currentTask in currentTaskList)
+                        {
+                            if(task.TaskID == currentTask.TaskID) { found = true; break; }
+                        }
+                        if (!found) { currentTaskList.Add(task); }
+                    }
+                    foreach(CTTask task in currentTaskList)
+                    {
+                        task.ServiceVendorList = serviceVendors;
+                        task.CheckDue(config.MarkDueDays);
+                    }
+                    DetailsTasksTable.ItemsSource = currentTaskList;
+                    return;
+                }
                 foreach (CTTask task in detailsTasks) { task.ServiceVendorList = serviceVendors; task.CheckDue(config.MarkDueDays); }
                 DetailsTasksTable.ItemsSource = detailsTasks;
             }
@@ -244,6 +280,12 @@ namespace CalTools_WPF
             }
         }
         private void SaveItemButton_Click(object sender, RoutedEventArgs e)
+        {
+            SaveItem();
+            SaveTasksTable();
+            UpdateItemList();
+        }
+        private void SaveItem()
         {
             string sn = "";
             if (DetailsSN.Text.Length > 0)
@@ -301,11 +343,20 @@ namespace CalTools_WPF
                         sn = item.SerialNumber;
                     }
                 }
-                foreach (CTTask task in DetailsTasksTable.Items) { if (task.ChangesMade) { database.SaveTask(task); } }
                 UpdateListsSingle(item);
             }
-            UpdateItemList();
-            GoToItem(sn);
+        }
+        private void SaveTasksTable()
+        {
+            foreach (CTTask task in DetailsTasksTable.Items)
+            {
+                string itemFolder = Directory.GetParent(task.TaskDirectory).FullName;
+                string currentFolder = Path.Combine(itemFolder, Path.GetFileName(task.TaskDirectory));
+                string newFolder = Path.Combine(itemFolder, $"{task.TaskID}_{task.TaskTitle}");
+                
+                if (currentFolder != newFolder) { Directory.Move(currentFolder,newFolder); task.TaskDirectory = newFolder; }
+                if (task.ChangesMade) { database.SaveTask(task); } 
+            }
         }
         private void OpenFolderButton_Click(object sender, RoutedEventArgs e)
         {
@@ -360,8 +411,12 @@ namespace CalTools_WPF
                 catch
                 { MessageBox.Show($"Invalid \"Standard Equipment\" entry.", "Invalid Entry", MessageBoxButton.OK, MessageBoxImage.Error); return; }
                 database.SaveTaskData(dataEntry.data);
-                UpdateItemList();
             }
+            SaveTasksTable();
+            CTItem item = database.GetItemFromTask(task);
+            List<CTTask> tasks = database.GetTasks("SerialNumber", item.SerialNumber);
+            CheckTasks(item.Directory, ref tasks);
+            UpdateTasksTable();
         }
         private void DetailsStandardBox_Checked(object sender, RoutedEventArgs e)
         {
@@ -601,6 +656,39 @@ namespace CalTools_WPF
         private void CalToolsMainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             database.CleanUp();
+        }
+
+        private void AddTaskButton_Click(object sender, RoutedEventArgs e)
+        {
+            CTItem currentItem = database.GetItem("SerialNumber", SelectedSN());
+            if(Directory.Exists(currentItem.Directory))
+            {
+                database.SaveTask(new CTTask { SerialNumber = SelectedSN() }, true);
+                int taskID = database.GetLastTaskID();
+                if(taskID == -1) { return; }
+                string newPath = Path.Combine(currentItem.Directory,$"{taskID}_CALIBRATION");
+                Debug.WriteLine(newPath);
+                Directory.CreateDirectory(newPath);
+                CTTask task = database.GetTasks("TaskID", taskID.ToString())[0];
+                if (Directory.Exists(newPath)) { task.TaskDirectory = newPath; }
+                database.SaveTask(task);
+            }
+            UpdateTasksTable(true);
+        }
+
+        private void RemoveTaskButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (IsTaskSelected())
+            {
+                CTTask task = (CTTask)DetailsTasksTable.SelectedItem;
+                if(MessageBox.Show($"Remove ({task.TaskID}){task.TaskTitle}? This cannot be undone.","Remove Task",MessageBoxButton.YesNo, MessageBoxImage.Warning)
+                    == MessageBoxResult.Yes)
+                {
+                    if (Directory.Exists(task.TaskDirectory)) { Directory.Delete(task.TaskDirectory, true); }
+                    database.RemoveTask(task.TaskID.ToString());
+                    UpdateTasksTable();
+                }
+            }
         }
     }
 }

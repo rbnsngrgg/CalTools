@@ -3,6 +3,7 @@ using Microsoft.Data.Sqlite;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -36,7 +37,7 @@ namespace CalTools_WPF
             if (conn.State == System.Data.ConnectionState.Open) { return true; }
             else { return false; }
         }
-        public void Execute(string com)
+        private void Execute(string com)
         {
             SqliteCommand command = new SqliteCommand(com, conn);
             reader = command.ExecuteReader();
@@ -361,6 +362,25 @@ namespace CalTools_WPF
                 return false;
             }
         }
+        public bool RemoveTask(string taskID)
+        {
+            try
+            {
+                if (Connect())
+                {
+                    string command = $"DELETE FROM Tasks WHERE TaskID='{taskID}'";
+                    Execute(command);
+                    Disconnect();
+                    return true;
+                }
+                return false;
+            }
+            catch (System.Exception ex)
+            {
+                MessageBox.Show($"Error while removing task from the database: {ex.Message}", "Database Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
+            }
+        }
         public bool RemoveTaskData(string id)
         {
             try
@@ -376,7 +396,7 @@ namespace CalTools_WPF
             }
             catch (System.Exception ex)
             {
-                MessageBox.Show($"Error while removing item from the database: {ex.Message}", "Database Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Error while removing task data from the database: {ex.Message}", "Database Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
             }
         }
@@ -426,6 +446,19 @@ namespace CalTools_WPF
         {
             conn.Close();
             conn.Open();
+        }
+        public int GetLastTaskID()
+        {
+            if (Connect())
+            {
+                string command = "SELECT * FROM Tasks ORDER BY TaskID DESC LIMIT 1";
+                Execute(command);
+                reader.Read();
+                int taskID = reader.GetInt32(0);
+                Disconnect();
+                return taskID;
+            }
+            else { return -1; }
         }
         //Data parsing---------------------------------------------------------------------------------------------------------------------
         private void AssignItemValues(ref CTItem item)

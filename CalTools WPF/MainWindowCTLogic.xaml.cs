@@ -60,14 +60,14 @@ namespace CalTools_WPF
                             calItem.Directory = itemFolder;
                             if (newItem) { database.CreateItem(calItem.SerialNumber); }
                         }
-                        CheckTasks(calItem.SerialNumber, itemFolder, ref taskData, ref allTasks);
+                        CheckTasks(itemFolder, ref allTasks);
                         if (calItem.ChangesMade) { database.SaveItem(calItem); }
                     }
                 }
             }
         }
-        //Checks completion dates and due dates on all tasks.
-        private void CheckTasks(string sn, string folder, ref List<TaskData> taskData, ref List<CTTask> tasks)
+        //Checks completion dates and due dates on all tasks in the specified item folder.
+        private void CheckTasks(string folder, ref List<CTTask> tasks)
         {
             foreach (string taskFolder in Directory.GetDirectories(folder))
             {
@@ -157,7 +157,7 @@ namespace CalTools_WPF
                 string newFilePath;
                 if (newFileName == "") { newFilePath = Path.Combine(destination, Path.GetFileName(filePath)); }
                 else { newFilePath = Path.Combine(destination, newFileName); }
-                if (isFolder) { File.Copy(filePath, newFilePath);  }
+                if (isFolder) { File.Copy(filePath, newFilePath); }
                 else { File.Move(filePath, newFilePath, true); }
                 return true;
             }
