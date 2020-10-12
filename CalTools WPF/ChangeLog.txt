@@ -6,7 +6,7 @@
 	--Fixed calendar table and details task table so that items without calibration data show as due if they're mandatory (Issue 66)
 	--Fixed data entry window re-appearing after the entry was confirmed with the enter key in maintenance mode (Issue 65)
 	--Fixed bug that caused errors to be thrown when new items are added to the database on start-up (Issue 64)
-	--Added functionality for items to have multiple tasks.
+	--Added functionality for items to have multiple tasks (Issue 60)
 		--Database has 3 tables: items, tasks, taskdata
 		--Updates and deletes cascade: item -> tasks -> taskdata
 		--Database version 5	
