@@ -1,8 +1,6 @@
 ﻿using CalTools_WPF.ObjectClasses;
-using IronXL.Xml.Dml;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Windows;
@@ -166,17 +164,12 @@ namespace CalTools_WPF
         //Take original path, destination (without file name), and an optional new file name to move the file.
         private bool MoveToTaskFolder(string filePath, string destination, string newFileName = "")
         {
-            Debug.WriteLine("MoveToTaskFolder called");
-            bool isFolder = false;
-            if (Directory.Exists(filePath)) { isFolder = true; }
-            if ((File.Exists(filePath) | isFolder) & Directory.Exists(destination))
+            if ((File.Exists(filePath)) & Directory.Exists(destination))
             {
-                Debug.WriteLine("Folder exists, File exists");
                 string newFilePath;
                 if (newFileName == "") { newFilePath = Path.Combine(destination, Path.GetFileName(filePath)); }
                 else { newFilePath = Path.Combine(destination, newFileName); }
-                if (isFolder) { File.Copy(filePath, newFilePath); }
-                else { File.Move(filePath, newFilePath, true); }
+                File.Move(filePath, newFilePath, true);
                 return true;
             }
             else { return false; }
@@ -188,7 +181,7 @@ namespace CalTools_WPF
             NewItemFolderSelect folderDialog = new NewItemFolderSelect();
             foreach (string configFolder in config.Folders)
             {
-                ComboBoxItem boxItem = new ComboBoxItem{ Content = configFolder };
+                ComboBoxItem boxItem = new ComboBoxItem { Content = configFolder };
                 folderDialog.FolderSelectComboBox.Items.Add(boxItem);
             }
             if (folderDialog.ShowDialog() == true)
@@ -293,7 +286,7 @@ namespace CalTools_WPF
             List<CTItem> allItems = database.GetAllItems();
             foreach (CTTask task in allTasks)
             {
-                if (ItemCalendar.SelectedDate != null & task.DueDate != null)
+                if (ItemCalendar.SelectedDate != null)
                 {
                     if ((task.Mandatory & mandatoryOnly) | (!mandatoryOnly))
                     {

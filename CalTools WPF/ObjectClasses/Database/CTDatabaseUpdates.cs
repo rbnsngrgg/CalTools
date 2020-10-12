@@ -2,7 +2,6 @@
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Windows;
@@ -283,7 +282,6 @@ namespace CalTools_WPF
                             else if (GetItem("SerialNumber", Path.GetFileName(itemFolder)) == null)
                             {
                                 CTItem newItem = new CTItem(Path.GetFileName(itemFolder));
-                                Debug.WriteLine($"New item created: {newItem.SerialNumber}");
                                 newItem.Directory = itemFolder;
                                 SaveItem(newItem);
                                 CTTask newTask = new CTTask();

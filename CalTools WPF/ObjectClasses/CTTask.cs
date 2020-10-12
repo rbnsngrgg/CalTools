@@ -36,7 +36,7 @@ namespace CalTools_WPF
 
                 if (value != null)
                 { DueDate = value.Value.AddMonths(Interval); CompleteDateString = completeDate.Value.ToString("yyyy-MM-dd"); }
-                else { DueDate = null; CompleteDateString = ""; }
+                else { DueDate = null; Due = true; CompleteDateString = ""; }
                 ChangesMade = true;
             }
         }
@@ -84,7 +84,7 @@ namespace CalTools_WPF
 
         public bool CheckDue(int days, DateTime checkDate)
         {
-            if (dueDate == null) { return true; }
+            if (dueDate == null) { Due = true; return Due; }
             if ((dueDate - checkDate).Value.Days < days) { Due = true; }
             else { Due = false; }
             return Due;
@@ -104,7 +104,10 @@ namespace CalTools_WPF
         {
             if (!FolderIsValid(taskFolder)) { return new DateTime(); }
             DateTime latestFileDate = new DateTime();
-            foreach (string file in Directory.GetFiles(taskFolder))
+            List<string> filesAndFolders = new List<string>();
+            filesAndFolders.AddRange(Directory.GetFiles(taskFolder));
+            filesAndFolders.AddRange(Directory.GetDirectories(taskFolder));
+            foreach (string file in filesAndFolders)
             {
                 string fileName = Path.GetFileNameWithoutExtension(file);
                 DateTime fileDate = CheckFile(fileName);

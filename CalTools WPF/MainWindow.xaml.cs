@@ -1,7 +1,6 @@
 ﻿using CalTools_WPF.ObjectClasses;
 using CalTools_WPF.Windows;
 using Helpers;
-using IronXL.Xml.Dml;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -172,7 +171,7 @@ namespace CalTools_WPF
         //True if a task is selected in the details area
         private bool IsTaskSelected()
         {
-            if(DetailsTasksTable.SelectedItem == null) { return false; }
+            if (DetailsTasksTable.SelectedItem == null) { return false; }
             else { return true; }
         }
         //Return header(SN) of selected item in treeview, empty string if no item is selected.
@@ -225,28 +224,28 @@ namespace CalTools_WPF
         }
         private void UpdateTasksTable(bool keepChanges = false)
         {
-            if(IsItemSelected())
+            if (IsItemSelected())
             {
                 UpdateDetails(database.GetItem("SerialNumber", SelectedSN()));
                 List<CTTask> detailsTasks = database.GetTasks("SerialNumber", SelectedSN());
-                if(keepChanges)
+                if (keepChanges)
                 {
                     //Add new items to table without reverting changes made to existing items.
                     List<CTTask> currentTaskList = new List<CTTask>();
-                    foreach(CTTask task in DetailsTasksTable.Items)
+                    foreach (CTTask task in DetailsTasksTable.Items)
                     {
                         currentTaskList.Add(task);
                     }
-                    foreach(CTTask task in detailsTasks)
+                    foreach (CTTask task in detailsTasks)
                     {
                         bool found = false;
-                        foreach(CTTask currentTask in currentTaskList)
+                        foreach (CTTask currentTask in currentTaskList)
                         {
-                            if(task.TaskID == currentTask.TaskID) { found = true; break; }
+                            if (task.TaskID == currentTask.TaskID) { found = true; break; }
                         }
                         if (!found) { currentTaskList.Add(task); }
                     }
-                    foreach(CTTask task in currentTaskList)
+                    foreach (CTTask task in currentTaskList)
                     {
                         task.ServiceVendorList = serviceVendors;
                         task.CheckDue(config.MarkDueDays, DateTime.UtcNow);
@@ -353,9 +352,9 @@ namespace CalTools_WPF
                 string itemFolder = Directory.GetParent(task.TaskDirectory).FullName;
                 string currentFolder = Path.Combine(itemFolder, Path.GetFileName(task.TaskDirectory));
                 string newFolder = Path.Combine(itemFolder, $"{task.TaskID}_{task.TaskTitle}");
-                
-                if (currentFolder != newFolder) { Directory.Move(currentFolder,newFolder); task.TaskDirectory = newFolder; }
-                if (task.ChangesMade) { database.SaveTask(task); } 
+
+                if (currentFolder != newFolder) { Directory.Move(currentFolder, newFolder); task.TaskDirectory = newFolder; }
+                if (task.ChangesMade) { database.SaveTask(task); }
             }
         }
         private void OpenFolderButton_Click(object sender, RoutedEventArgs e)
@@ -595,6 +594,13 @@ namespace CalTools_WPF
                     if (info.ShowDialog() == false) { if (File.Exists(filePath)) { File.Delete(filePath); } return; }
                     else
                     {
+                        if (Directory.Exists(filePath))
+                        {
+                            File.Delete(filePath);
+                            MessageBox.Show("Drag and drop for folders is not currently supported.",
+                                "Drag and Drop", MessageBoxButton.OK, MessageBoxImage.Error);
+                            return;
+                        }
                         newFileName = $"{info.DateBox.Text}_{info.SerialNumberBox.Text}{Path.GetExtension(file)}";
                         CTTask currentTask = (CTTask)info.TaskBox.SelectedItem;
                         taskFolder = currentTask.GetTaskFolder();
@@ -602,7 +608,6 @@ namespace CalTools_WPF
                         {
                             MessageBox.Show($"{info.SerialNumberBox.Text} Task: ({currentTask.TaskID}){currentTask.TaskTitle} does not have a valid folder.",
                                 "Invalid Directory", MessageBoxButton.OK, MessageBoxImage.Error);
-                            
                             break;
                         }
                     }
@@ -619,6 +624,12 @@ namespace CalTools_WPF
                 string taskFolder = "";
                 do
                 {
+                    if (Directory.Exists(file))
+                    {
+                        MessageBox.Show("Drag and drop for folders is not currently supported.",
+                            "Drag and Drop", MessageBoxButton.OK, MessageBoxImage.Error);
+                        return;
+                    }
                     DropFileInfo info = new DropFileInfo();
                     if (IsItemSelected()) { info.SerialNumberBox.Text = SelectedSN(); }
                     info.TaskBox.ItemsSource = database.GetTasks("SerialNumber", SelectedSN());
@@ -663,13 +674,13 @@ namespace CalTools_WPF
         private void AddTaskButton_Click(object sender, RoutedEventArgs e)
         {
             CTItem currentItem = database.GetItem("SerialNumber", SelectedSN());
-            if(Directory.Exists(currentItem.Directory))
+            if (Directory.Exists(currentItem.Directory))
             {
                 database.SaveTask(new CTTask { SerialNumber = SelectedSN() }, true);
                 int taskID = database.GetLastTaskID();
-                if(taskID == -1) { return; }
+                if (taskID == -1) { return; }
                 CTTask task = database.GetTasks("TaskID", taskID.ToString())[0];
-                string newPath = Path.Combine(currentItem.Directory,$"{taskID}_{task.TaskTitle}");
+                string newPath = Path.Combine(currentItem.Directory, $"{taskID}_{task.TaskTitle}");
                 Directory.CreateDirectory(newPath);
                 if (Directory.Exists(newPath)) { task.TaskDirectory = newPath; }
                 database.SaveTask(task);
@@ -682,7 +693,7 @@ namespace CalTools_WPF
             if (IsTaskSelected())
             {
                 CTTask task = (CTTask)DetailsTasksTable.SelectedItem;
-                if(MessageBox.Show($"Remove ({task.TaskID}){task.TaskTitle}? This cannot be undone.","Remove Task",MessageBoxButton.YesNo, MessageBoxImage.Warning)
+                if (MessageBox.Show($"Remove ({task.TaskID}){task.TaskTitle}? This cannot be undone.", "Remove Task", MessageBoxButton.YesNo, MessageBoxImage.Warning)
                     == MessageBoxResult.Yes)
                 {
                     if (Directory.Exists(task.TaskDirectory)) { Directory.Delete(task.TaskDirectory, true); }

@@ -241,7 +241,7 @@ namespace CalTools_WPF
                 if (CalibrationSelection.IsSelected)
                 { if (SaveCalibrationData()) { e.Handled = true; this.DialogResult = true; } }
                 else if (MaintenanceSelection.IsSelected)
-                { if (SaveMaintenanceData()) { this.DialogResult = true; } }
+                { if (SaveMaintenanceData()) { e.Handled = true; this.DialogResult = true; } }
             }
         }
 

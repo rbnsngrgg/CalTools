@@ -16,7 +16,6 @@ namespace CalTools_WPF
         public string ItemScansDir { get; set; }
         public string Theme { get; set; }
         public int MarkDueDays { get; set; }
-        public int DueInCalendar { get; set; }
         public string CerificateFileName { get; set; }
         public Dictionary<string, string> ReportCells { get; set; } = new Dictionary<string, string>();
         public List<string> Folders { get; set; } = new List<string>();
@@ -29,11 +28,11 @@ namespace CalTools_WPF
                 //Generate file and write first lines
                 string[] lines = { "<CalTools_Config Theme = \"Light\" Folders = \"PRODUCTION EQUIPMENT,ENGINEERING EQUIPMENT,QUALITY EQUIPMENT,Ref Only,Removed from Service\"" +
                         " Procedures = \"019-0065\">",
-                        "\t<Database DbName = \"debug_Test Equipment Calibration List.db\"/>",
+                        "\t<Database DbName = \"Test Equipment Calibration List.db\"/>",
                         "\t<Directories ListDir = \"\\\\artemis\\Hardware Development Projects\\Manufacturing Engineering\\Test Equipment\" " +
                         "TempFilesDir = \"\\\\artemis\\Hardware Development Projects\\Manufacturing Engineering\\Test Equipment\\Template Files\" " +
                         "ItemScansDir = \"\\\\artemis\\Hardware Development Projects\\Manufacturing Engineering\\Test Equipment\\Item Scans\"/>",
-                        "\t<DueItems MarkDueDays = \"30\" DueInCalendar = \"60\"/>",
+                        "\t<DueItems MarkDueDays = \"30\"/>",
                         "\t<Report_Template " +
                         "CertificateFileName = \"ReportTemplate.xlsx\" " +
                         "ManufacturerCell = \"C5\" " +
@@ -77,7 +76,6 @@ namespace CalTools_WPF
                 TempFilesDir = config.LastChild.ChildNodes[1].Attributes[1].Value;
                 ItemScansDir = config.LastChild.ChildNodes[1].Attributes[2].Value;
                 MarkDueDays = int.Parse(config.LastChild.ChildNodes[2].Attributes[0].Value);
-                DueInCalendar = int.Parse(config.LastChild.ChildNodes[2].Attributes[1].Value);
 
                 ReportCells.Add("CerificateFileName", config.LastChild.ChildNodes[3].Attributes[0].Value);
                 ReportCells.Add("ManufacturerCell", config.LastChild.ChildNodes[3].Attributes[1].Value);

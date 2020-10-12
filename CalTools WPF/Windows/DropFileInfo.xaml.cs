@@ -26,5 +26,11 @@ namespace CalTools_WPF.Windows
         {
             this.DialogResult = false;
         }
+
+        private void TaskBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            if (TaskBox.SelectedItem == null) { InfoOKButton.IsEnabled = false; }
+            else { InfoOKButton.IsEnabled = true; }
+        }
     }
 }

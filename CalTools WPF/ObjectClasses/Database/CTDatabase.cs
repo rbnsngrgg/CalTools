@@ -3,8 +3,6 @@ using Microsoft.Data.Sqlite;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Data;
-using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Windows;
@@ -292,7 +290,6 @@ namespace CalTools_WPF
                             $"Comments='{task.Comment}' " +
                             $"WHERE TaskID='{task.TaskID}'";
                     }
-                    Debug.WriteLine(command);
                     Execute(command);
                     if (disconnect) { Disconnect(); }
                     return true;
@@ -329,7 +326,6 @@ namespace CalTools_WPF
                         $"'{data.Remarks.Replace("'", "''")}'," +
                         $"'{data.Technician.Replace("'", "''")}'," +
                         $"'{(timestampOverride ? data.Timestamp : DateTime.UtcNow.ToString(timestampFormat, CultureInfo.InvariantCulture))}')";
-                    Debug.WriteLine(command);
                     Execute(command);
                     if (disconnect) { Disconnect(); }
                     return true;
