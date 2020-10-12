@@ -1,6 +1,5 @@
 ﻿using CalTools_WPF.ObjectClasses;
 using System;
-using System.Diagnostics;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
@@ -13,7 +12,7 @@ namespace CalTools_WPF
     /// </summary>
     public partial class CalDataEntry : Window
     {
-        public CalibrationData data = new CalibrationData();
+        public TaskData data = new TaskData();
         public Findings findings = new Findings();
         public CalDataEntry()
         {
@@ -61,14 +60,14 @@ namespace CalTools_WPF
 
             if (calDate > DateTime.UtcNow)
             { MessageBox.Show("Entries for future dates are not allowed.", "Future Date", MessageBoxButton.OK, MessageBoxImage.Exclamation); return false; }
-            data.CalibrationDate = calDate;
+            data.CompleteDate = calDate;
             if (ProcedureBox.Text.Length == 0) { MessageBox.Show("\"Procedure\" is required.", "Required Field", MessageBoxButton.OK, MessageBoxImage.Exclamation); return false; }
             else { data.Procedure = ProcedureBox.Text; }
 
             if (EquipmentBox.Text.Length == 0)
             { if (MessageBox.Show("\"Standard Equipment\" is blank. Continue?", "Blank Field", MessageBoxButton.YesNo, MessageBoxImage.Exclamation) == MessageBoxResult.No) { return false; } }
             else { data.StandardEquipment = EquipmentBox.Text; }
-            data.findings = findings;
+            data.Findings = findings;
             if (RemarksBox.Text.Length == 0 & findings.parameters.Count == 0)
             { MessageBox.Show("Remarks are required if there are no findings parameters.", "Remarks", MessageBoxButton.OK, MessageBoxImage.Exclamation); return false; }
             data.Remarks = RemarksBox.Text;
@@ -108,12 +107,12 @@ namespace CalTools_WPF
 
             if (calDate > DateTime.UtcNow)
             { MessageBox.Show("Entries for future dates are not allowed.", "Future Date", MessageBoxButton.OK, MessageBoxImage.Exclamation); return false; }
-            data.CalibrationDate = calDate;
+            data.CompleteDate = calDate;
             if (MaintenanceProcedureBox.Text.Length == 0) { MessageBox.Show("\"Procedure\" is required.", "Required Field", MessageBoxButton.OK, MessageBoxImage.Exclamation); return false; }
             else { data.Procedure = MaintenanceProcedureBox.Text; }
 
             data.StandardEquipment = MaintenanceEquipmentBox.Text;
-            data.findings = null;
+            data.Findings = null;
             if (MaintenanceRemarksBox.Text.Length == 0)
             { MessageBox.Show("Remarks are required for maintenance actions.", "Remarks", MessageBoxButton.OK, MessageBoxImage.Exclamation); return false; }
             data.Remarks = MaintenanceRemarksBox.Text;
@@ -126,8 +125,8 @@ namespace CalTools_WPF
         {
             if (CalibrationSelection.IsSelected)
             { if (SaveCalibrationData()) { this.DialogResult = true; } }
-            else if(MaintenanceSelection.IsSelected)
-                { if (SaveMaintenanceData()) { this.DialogResult = true; } }
+            else if (MaintenanceSelection.IsSelected)
+            { if (SaveMaintenanceData()) { this.DialogResult = true; } }
         }
 
         private void CancelButton_Click(object sender, RoutedEventArgs e)
@@ -242,7 +241,7 @@ namespace CalTools_WPF
                 if (CalibrationSelection.IsSelected)
                 { if (SaveCalibrationData()) { e.Handled = true; this.DialogResult = true; } }
                 else if (MaintenanceSelection.IsSelected)
-                { if (SaveMaintenanceData()) { this.DialogResult = true; } }
+                { if (SaveMaintenanceData()) { e.Handled = true; this.DialogResult = true; } }
             }
         }
 

@@ -53,7 +53,9 @@
                     <RowDefinition/>
                 </Grid.RowDefinitions>
                 <Label Content="Serial Number:" Grid.Row="0" Grid.Column="1" HorizontalAlignment="Center" FontSize="14"/>
-                    <TextBox x:Name="SerialNumberBox" Grid.Row="0" Grid.Column="2" FontSize="16" Grid.ColumnSpan="4" IsEnabled="False"/>
+                    <TextBox x:Name="SerialNumberBox" Grid.Row="0" Grid.Column="2" FontSize="16" Grid.ColumnSpan="2" IsEnabled="False"/>
+                <Label Content="Task:" Grid.Row="0" Grid.Column="4" HorizontalAlignment="Center" FontSize="14"/>
+                <TextBox x:Name="TaskBox" Grid.Row="0" Grid.Column="5" FontSize="16" IsEnabled="False"/>
                 <Label Content="Before Action:" Grid.Row="1" Grid.Column="1" HorizontalAlignment="Center" FontSize="14"/>
                 <CheckBox x:Name="InToleranceBox1" Grid.Row="1" Grid.Column="2" Content="In Tolerance" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14" Checked="InToleranceBox1_Checked" Unchecked="InToleranceBox1_Checked"/>
                 <CheckBox x:Name="OutOfToleranceBox1" Grid.Row="1" Grid.Column="3" Content="Out of Tolerance" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14" Checked="OutOfToleranceBox1_Checked" Unchecked="OutOfToleranceBox1_Checked"/>
@@ -128,7 +130,9 @@
                     <RowDefinition/>
                 </Grid.RowDefinitions>
                 <Label Content="Serial Number:" Grid.Row="0" Grid.Column="1" HorizontalAlignment="Center" FontSize="14"/>
-                <TextBox x:Name="MaintenanceSerialNumberBox" Grid.Row="0" Grid.Column="2" FontSize="16" Grid.ColumnSpan="4" IsEnabled="False"/>
+                <TextBox x:Name="MaintenanceSerialNumberBox" Grid.Row="0" Grid.Column="2" FontSize="16" Grid.ColumnSpan="2" IsEnabled="False"/>
+                <Label Content="Task:" Grid.Row="0" Grid.Column="4" HorizontalAlignment="Center" FontSize="14"/>
+                <TextBox x:Name="MaintenanceTaskBox" Grid.Row="0" Grid.Column="5" FontSize="16" IsEnabled="False"/>
                 <Label Content="Before Action:" Grid.Row="1" Grid.Column="1" HorizontalAlignment="Center" FontSize="14"/>
                 <CheckBox x:Name="MaintenanceMalfunctioningBox1" Grid.Row="1" Grid.Column="2" Content="Malfunctioning" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14" Checked="MaintenanceMalfunctioningBox1_Checked" Unchecked="MaintenanceMalfunctioningBox1_Checked"/>
                 <CheckBox x:Name="MaintenanceOperationalBox1" Grid.Row="1" Grid.Column="3" Content="Operational" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14" IsChecked="True" Checked="MaintenanceOperationalBox1_Checked" Unchecked="MaintenanceOperationalBox1_Checked"/>

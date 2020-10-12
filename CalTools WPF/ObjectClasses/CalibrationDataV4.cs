@@ -2,7 +2,7 @@
 
 namespace CalTools_WPF.ObjectClasses
 {
-    public class CalibrationData
+    public class CalibrationDataV4
     {
 #nullable enable
         public int? ID { get; set; } = null;
@@ -18,6 +18,7 @@ namespace CalTools_WPF.ObjectClasses
         public Findings? findings = new Findings();
         public string Remarks { get; set; } = "";
         public string Technician { get; set; } = "";
+        public string Timestamp { get; set; } = "";
         public enum DatabaseColumns
         {
             ColID,
@@ -37,19 +38,4 @@ namespace CalTools_WPF.ObjectClasses
 
     }
 #nullable disable
-    public struct State
-    {
-        public bool InTolerance;
-        public bool OutOfTolerance;
-        public bool Malfunctioning;
-        public bool Operational;
-    }
-    public struct ActionTaken
-    {
-        public bool Calibration;
-        public bool Verification;
-        public bool Adjusted;
-        public bool Repaired;
-        public bool Maintenance;
-    }
 }

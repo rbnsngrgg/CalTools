@@ -8,13 +8,13 @@
     <AssemblyName>CalTools</AssemblyName>
     <ApplicationIcon>images\CalToolsIcon.ico</ApplicationIcon>
     <Authors>Gregg Robinson</Authors>
-    <Version>4.0.0</Version>
+    <Version>5.0.0</Version>
     <Company>Perceptron, Inc.</Company>
     <Description>A tool for managing calibrated equipment at Perceptron HQ.</Description>
     <PackageProjectUrl></PackageProjectUrl>
     <PackageIcon>CalToolsIcon.png</PackageIcon>
-    <AssemblyVersion>4.2.0.0</AssemblyVersion>
-    <FileVersion>4.2.0.0</FileVersion>
+    <AssemblyVersion>5.0.0.0</AssemblyVersion>
+    <FileVersion>5.0.0.0</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>
