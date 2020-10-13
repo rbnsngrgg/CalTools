@@ -36,7 +36,7 @@
             </Button>
             <Button x:Name="ReceivingFolderButton"  MinWidth="150" MaxWidth="500" Height="20" HorizontalAlignment="Stretch" Margin="15,0,0,0" Content="Receiving Folder" Click="ReceivingFolderButton_Click"/>
             <Button x:Name="CalReportButton"  MinWidth="150" MaxWidth="500" Height="20" HorizontalAlignment="Stretch" Margin="10,0,0,0" Content="Out of Cal Report" Visibility="Collapsed"/>
-            <Button x:Name="UpdateButton"  MinWidth="150" MaxWidth="500" Height="20" HorizontalAlignment="Stretch" Margin="10,0,0,0" Content="Update Items" Click="UpdateButton_Click"/>
+            <Button x:Name="UpdateButton"  MinWidth="150" MaxWidth="500" Height="20" HorizontalAlignment="Stretch" Margin="10,0,0,0" Content="Update All Items" Click="UpdateButton_Click"/>
             <Button x:Name="CalFolderButton"  MinWidth="150" MaxWidth="500" Height="20" HorizontalAlignment="Stretch" Margin="10,0,0,0" Content="Calibrations Folder" Click="CalFolderButton_Click"/>
             <Button x:Name="SettingsButton"  MinWidth="150" MaxWidth="500" Height="20" HorizontalAlignment="Stretch" Margin="10,0,0,0" Content="Settings" Visibility="Collapsed"/>
             <Separator HorizontalAlignment="Stretch" Background="White"/>

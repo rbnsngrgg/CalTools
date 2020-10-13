@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -47,12 +48,13 @@ namespace CalTools_WPF
             todoTable.ItemsSource = weekTodoItems;
         }
         //Update GUI Elements
-        private void UpdateItemList()
+        private void UpdateItemList(bool single = false)
         {
             if (!database.tablesExist) { return; }
             CheckReceiving();
             string currentItem = SelectedSN();
-            ScanFolders();
+            if (single) { ScanFoldersSingle(database.GetItem("SerialNumber", currentItem)); }
+            else { ScanFolders(); }
             if (SearchBox.Text.Length != 0)
             {
                 AddItemsToList(ItemListFilter(searchModes[SearchOptions.SelectedItem.ToString()], SearchBox.Text));
@@ -282,7 +284,9 @@ namespace CalTools_WPF
         {
             SaveItem();
             SaveTasksTable();
-            UpdateItemList();
+            //Update specific item
+            //UpdateSingleItem(SelectedSN());
+            UpdateItemList(true);
         }
         private void SaveItem()
         {
@@ -412,7 +416,8 @@ namespace CalTools_WPF
             SaveTasksTable();
             CTItem item = database.GetItemFromTask(task);
             List<CTTask> tasks = database.GetTasks("SerialNumber", item.SerialNumber);
-            CheckTasks(item.Directory, ref tasks);
+            List<TaskData> taskData = database.GetAllTaskData();
+            CheckTasks(item.Directory, ref tasks, ref taskData);
             UpdateTasksTable();
         }
         private void DetailsStandardBox_Checked(object sender, RoutedEventArgs e)

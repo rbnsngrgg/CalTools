@@ -1,4 +1,7 @@
 [Changes]
+--5.0.1
+	--Improved performance when saving an item in details view. The entire list is only updated on startup and when "Update All Items" is pressed. (Issue 71)
+
 --5.0.0
 	--Backwards compatibility for database versions < 4 is no longer supported.
 	--Added functionality to check names of folders when checking due dates (Issue 68)
@@ -10,6 +13,7 @@
 		--Database has 3 tables: items, tasks, taskdata
 		--Updates and deletes cascade: item -> tasks -> taskdata
 		--Database version 5	
+
 --4.2.0
 	--Changed verbiage of some of the labels in the item details area.
 	--Fixed bug that still showed a "Next Calibration" date when there are no longer any calibration records.

@@ -1,8 +1,11 @@
 ﻿using CalTools_WPF.ObjectClasses;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -11,10 +14,10 @@ namespace CalTools_WPF
     //Other main window code-behind logic that doesn't directly interact with the GUI elements.
     public partial class MainWindow : Window
     {
-        public readonly string version = "5.0.0";
+        public readonly string version = "5.0.1";
         private CTDatabase database;
         private CTConfig config = new CTConfig();
-        private Dictionary<string, string> searchModes = new Dictionary<string, string>() {
+        private readonly Dictionary<string, string> searchModes = new Dictionary<string, string>() {
             { "Serial Number","SerialNumber" },
             { "Location","Location" },
             { "Service Vendor","Vendor" },
@@ -33,15 +36,26 @@ namespace CalTools_WPF
         private List<string> standardEquipment = new List<string>();
         private List<Dictionary<string, string>> weekTodoItems = new List<Dictionary<string, string>>();
         private List<CTTask> detailsTasks = new List<CTTask>();
+
+        //Used in place of ScanFolders() when only one item needs to be updated.
+        private void ScanFoldersSingle(CTItem item)
+        {
+            if(item == null) { return; }
+            List<CTTask> itemTasks = database.GetTasks("SerialNumber",item.SerialNumber);
+            List<TaskData> taskData = database.GetAllTaskData();
+            if (!Directory.Exists(item.Directory)) { item.Directory = FindItemDirectory(item.SerialNumber); }
+            CheckTasks(item.Directory, ref itemTasks, ref taskData);
+            if (item.ChangesMade) { database.SaveItem(item); }
+        }
         private void ScanFolders()
         {
             List<CTTask> allTasks = database.GetAllTasks();
             List<CTItem> allItems = database.GetAllItems();
             List<TaskData> taskData = database.GetAllTaskData();
-            string itemsFolder = $"{config.ItemScansDir}\\";
+
             foreach (string folder in config.Folders)
             {
-                string scanFolder = $"{itemsFolder}{folder}";
+                string scanFolder = Path.Combine(config.ItemScansDir,folder);
                 if (Directory.Exists(scanFolder))
                 {
                     foreach (string itemFolder in Directory.GetDirectories(scanFolder))
@@ -49,38 +63,47 @@ namespace CalTools_WPF
                         CTItem calItem = null;
                         bool newItem = false;
                         string itemSN = System.IO.Path.GetFileName(itemFolder);
-                        foreach (CTItem item in allItems)
+                        foreach (CTItem item in allItems)                                       //Match folder to CTItem in list
                         {
                             if (item.SerialNumber == itemSN) { calItem = item; break; }
                         }
-                        if (calItem == null) { calItem = new CTItem(itemSN); newItem = true; }
-                        if (calItem.Directory != itemFolder)
+                        if (calItem == null) { calItem = new CTItem(itemSN); newItem = true; }  //If existing item wasn't found, create new
+                        if (calItem.Directory != itemFolder)                                    //Check if directory is valid. Set to the found folder if not
                         {
                             calItem.Directory = itemFolder;
                             if (newItem) { database.CreateItem(calItem.SerialNumber); }
                         }
-                        CheckTasks(itemFolder, ref allTasks);
+                        CheckTasks(itemFolder, ref allTasks, ref taskData);
                         if (calItem.ChangesMade) { database.SaveItem(calItem); }
                     }
                 }
             }
+            CreateTaskFolders(ref allTasks);
         }
         //Checks completion dates and due dates on all tasks in the specified item folder.
-        private void CheckTasks(string folder, ref List<CTTask> tasks)
+        private void CheckTasks(string folder, ref List<CTTask> tasks, ref List<TaskData> taskData)
         {
             foreach (string taskFolder in Directory.GetDirectories(folder))
             {
                 string folderTaskID = Path.GetFileName(taskFolder).Split("_")[0];
                 foreach (CTTask task in tasks)
                 {
+                    List<TaskData> currentData = new List<TaskData>();
+                    foreach(TaskData data in taskData)
+                    {
+                        if (data.TaskID == task.TaskID) { currentData.Add(data); }
+                    }
                     if (folderTaskID == task.TaskID.ToString() & Path.GetFileName(folder) == task.SerialNumber)
                     {
                         task.TaskDirectory = taskFolder;
-                        task.CheckDates(taskFolder, database.GetTaskData(task.TaskID.ToString()));
+                        task.CheckDates(taskFolder, currentData);
                     }
                 }
             }
-            CreateTaskFolders(ref tasks);
+            SaveTaskChanges(ref tasks);
+        }
+        private void SaveTaskChanges(ref List<CTTask> tasks)
+        {
             foreach (CTTask task in tasks)
             {
                 if (task.ChangesMade) { database.SaveTask(task); task.ChangesMade = false; }
@@ -136,6 +159,26 @@ namespace CalTools_WPF
                     MoveToItemFolder(file);
                 }
             }
+        }
+        private string FindItemDirectory(string serialNumber)
+        {
+            //Iterate through folders in the Item Scans directory
+            foreach(string directoryFolder in Directory.GetDirectories(config.ItemScansDir))
+            {
+                //Match folder with one of the folders specified in the config
+                foreach(string configFolder in config.Folders)
+                {
+                    if(directoryFolder.Contains(configFolder))
+                    {
+                        //Search for a folder that matches the specified item.
+                        foreach(string itemFolder in Directory.GetDirectories(directoryFolder))
+                        {
+                            if(itemFolder == serialNumber) { return itemFolder; }
+                        }
+                    }
+                }
+            }
+            return "";
         }
         private bool MoveToItemFolder(string file, string newFileName = "")
         {
