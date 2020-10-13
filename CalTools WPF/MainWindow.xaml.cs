@@ -289,7 +289,6 @@ namespace CalTools_WPF
         }
         private void SaveItem()
         {
-            string sn = "";
             if (DetailsSN.Text.Length > 0)
             {
                 CTItem item;
@@ -333,7 +332,6 @@ namespace CalTools_WPF
                             database.SaveItem(item);
                             UpdateDetails(database.GetItem("SerialNumber", item.SerialNumber));
                             UpdateItemList();
-                            sn = item.SerialNumber;
                         }
                     }
                     else
@@ -342,7 +340,6 @@ namespace CalTools_WPF
                         SaveItemButton.Visibility = Visibility.Collapsed;
                         DetailsEditToggle();
                         EditItemButton.Visibility = Visibility.Visible;
-                        sn = item.SerialNumber;
                     }
                 }
                 UpdateListsSingle(item);
@@ -700,7 +697,6 @@ namespace CalTools_WPF
             }
             UpdateTasksTable(true);
         }
-
         private void RemoveTaskButton_Click(object sender, RoutedEventArgs e)
         {
             if (IsTaskSelected())

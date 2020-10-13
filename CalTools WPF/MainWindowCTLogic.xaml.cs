@@ -32,7 +32,6 @@ namespace CalTools_WPF
         private List<string> itemGroups = new List<string>();
         private List<string> standardEquipment = new List<string>();
         private List<Dictionary<string, string>> weekTodoItems = new List<Dictionary<string, string>>();
-        private List<CTTask> detailsTasks = new List<CTTask>();
 
         //Used in place of ScanFolders() when only one item needs to be updated.
         private void ScanFoldersSingle(CTItem item)

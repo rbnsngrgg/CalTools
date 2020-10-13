@@ -294,5 +294,17 @@ namespace CalTools_WPF
                 }
             }
         }
+        private void MoveToTaskFolder(CTItem item, CTTask task)
+        {
+            if (item == null | task == null) { return; }
+            string taskFolder = Path.Combine(item.Directory, $"{task.TaskID}_{task.TaskTitle}");
+            if (Directory.Exists(taskFolder)) { return; }
+            Directory.CreateDirectory(taskFolder);
+            foreach (string file in Directory.GetFiles(item.Directory))
+            {
+                string newLocation = Path.Combine(taskFolder, Path.GetFileName(file));
+                File.Move(file, newLocation);
+            }
+        }
     }
 }
