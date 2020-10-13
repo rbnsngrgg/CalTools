@@ -47,12 +47,13 @@ namespace CalTools_WPF
             todoTable.ItemsSource = weekTodoItems;
         }
         //Update GUI Elements
-        private void UpdateItemList()
+        private void UpdateItemList(bool single = false)
         {
             if (!database.tablesExist) { return; }
             CheckReceiving();
             string currentItem = SelectedSN();
-            ScanFolders();
+            if (single) { ScanFoldersSingle(database.GetItem("SerialNumber", currentItem)); }
+            else { ScanFolders(); }
             if (SearchBox.Text.Length != 0)
             {
                 AddItemsToList(ItemListFilter(searchModes[SearchOptions.SelectedItem.ToString()], SearchBox.Text));
@@ -220,13 +221,13 @@ namespace CalTools_WPF
                 DetailsEditToggle();
                 EditItemButton.Visibility = Visibility.Visible;
             }
+            UpdateDetails(database.GetItem("SerialNumber", SelectedSN()));
             UpdateTasksTable();
         }
         private void UpdateTasksTable(bool keepChanges = false)
         {
             if (IsItemSelected())
             {
-                UpdateDetails(database.GetItem("SerialNumber", SelectedSN()));
                 List<CTTask> detailsTasks = database.GetTasks("SerialNumber", SelectedSN());
                 if (keepChanges)
                 {
@@ -282,7 +283,9 @@ namespace CalTools_WPF
         {
             SaveItem();
             SaveTasksTable();
-            UpdateItemList();
+            //Update specific item
+            //UpdateSingleItem(SelectedSN());
+            UpdateItemList(true);
         }
         private void SaveItem()
         {
@@ -412,7 +415,8 @@ namespace CalTools_WPF
             SaveTasksTable();
             CTItem item = database.GetItemFromTask(task);
             List<CTTask> tasks = database.GetTasks("SerialNumber", item.SerialNumber);
-            CheckTasks(item.Directory, ref tasks);
+            List<TaskData> taskData = database.GetAllTaskData();
+            CheckTasks(item.Directory, ref tasks, ref taskData);
             UpdateTasksTable();
         }
         private void DetailsStandardBox_Checked(object sender, RoutedEventArgs e)
@@ -473,6 +477,10 @@ namespace CalTools_WPF
         }
         private void SearchOptions_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            SearchItems();
+        }
+        private void SearchItems()
+        {
             SearchBox.Clear();
             string selection = SearchOptions.SelectedItem.ToString();
             if (selection == "Calibration Due" | selection == "Has Comment" | selection == "Standard Equipment" | selection == "Action Due")
@@ -514,7 +522,12 @@ namespace CalTools_WPF
         private void TableMenuGoto_Click(object sender, RoutedEventArgs e)
         {
             if (todoTable.SelectedItem != null)
-            { ToggleView(); GoToItem(((Dictionary<string, string>)todoTable.SelectedItem)["SerialNumber"]); }
+            {
+                ToggleView();
+                if (SearchOptions.SelectedItem.ToString() == "Serial Number") { SearchItems(); }
+                else { SearchOptions.SelectedItem = "Serial Number"; }
+                GoToItem(((Dictionary<string, string>)todoTable.SelectedItem)["SerialNumber"]);
+            }
         }
         private void TableMenuCalData_Click(object sender, RoutedEventArgs e)
         {
