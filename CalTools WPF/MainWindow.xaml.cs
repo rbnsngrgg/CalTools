@@ -8,7 +8,6 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -222,13 +221,13 @@ namespace CalTools_WPF
                 DetailsEditToggle();
                 EditItemButton.Visibility = Visibility.Visible;
             }
+            UpdateDetails(database.GetItem("SerialNumber", SelectedSN()));
             UpdateTasksTable();
         }
         private void UpdateTasksTable(bool keepChanges = false)
         {
             if (IsItemSelected())
             {
-                UpdateDetails(database.GetItem("SerialNumber", SelectedSN()));
                 List<CTTask> detailsTasks = database.GetTasks("SerialNumber", SelectedSN());
                 if (keepChanges)
                 {
@@ -478,6 +477,10 @@ namespace CalTools_WPF
         }
         private void SearchOptions_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            SearchItems();
+        }
+        private void SearchItems()
+        {
             SearchBox.Clear();
             string selection = SearchOptions.SelectedItem.ToString();
             if (selection == "Calibration Due" | selection == "Has Comment" | selection == "Standard Equipment" | selection == "Action Due")
@@ -519,7 +522,12 @@ namespace CalTools_WPF
         private void TableMenuGoto_Click(object sender, RoutedEventArgs e)
         {
             if (todoTable.SelectedItem != null)
-            { ToggleView(); GoToItem(((Dictionary<string, string>)todoTable.SelectedItem)["SerialNumber"]); }
+            {
+                ToggleView();
+                if (SearchOptions.SelectedItem.ToString() == "Serial Number") { SearchItems(); }
+                else { SearchOptions.SelectedItem = "Serial Number"; }
+                GoToItem(((Dictionary<string, string>)todoTable.SelectedItem)["SerialNumber"]);
+            }
         }
         private void TableMenuCalData_Click(object sender, RoutedEventArgs e)
         {

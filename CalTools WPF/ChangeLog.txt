@@ -1,7 +1,8 @@
 [Changes]
 --5.0.1
+	--Fixed bug where search wasn't reset when selecting "Go To Item" from calendar mode, preventing the item from being selected in the list. (Issue 72)
 	--Improved performance when saving an item in details view. The entire list is only updated on startup and when "Update All Items" is pressed. (Issue 71)
-
+	--Fixed bug that caused changes made in the details area to be reverted when a new task is added to the table. (Issue 70)
 --5.0.0
 	--Backwards compatibility for database versions < 4 is no longer supported.
 	--Added functionality to check names of folders when checking due dates (Issue 68)

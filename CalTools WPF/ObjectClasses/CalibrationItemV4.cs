@@ -1,6 +1,5 @@
 ﻿using Newtonsoft.Json;
 using System;
-using System.Diagnostics;
 
 namespace CalTools_WPF
 {
@@ -64,34 +63,6 @@ namespace CalTools_WPF
         public string ToJson()
         {
             return JsonConvert.SerializeObject(this);
-        }
-
-        //Display all properties in debug
-        public void ShowDebug()
-        {
-            Debug.WriteLine("----------------------------------------------------------------------");
-            Debug.WriteLine(SerialNumber);
-            Debug.WriteLine(Location);
-            Debug.WriteLine(Interval);
-            Debug.WriteLine(CalVendor);
-            Debug.WriteLine(Manufacturer);
-            if (LastCal == null) { Debug.WriteLine("LastCal Null"); } else { Debug.WriteLine(LastCal); }
-            if (NextCal == null) { Debug.WriteLine("NextCal Null"); } else { Debug.WriteLine(NextCal); }
-            Debug.WriteLine(Mandatory);
-            Debug.WriteLine(Directory);
-            Debug.WriteLine(Description);
-            Debug.WriteLine(InService);
-            if (InServiceDate == null) { Debug.WriteLine("In Service Date Null"); } else { Debug.WriteLine(InServiceDate); }
-            if (OutOfServiceDate == null) { Debug.WriteLine("Out of Service Date Null"); } else { Debug.WriteLine(OutOfServiceDate); }
-            Debug.WriteLine(CalDue);
-            Debug.WriteLine(Model);
-            Debug.WriteLine(Comment);
-            if (TimeStamp == null) { Debug.WriteLine("Timestamp Null"); } else { Debug.WriteLine(TimeStamp); }
-            Debug.WriteLine(ItemGroup);
-            Debug.WriteLine(VerifyOrCalibrate);
-            Debug.WriteLine(CertificateNumber);
-            Debug.WriteLine(StandardEquipment);
-            Debug.WriteLine("----------------------------------------------------------------------");
         }
     }
 }

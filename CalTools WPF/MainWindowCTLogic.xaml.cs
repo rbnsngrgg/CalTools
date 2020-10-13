@@ -1,11 +1,8 @@
 ﻿using CalTools_WPF.ObjectClasses;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -40,8 +37,8 @@ namespace CalTools_WPF
         //Used in place of ScanFolders() when only one item needs to be updated.
         private void ScanFoldersSingle(CTItem item)
         {
-            if(item == null) { return; }
-            List<CTTask> itemTasks = database.GetTasks("SerialNumber",item.SerialNumber);
+            if (item == null) { return; }
+            List<CTTask> itemTasks = database.GetTasks("SerialNumber", item.SerialNumber);
             List<TaskData> taskData = database.GetAllTaskData();
             if (!Directory.Exists(item.Directory)) { item.Directory = FindItemDirectory(item.SerialNumber); }
             CheckTasks(item.Directory, ref itemTasks, ref taskData);
@@ -55,7 +52,7 @@ namespace CalTools_WPF
 
             foreach (string folder in config.Folders)
             {
-                string scanFolder = Path.Combine(config.ItemScansDir,folder);
+                string scanFolder = Path.Combine(config.ItemScansDir, folder);
                 if (Directory.Exists(scanFolder))
                 {
                     foreach (string itemFolder in Directory.GetDirectories(scanFolder))
@@ -89,7 +86,7 @@ namespace CalTools_WPF
                 foreach (CTTask task in tasks)
                 {
                     List<TaskData> currentData = new List<TaskData>();
-                    foreach(TaskData data in taskData)
+                    foreach (TaskData data in taskData)
                     {
                         if (data.TaskID == task.TaskID) { currentData.Add(data); }
                     }
@@ -163,17 +160,17 @@ namespace CalTools_WPF
         private string FindItemDirectory(string serialNumber)
         {
             //Iterate through folders in the Item Scans directory
-            foreach(string directoryFolder in Directory.GetDirectories(config.ItemScansDir))
+            foreach (string directoryFolder in Directory.GetDirectories(config.ItemScansDir))
             {
                 //Match folder with one of the folders specified in the config
-                foreach(string configFolder in config.Folders)
+                foreach (string configFolder in config.Folders)
                 {
-                    if(directoryFolder.Contains(configFolder))
+                    if (directoryFolder.Contains(configFolder))
                     {
                         //Search for a folder that matches the specified item.
-                        foreach(string itemFolder in Directory.GetDirectories(directoryFolder))
+                        foreach (string itemFolder in Directory.GetDirectories(directoryFolder))
                         {
-                            if(itemFolder == serialNumber) { return itemFolder; }
+                            if (itemFolder == serialNumber) { return itemFolder; }
                         }
                     }
                 }
