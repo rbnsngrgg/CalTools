@@ -8,6 +8,7 @@ namespace CalTools_WPF
 {
     public class CTTask
     {
+        #region Private Fields
         private int taskID = -1;
         private string serialNumber = "";
         private string taskTitle = "CALIBRATION";
@@ -20,16 +21,18 @@ namespace CalTools_WPF
         private string actionType = "CALIBRATION";
         private string taskDirectory = "";
         private string comment = "";
+        #endregion
 
-        public int TaskID { get { return taskID; } set { taskID = value; ChangesMade = true; } }
-        public string SerialNumber { get { return serialNumber; } set { serialNumber = value; ChangesMade = true; } }
-        public string TaskTitle { get { return taskTitle; } set { taskTitle = value; ChangesMade = true; } }
-        public string ServiceVendor { get { return serviceVendor; } set { serviceVendor = value; ChangesMade = true; } }
-        public bool Mandatory { get { return mandatory; } set { mandatory = value; ChangesMade = true; } }
-        public int Interval { get { return interval; } set { interval = value; if (CompleteDate != null) { DueDate = completeDate.Value.AddMonths(Interval); } ChangesMade = true; } }
+        #region Getters and Setters
+        public int TaskID { get => taskID; set { taskID = value; ChangesMade = true; } }
+        public string SerialNumber { get => serialNumber; set { serialNumber = value; ChangesMade = true; } }
+        public string TaskTitle { get => taskTitle; set { taskTitle = value; ChangesMade = true; } }
+        public string ServiceVendor { get => serviceVendor; set { serviceVendor = value; ChangesMade = true; } }
+        public bool Mandatory { get => mandatory; set { mandatory = value; ChangesMade = true; } }
+        public int Interval { get => interval; set { interval = value; if (CompleteDate != null) { DueDate = completeDate.Value.AddMonths(Interval); } ChangesMade = true; } }
         public DateTime? CompleteDate
         {
-            get { return completeDate; }
+            get => completeDate;
             set
             {
                 completeDate = value;
@@ -43,7 +46,7 @@ namespace CalTools_WPF
         public string CompleteDateString { get; private set; } = "";
         public DateTime? DueDate
         {
-            get { return dueDate; }
+            get => dueDate;
             set
             {
                 dueDate = value;
@@ -55,15 +58,17 @@ namespace CalTools_WPF
                 ChangesMade = true;
             }
         }
-        public bool Due { get { return due; } set { if (due != value) { due = value; ChangesMade = true; } } }
+        public bool Due { get => due; set { if (due != value) { due = value; ChangesMade = true; } } }
         public string DueDateString { get; private set; } = "";
-        public string ActionType { get { return actionType; } set { actionType = value; ChangesMade = true; } }
-        public string TaskDirectory { get { return taskDirectory; } set { if (taskDirectory != value) { ChangesMade = true; } taskDirectory = value; } }
-        public string Comment { get { return comment; } set { comment = value; ChangesMade = true; } }
+        public string ActionType { get => actionType; set { actionType = value; ChangesMade = true; } }
+        public string TaskDirectory { get => taskDirectory; set { if (taskDirectory != value) { ChangesMade = true; } taskDirectory = value; } }
+        public string Comment { get => comment; set { comment = value; ChangesMade = true; } }
         public bool ChangesMade { get; set; } = false;
+        #endregion
+
         //For use with the DetailsTasksTable. Used to populate the datagrid combobox with vendors. Transient
         public List<string> ServiceVendorList { get; set; }
-        //--------------------------------------------------------------------------------------------------
+        //---------------------------------------------------------------------------------------------------------------------------------
         public enum DatabaseColumns
         {
             TaskID,
@@ -79,17 +84,13 @@ namespace CalTools_WPF
             Directory,
             Comments
         }
-
-        public List<string> ActionTypes { get; private set; } = new List<string> { "CALIBRATION", "MAINTENANCE", "VERIFICATION" };
-
-        public bool CheckDue(int days, DateTime checkDate)
+        public bool IsTaskDue(int days, DateTime checkDate)
         {
             if (dueDate == null) { Due = true; return Due; }
             if ((dueDate - checkDate).Value.Days < days) { Due = true; }
             else { Due = false; }
             return Due;
         }
-
         //Methods for checking the completion dates of TaskData and task folders
         public void CheckDates(string taskFolder, List<TaskData> taskDataList)
         {
@@ -99,7 +100,6 @@ namespace CalTools_WPF
             else if (latestFileDate > latestDataDate) { if (CompleteDate != latestFileDate) { CompleteDate = latestFileDate; } }
             else if (latestDataDate > latestFileDate) { if (CompleteDate != latestDataDate) { CompleteDate = latestDataDate; } }
         }
-
         private DateTime CheckFolder(string taskFolder)
         {
             if (!FolderIsValid(taskFolder)) { return new DateTime(); }
@@ -130,12 +130,6 @@ namespace CalTools_WPF
             if (snMatch) { return fileDate; }
             else { return new DateTime(); }
         }
-        private bool FolderIsValid(string folder)
-        {
-            //Input full path of folder. Return true if folder name is properly formatted with TaskID, false otherwise.
-            if (Path.GetFileName(folder).Split("_")[0] != TaskID.ToString()) { return false; }
-            else { return true; }
-        }
         private DateTime CheckTaskData(ref List<TaskData> taskDataList)
         {
             DateTime latestData = new DateTime();
@@ -145,8 +139,12 @@ namespace CalTools_WPF
             }
             return latestData;
         }
-
-        //Check if task folder is valid. Try to find the task folder if not. Return valid directory or empty string
+        private bool FolderIsValid(string folder)
+        {
+            //Input full path of folder. Return true if folder name is properly formatted with TaskID, false otherwise.
+            if (Path.GetFileName(folder).Split("_")[0] != TaskID.ToString()) { return false; }
+            else { return true; }
+        }
         public string GetTaskFolder()
         {
             if (Directory.Exists(TaskDirectory)) { return TaskDirectory; }
@@ -161,6 +159,6 @@ namespace CalTools_WPF
                 if (!folderFound) { TaskDirectory = ""; }
                 return TaskDirectory;
             }
-        }
+        }//Check if task folder is valid. Try to find the task folder if not. Return valid directory or empty string
     }
 }

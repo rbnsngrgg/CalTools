@@ -21,12 +21,7 @@ namespace CalTools_WPF.Windows
             else
             { MessageBox.Show("The date is not in a valid \"yyyy-MM-dd\" format", "Date Format", MessageBoxButton.OK, MessageBoxImage.Exclamation); }
         }
-
-        private void InfoCancelButton_Click(object sender, RoutedEventArgs e)
-        {
-            this.DialogResult = false;
-        }
-
+        private void InfoCancelButton_Click(object sender, RoutedEventArgs e) => this.DialogResult = false;
         private void TaskBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
             if (TaskBox.SelectedItem == null) { InfoOKButton.IsEnabled = false; }

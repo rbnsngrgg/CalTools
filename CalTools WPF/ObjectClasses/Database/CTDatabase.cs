@@ -419,6 +419,15 @@ namespace CalTools_WPF
         {
             if (IsConnected()) { Disconnect(); }
         }
+        private int GetDatabaseVersion()
+        {
+            string command = "PRAGMA user_version";
+            Execute(command);
+            if (reader.Read())
+            { return reader.GetInt32(0); }
+            else
+            { return 0; }
+        }
         public int GetLastTaskID()
         {
             if (Connect())

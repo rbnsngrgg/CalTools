@@ -249,12 +249,12 @@ namespace CalTools_WPF
                     foreach (CTTask task in currentTaskList)
                     {
                         task.ServiceVendorList = serviceVendors;
-                        task.CheckDue(config.MarkDueDays, DateTime.UtcNow);
+                        task.IsTaskDue(config.MarkDueDays, DateTime.UtcNow);
                     }
                     DetailsTasksTable.ItemsSource = currentTaskList;
                     return;
                 }
-                foreach (CTTask task in detailsTasks) { task.ServiceVendorList = serviceVendors; task.CheckDue(config.MarkDueDays, DateTime.UtcNow); }
+                foreach (CTTask task in detailsTasks) { task.ServiceVendorList = serviceVendors; task.IsTaskDue(config.MarkDueDays, DateTime.UtcNow); }
                 DetailsTasksTable.ItemsSource = detailsTasks;
             }
         }

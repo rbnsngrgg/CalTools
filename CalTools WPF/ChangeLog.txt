@@ -1,4 +1,7 @@
 [Changes]
+--5.0.2
+	--Improved source code modularity and readability
+
 --5.0.1
 	--Fixed bug where search wasn't reset when selecting "Go To Item" from calendar mode, preventing the item from being selected in the list. (Issue 72)
 	--Improved performance when saving an item in details view. The entire list is only updated on startup and when "Update All Items" is pressed. (Issue 71)

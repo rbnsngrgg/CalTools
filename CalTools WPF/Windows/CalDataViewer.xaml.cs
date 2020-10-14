@@ -38,6 +38,7 @@ namespace CalTools_WPF
             }
             TaskFilesTree.Items.Refresh();
         }
+
         private void OpenForm(TaskData data)
         {
             if (data.Findings != null)
@@ -116,13 +117,11 @@ namespace CalTools_WPF
         {
             this.DialogResult = false;
         }
-
         private void SaveButton_Click(object sender, RoutedEventArgs e)
         {
             if (MessageBox.Show($"Save all changes?", "Save Data", MessageBoxButton.YesNo, MessageBoxImage.Exclamation) == MessageBoxResult.Yes)
             { this.DialogResult = true; }
         }
-
         private void TaskDataTree_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
             if (((TreeView)sender).SelectedItem != null)
@@ -137,7 +136,6 @@ namespace CalTools_WPF
                 }
             }
         }
-
         private void TaskFilesTree_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
             if (((TreeView)sender).SelectedItem != null)
@@ -149,7 +147,6 @@ namespace CalTools_WPF
                 }
             }
         }
-
         private void TaskDataDeleteContext_Click(object sender, RoutedEventArgs e)
         {
             if (TaskDataTree.SelectedItem != null)
@@ -169,7 +166,6 @@ namespace CalTools_WPF
                 }
             }
         }
-
         private void TaskFilesDeleteContext_Click(object sender, RoutedEventArgs e)
         {
             if (MessageBox.Show("Delete this file? This operation cannot be undone after this point.", "Delete File", MessageBoxButton.YesNo, MessageBoxImage.Warning)

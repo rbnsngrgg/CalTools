@@ -11,56 +11,91 @@ namespace CalTools_WPF
     //Contains the CTDatabase methods related to checking and updating the structure and version of the SQLite database.
     partial class CTDatabase
     {
-        private bool UpdateDatabase()
+        private void AssignItemValuesLegacy(ref CalibrationItemV4 item)
         {
-            try
-            {
-                //Check DB version
-                int currentVersion = 5;
-                int dbVersion = GetDatabaseVersion();
-                if (dbVersion == 5)
-                {
-                    return true;
-                }
-                //Reset connection to prevent db table from being locked.
-                ResetConnection();
-                string command = "DROP TABLE IF EXISTS item_groups";
-                Execute(command);
-                CreateV5Tables();
-                while (dbVersion < currentVersion)
-                {
-                    if (dbVersion < 4)
-                    {
-                        ConvertFileStructure();
-                        command = "PRAGMA user_version = 5";
-                        Execute(command);
-                    }
-                    else if (dbVersion == 4) { FromVersion4(); ConvertFileStructure(); }
-                    ResetConnection();
-                    dbVersion = GetDatabaseVersion();
-                }
-                if (dbVersion > currentVersion)
-                {
-                    MessageBox.Show($"This version of CalTools is outdated and uses database version {currentVersion}. The current database version is {dbVersion}");
-                    return false;
-                }
-                return true;
-            }
-            catch (System.Exception ex)
-            {
-                MessageBox.Show(ex.Message, " Update Database, SQLite Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return false;
-            }
+            item.Location = reader.GetString((int)CalibrationItemV4.DatabaseColumns.location);
+            item.Interval = reader.GetInt32((int)CalibrationItemV4.DatabaseColumns.interval);
+            item.CalVendor = reader.GetString((int)CalibrationItemV4.DatabaseColumns.cal_vendor);
+            item.Manufacturer = reader.GetString((int)CalibrationItemV4.DatabaseColumns.manufacturer);
+            if (reader.GetString(5).Length > 0) { item.LastCal = DateTime.ParseExact(reader.GetString((int)CalibrationItemV4.DatabaseColumns.lastcal), dateFormat, CultureInfo.InvariantCulture); }
+            if (reader.GetString(6).Length > 0) { item.NextCal = DateTime.ParseExact(reader.GetString((int)CalibrationItemV4.DatabaseColumns.nextcal), dateFormat, CultureInfo.InvariantCulture); }
+            item.Mandatory = reader.GetString((int)CalibrationItemV4.DatabaseColumns.mandatory) == "1";
+            item.Directory = reader.GetString((int)CalibrationItemV4.DatabaseColumns.directory);
+            item.Description = reader.GetString((int)CalibrationItemV4.DatabaseColumns.description);
+            item.InService = reader.GetString((int)CalibrationItemV4.DatabaseColumns.inservice) == "1";
+            if (reader.GetString(11).Length > 0) { item.InServiceDate = DateTime.ParseExact(reader.GetString((int)CalibrationItemV4.DatabaseColumns.inservicedate), dateFormat, CultureInfo.InvariantCulture); }
+            if (reader.GetString(12).Length > 0) { item.OutOfServiceDate = DateTime.ParseExact(reader.GetString((int)CalibrationItemV4.DatabaseColumns.outofservicedate), dateFormat, CultureInfo.InvariantCulture); }
+            item.CalDue = reader.GetString((int)CalibrationItemV4.DatabaseColumns.caldue) == "1";
+            item.Model = reader.GetString((int)CalibrationItemV4.DatabaseColumns.model);
+            item.Comment = reader.GetString((int)CalibrationItemV4.DatabaseColumns.comments);
+            if (reader.GetString(16).Length > 0) { item.TimeStamp = DateTime.ParseExact(reader.GetString((int)CalibrationItemV4.DatabaseColumns.timestamp), timestampFormat, CultureInfo.InvariantCulture); }
+            item.ItemGroup = reader.GetString((int)CalibrationItemV4.DatabaseColumns.item_group);
+            item.VerifyOrCalibrate = reader.GetString((int)CalibrationItemV4.DatabaseColumns.verify_or_calibrate);
+            item.StandardEquipment = reader.GetString((int)CalibrationItemV4.DatabaseColumns.standard_equipment) == "1";
+            item.CertificateNumber = reader.GetString((int)CalibrationItemV4.DatabaseColumns.certificate_number);
         }
-        //Methods for forming and checking the current database structure. The methods assume an open connection.
-        private int GetDatabaseVersion()
+        private void AssignDataValuesLegacy(ref CalibrationDataV4 data)
         {
-            string command = "PRAGMA user_version";
-            Execute(command);
-            if (reader.Read())
-            { return reader.GetInt32(0); }
-            else
-            { return 0; }
+            data.ID = reader.GetInt32((int)CalibrationDataV4.DatabaseColumns.ColID);
+            data.SerialNumber = reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColSerialNumber);
+            data.StateBefore = JsonConvert.DeserializeObject<State>(reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColStateBeforeAction));
+            data.StateAfter = JsonConvert.DeserializeObject<State>(reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColStateAfterAction));
+            data.ActionTaken = JsonConvert.DeserializeObject<ActionTaken>(reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColActionTaken));
+            if (reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColCalibrationDate).Length > 0)
+            { data.CalibrationDate = DateTime.ParseExact(reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColCalibrationDate), dateFormat, CultureInfo.InvariantCulture); }
+            if (reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColDueDate).Length > 0)
+            { data.DueDate = DateTime.ParseExact(reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColDueDate), dateFormat, CultureInfo.InvariantCulture); }
+            data.Procedure = reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColProcedure);
+            data.StandardEquipment = reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColStandardEquipment);
+            data.findings = JsonConvert.DeserializeObject<Findings>(reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColFindings));
+            data.Remarks = reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColRemarks);
+            data.Technician = reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColTechnician);
+            data.Timestamp = reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColEntryTimestamp);
+        }
+        private void ConvertFileStructure() //Converts the file structure from V4 to V5, adding folders for each task
+        {
+            List<CTItem> allItems = GetAllItems();
+            foreach (string folder in Directory.GetDirectories(ItemScansDir))
+            {
+                foreach (string configFolder in Folders)
+                {
+                    //If folder in ItemScansDir is a folder specified in config
+                    if (folder.Contains(configFolder))
+                    {
+                        foreach (string itemFolder in Directory.GetDirectories(folder))
+                        {
+                            bool itemExists = false;
+                            //Get DB item that matches current folder
+                            foreach (CTItem item in allItems)
+                            {
+                                if (Path.GetFileName(itemFolder) == item.SerialNumber)
+                                {
+                                    itemExists = true;
+                                    if (itemFolder != item.Directory) { item.Directory = itemFolder; }
+                                    foreach (CTTask task in GetTasks("SerialNumber", item.SerialNumber))
+                                    {
+                                        //Create task folder, then move all files to the task folder.
+                                        MoveToTaskFolder(item, task);
+                                    }
+                                    if (item.ChangesMade) { SaveItem(item); }
+                                    break;
+                                }
+                            }
+                            if (itemExists) { continue; }
+                            else if (GetItem("SerialNumber", Path.GetFileName(itemFolder)) == null)
+                            {
+                                CTItem newItem = new CTItem(Path.GetFileName(itemFolder));
+                                newItem.Directory = itemFolder;
+                                SaveItem(newItem);
+                                CTTask newTask = new CTTask();
+                                newTask.SerialNumber = newItem.SerialNumber;
+                                SaveTask(newTask);
+                                MoveToTaskFolder(newItem, GetTasks("SerialNumber", newItem.SerialNumber)[0]);
+                            }
+                        }
+                    }
+                }
+            }
         }
         private void CreateV5Tables()
         {
@@ -113,7 +148,7 @@ namespace CalTools_WPF
             Execute(command);
             tablesExist = true;
         }
-        private void FromVersion4()
+        private void FromVersion4() //Gets all CalibrationItems and CalibrationData, converts to Items, Tasks, and TaskData
         {
             List<CalibrationItemV4> legacyItems = GetAllItemsLegacy();
             if (!IsConnected()) { conn.Open(); }
@@ -177,61 +212,6 @@ namespace CalTools_WPF
             Execute(command);
             ResetConnection();
         }
-        private void AssignItemValuesLegacy(ref CalibrationItemV4 item)
-        {
-            item.Location = reader.GetString((int)CalibrationItemV4.DatabaseColumns.location);
-            item.Interval = reader.GetInt32((int)CalibrationItemV4.DatabaseColumns.interval);
-            item.CalVendor = reader.GetString((int)CalibrationItemV4.DatabaseColumns.cal_vendor);
-            item.Manufacturer = reader.GetString((int)CalibrationItemV4.DatabaseColumns.manufacturer);
-            if (reader.GetString(5).Length > 0) { item.LastCal = DateTime.ParseExact(reader.GetString((int)CalibrationItemV4.DatabaseColumns.lastcal), dateFormat, CultureInfo.InvariantCulture); }
-            if (reader.GetString(6).Length > 0) { item.NextCal = DateTime.ParseExact(reader.GetString((int)CalibrationItemV4.DatabaseColumns.nextcal), dateFormat, CultureInfo.InvariantCulture); }
-            item.Mandatory = reader.GetString((int)CalibrationItemV4.DatabaseColumns.mandatory) == "1";
-            item.Directory = reader.GetString((int)CalibrationItemV4.DatabaseColumns.directory);
-            item.Description = reader.GetString((int)CalibrationItemV4.DatabaseColumns.description);
-            item.InService = reader.GetString((int)CalibrationItemV4.DatabaseColumns.inservice) == "1";
-            if (reader.GetString(11).Length > 0) { item.InServiceDate = DateTime.ParseExact(reader.GetString((int)CalibrationItemV4.DatabaseColumns.inservicedate), dateFormat, CultureInfo.InvariantCulture); }
-            if (reader.GetString(12).Length > 0) { item.OutOfServiceDate = DateTime.ParseExact(reader.GetString((int)CalibrationItemV4.DatabaseColumns.outofservicedate), dateFormat, CultureInfo.InvariantCulture); }
-            item.CalDue = reader.GetString((int)CalibrationItemV4.DatabaseColumns.caldue) == "1";
-            item.Model = reader.GetString((int)CalibrationItemV4.DatabaseColumns.model);
-            item.Comment = reader.GetString((int)CalibrationItemV4.DatabaseColumns.comments);
-            if (reader.GetString(16).Length > 0) { item.TimeStamp = DateTime.ParseExact(reader.GetString((int)CalibrationItemV4.DatabaseColumns.timestamp), timestampFormat, CultureInfo.InvariantCulture); }
-            item.ItemGroup = reader.GetString((int)CalibrationItemV4.DatabaseColumns.item_group);
-            item.VerifyOrCalibrate = reader.GetString((int)CalibrationItemV4.DatabaseColumns.verify_or_calibrate);
-            item.StandardEquipment = reader.GetString((int)CalibrationItemV4.DatabaseColumns.standard_equipment) == "1";
-            item.CertificateNumber = reader.GetString((int)CalibrationItemV4.DatabaseColumns.certificate_number);
-        }
-        private void AssignDataValuesLegacy(ref CalibrationDataV4 data)
-        {
-            data.ID = reader.GetInt32((int)CalibrationDataV4.DatabaseColumns.ColID);
-            data.SerialNumber = reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColSerialNumber);
-            data.StateBefore = JsonConvert.DeserializeObject<State>(reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColStateBeforeAction));
-            data.StateAfter = JsonConvert.DeserializeObject<State>(reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColStateAfterAction));
-            data.ActionTaken = JsonConvert.DeserializeObject<ActionTaken>(reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColActionTaken));
-            if (reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColCalibrationDate).Length > 0)
-            { data.CalibrationDate = DateTime.ParseExact(reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColCalibrationDate), dateFormat, CultureInfo.InvariantCulture); }
-            if (reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColDueDate).Length > 0)
-            { data.DueDate = DateTime.ParseExact(reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColDueDate), dateFormat, CultureInfo.InvariantCulture); }
-            data.Procedure = reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColProcedure);
-            data.StandardEquipment = reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColStandardEquipment);
-            data.findings = JsonConvert.DeserializeObject<Findings>(reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColFindings));
-            data.Remarks = reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColRemarks);
-            data.Technician = reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColTechnician);
-            data.Timestamp = reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColEntryTimestamp);
-        }
-        public List<CalibrationItemV4> GetAllItemsLegacy()
-        {
-            List<CalibrationItemV4> allItems = new List<CalibrationItemV4>();
-            string command = "SELECT * FROM calibration_items";
-            if (!Connect()) { return allItems; }
-            Execute(command);
-            while (reader.Read())
-            {
-                CalibrationItemV4 item = new CalibrationItemV4(reader.GetString(0));
-                AssignItemValuesLegacy(ref item);
-                allItems.Add(item);
-            }
-            return allItems;
-        }
         public List<CalibrationDataV4> GetAllCalDataLegacy()
         {
             List<CalibrationDataV4> calData = new List<CalibrationDataV4>();
@@ -248,53 +228,21 @@ namespace CalTools_WPF
             }
             return calData;
         }
-        //From V4 to V5, convert file structure to have sub-folders for each task (when this conversion happens, there is only one task per item)
-        private void ConvertFileStructure()
+        public List<CalibrationItemV4> GetAllItemsLegacy()
         {
-            List<CTItem> allItems = GetAllItems();
-            foreach (string folder in Directory.GetDirectories(ItemScansDir))
+            List<CalibrationItemV4> allItems = new List<CalibrationItemV4>();
+            string command = "SELECT * FROM calibration_items";
+            if (!Connect()) { return allItems; }
+            Execute(command);
+            while (reader.Read())
             {
-                foreach (string configFolder in Folders)
-                {
-                    //If folder in ItemScansDir is a folder specified in config
-                    if (folder.Contains(configFolder))
-                    {
-                        foreach (string itemFolder in Directory.GetDirectories(folder))
-                        {
-                            bool itemExists = false;
-                            //Get DB item that matches current folder
-                            foreach (CTItem item in allItems)
-                            {
-                                if (Path.GetFileName(itemFolder) == item.SerialNumber)
-                                {
-                                    itemExists = true;
-                                    if (itemFolder != item.Directory) { item.Directory = itemFolder; }
-                                    foreach (CTTask task in GetTasks("SerialNumber", item.SerialNumber))
-                                    {
-                                        //Create task folder, then move all files to the task folder.
-                                        MoveToTaskFolder(item, task);
-                                    }
-                                    if (item.ChangesMade) { SaveItem(item); }
-                                    break;
-                                }
-                            }
-                            if (itemExists) { continue; }
-                            else if (GetItem("SerialNumber", Path.GetFileName(itemFolder)) == null)
-                            {
-                                CTItem newItem = new CTItem(Path.GetFileName(itemFolder));
-                                newItem.Directory = itemFolder;
-                                SaveItem(newItem);
-                                CTTask newTask = new CTTask();
-                                newTask.SerialNumber = newItem.SerialNumber;
-                                SaveTask(newTask);
-                                MoveToTaskFolder(newItem, GetTasks("SerialNumber", newItem.SerialNumber)[0]);
-                            }
-                        }
-                    }
-                }
+                CalibrationItemV4 item = new CalibrationItemV4(reader.GetString(0));
+                AssignItemValuesLegacy(ref item);
+                allItems.Add(item);
             }
+            return allItems;
         }
-        private void MoveToTaskFolder(CTItem item, CTTask task)
+        private void MoveToTaskFolder(CTItem item, CTTask task) //Move existing files to the new task folder
         {
             if (item == null | task == null) { return; }
             string taskFolder = Path.Combine(item.Directory, $"{task.TaskID}_{task.TaskTitle}");
@@ -304,6 +252,47 @@ namespace CalTools_WPF
             {
                 string newLocation = Path.Combine(taskFolder, Path.GetFileName(file));
                 File.Move(file, newLocation);
+            }
+        }
+        private bool UpdateDatabase()
+        {
+            try
+            {
+                //Check DB version
+                int currentVersion = 5;
+                int dbVersion = GetDatabaseVersion();
+                if (dbVersion == 5)
+                {
+                    return true;
+                }
+                //Reset connection to prevent db table from being locked.
+                ResetConnection();
+                string command = "DROP TABLE IF EXISTS item_groups";
+                Execute(command);
+                CreateV5Tables();
+                while (dbVersion < currentVersion)
+                {
+                    if (dbVersion < 4)
+                    {
+                        ConvertFileStructure();
+                        command = "PRAGMA user_version = 5";
+                        Execute(command);
+                    }
+                    else if (dbVersion == 4) { FromVersion4(); ConvertFileStructure(); }
+                    ResetConnection();
+                    dbVersion = GetDatabaseVersion();
+                }
+                if (dbVersion > currentVersion)
+                {
+                    MessageBox.Show($"This version of CalTools is outdated and uses database version {currentVersion}. The current database version is {dbVersion}");
+                    return false;
+                }
+                return true;
+            }
+            catch (System.Exception ex)
+            {
+                MessageBox.Show(ex.Message, " Update Database, SQLite Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
             }
         }
     }

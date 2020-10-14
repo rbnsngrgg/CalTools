@@ -7,7 +7,7 @@ namespace CalTools_WPF
 {
     class CTConfig
     {
-        private string configName = "CTConfig.xml";
+        private readonly string configName = "CTConfig.xml";
         //Values to be loaded from config
         public string DbName { get; set; }
         public string DbPath { get; set; }

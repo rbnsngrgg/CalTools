@@ -11,7 +11,7 @@ namespace CalTools_WPF
     //Other main window code-behind logic that doesn't directly interact with the GUI elements.
     public partial class MainWindow : Window
     {
-        public readonly string version = "5.0.1";
+        public readonly string version = "5.0.2";
         private CTDatabase database;
         private CTConfig config = new CTConfig();
         private readonly Dictionary<string, string> searchModes = new Dictionary<string, string>() {
@@ -296,7 +296,7 @@ namespace CalTools_WPF
                 {
                     foreach (CTTask task in allTasks)
                     {
-                        if (task.SerialNumber == item.SerialNumber & task.CheckDue(config.MarkDueDays, DateTime.UtcNow)) { filteredItems.Add(item); break; }
+                        if (task.SerialNumber == item.SerialNumber & task.IsTaskDue(config.MarkDueDays, DateTime.UtcNow)) { filteredItems.Add(item); break; }
                     }
                 }
                 else if (mode == "Vendor")
@@ -333,7 +333,7 @@ namespace CalTools_WPF
                         {
                             if (item.InService & item.SerialNumber == task.SerialNumber)
                             {
-                                if (task.CheckDue(config.MarkDueDays, calendarDate))
+                                if (task.IsTaskDue(config.MarkDueDays, calendarDate))
                                 {
                                     Dictionary<string, string> compositeItem = new Dictionary<string, string>
                                     {
