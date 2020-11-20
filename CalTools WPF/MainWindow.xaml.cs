@@ -340,17 +340,6 @@ namespace CalTools_WPF
             UpdateItemList();
         }
 
-        //Update CTTask item when the combo box selection is changed.
-        private void TaskActionColBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (DetailsTasksTable.SelectedItem == null) { return; }
-            ((CTTask)DetailsTasksTable.SelectedItem).ActionType = ((ComboBox)sender).SelectedItem.ToString();
-        }
-        private void TaskVendorColBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (DetailsTasksTable.SelectedItem == null) { return; }
-            ((CTTask)DetailsTasksTable.SelectedItem).ServiceVendor = ((ComboBox)sender).SelectedItem.ToString();
-        }
         private void AddTaskButton_Click(object sender, RoutedEventArgs e)
         {
             CTItem currentItem = database.GetItem("SerialNumber", SelectedSN());

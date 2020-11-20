@@ -150,7 +150,8 @@ namespace CalTools_WPF
                 child.IsEnabled = enable;
             }
             DetailsComments.IsEnabled = enable;
-            DetailsTasksTable.IsEnabled = enable;
+            DetailsTasksTable.IsEnabled = true;
+            DetailsTasksTable.IsReadOnly = !enable;
             AddTaskButton.IsEnabled = enable;
             RemoveTaskButton.IsEnabled = enable;
         }

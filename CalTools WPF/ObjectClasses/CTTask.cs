@@ -8,6 +8,7 @@ namespace CalTools_WPF
 {
     public class CTTask
     {
+        public List<string> ActionTypes { get; private set; } = new List<string> { "CALIBRATION", "MAINTENANCE", "VERIFICATION" };
         #region Private Fields
         private int taskID = -1;
         private string serialNumber = "";
