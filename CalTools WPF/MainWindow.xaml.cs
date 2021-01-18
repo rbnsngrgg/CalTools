@@ -4,7 +4,6 @@ using Helpers;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Windows;
@@ -214,6 +213,17 @@ namespace CalTools_WPF
                 NewReport(task);
             }
         }
+
+        //Task data grid event handlers----------------------------------------------------------------------------------------------------
+        private void ContextMarkDue_Click(object sender, RoutedEventArgs e)
+        {
+            CTTask currentTask = DetailsTasksTable.SelectedItem as CTTask;
+            if(currentTask.ManualFlag != null)
+            {
+                currentTask.ManualFlag = null;
+            }
+            else { currentTask.ManualFlag = DateTime.UtcNow; }
+        }
         private void ContextViewData_Click(object sender, RoutedEventArgs e)
         {
             if (DetailsTasksTable.SelectedItem != null)
@@ -251,6 +261,27 @@ namespace CalTools_WPF
                 else { Process.Start("explorer", config.ListDir); }
             }
         }
+        private void TaskDataGridContextMenu_Opened(object sender, RoutedEventArgs e)
+        {
+            //Change ContextMarkDue_Click depending on if the task is already flagged
+            CTTask currentTask = DetailsTasksTable.SelectedItem as CTTask;
+            if (IsTaskSelected())
+            {
+                if (DetailsSN.IsEnabled) { ContextMarkDue.IsEnabled = true; }
+                else { ContextMarkDue.IsEnabled = false; }
+                ContextViewData.IsEnabled = true;
+                ContextOpenLocation.IsEnabled = true;
+                if (currentTask.ManualFlag != null) { ContextMarkDue.Header = "Clear Due Flag"; }
+                else { ContextMarkDue.Header = "Manually Mark Due"; }
+            }
+            else 
+            {
+                ContextMarkDue.IsEnabled = false;
+                ContextViewData.IsEnabled = false;
+                ContextOpenLocation.IsEnabled = false;
+            }
+        }
+
         private void MainWindow_Drop(object sender, DragEventArgs e)
         {
             if (!IsItemSelected())
@@ -369,6 +400,18 @@ namespace CalTools_WPF
                     UpdateTasksTable();
                 }
             }
+        }
+
+        //TreeView Context Menu
+        private void TreeViewReplaceItem_Click(object sender, RoutedEventArgs e)
+        {
+            SwapItems();
+        }
+
+        private void TreeViewContextMenu_Opened(object sender, RoutedEventArgs e)
+        {
+            if (IsItemSelected()) { TreeViewReplaceItem.IsEnabled = true; }
+            else { TreeViewReplaceItem.IsEnabled = false; }
         }
 
         //On program exit

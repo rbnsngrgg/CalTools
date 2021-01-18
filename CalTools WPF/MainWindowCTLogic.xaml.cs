@@ -1,4 +1,5 @@
 ﻿using CalTools_WPF.ObjectClasses;
+using CalTools_WPF.Windows;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -7,13 +8,14 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+//using System.Diagnostics;
 
 namespace CalTools_WPF
 {
     //Main window code-behind logic outside of event handlers
     public partial class MainWindow : Window
     {
-        public readonly string version = "5.0.2";
+        public readonly string version = "5.1.0";
         private CTDatabase database;
         private CTConfig config = new CTConfig();
         private readonly Dictionary<string, string> searchModes = new Dictionary<string, string>() {
@@ -198,6 +200,35 @@ namespace CalTools_WPF
                 { folder = $"{config.ItemScansDir}\\{folderDialog.FolderSelectComboBox.Text}\\{sn}"; Directory.CreateDirectory(folder); }
             }
             return folder;
+        }
+        private void SwapItems()
+        {
+            string selectedSN = ((TreeViewItem)CalibrationItemTree.SelectedItem).Header.ToString();
+            List<string> itemsInGroup = new List<string>();
+            CTItem selectedItem = database.GetItem("SerialNumber", selectedSN);
+            foreach(CTItem item in database.GetAllItems())
+            {
+                if(item.ItemGroup == selectedItem.ItemGroup)
+                {
+                    itemsInGroup.Add(item.SerialNumber);
+                }
+            }
+            ReplaceItemSelection selectionDialog = new ReplaceItemSelection();
+            selectionDialog.ReplaceSelectComboBox.ItemsSource = itemsInGroup;
+            if(selectionDialog.ShowDialog() == true)
+            {
+                CTItem newItem1 = database.GetItem("SerialNumber", selectedItem.SerialNumber);
+                CTItem newItem2 = database.GetItem("SerialNumber", selectionDialog.ReplaceSelectComboBox.SelectedItem.ToString());
+
+                newItem1.Location = newItem2.Location;
+                newItem1.InService = newItem2.InService;
+
+                newItem2.Location = selectedItem.Location;
+                newItem2.InService = selectedItem.InService;
+
+                database.SaveItem(newItem1);
+                database.SaveItem(newItem2);
+            }    
         }
         private void GoToItem(string sn)
         {

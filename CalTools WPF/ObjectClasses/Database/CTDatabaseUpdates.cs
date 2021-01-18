@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Windows;
+//using System.Diagnostics;
 
 namespace CalTools_WPF
 {
@@ -259,9 +260,9 @@ namespace CalTools_WPF
             try
             {
                 //Check DB version
-                int currentVersion = 5;
+                int currentVersion = 6;
                 int dbVersion = GetDatabaseVersion();
-                if (dbVersion == 5)
+                if (dbVersion == currentVersion)
                 {
                     return true;
                 }
@@ -278,14 +279,20 @@ namespace CalTools_WPF
                         command = "PRAGMA user_version = 5";
                         Execute(command);
                     }
-                    else if (dbVersion == 4) { FromVersion4(); ConvertFileStructure(); }
-                    ResetConnection();
+                    else if (dbVersion == 4) { FromVersion4(); ConvertFileStructure(); ResetConnection(); }
+                    else if (dbVersion == 5)
+                    {
+                        Execute("ALTER TABLE Tasks ADD COLUMN ManualFlag TEXT DEFAULT ''");
+                        Execute("PRAGMA user_version = 6");
+                    }
                     dbVersion = GetDatabaseVersion();
                 }
                 if (dbVersion > currentVersion)
                 {
-                    MessageBox.Show($"This version of CalTools is outdated and uses database version {currentVersion}. The current database version is {dbVersion}");
-                    return false;
+                    if (MessageBox.Show($"This version of CalTools is outdated and uses database version {currentVersion}. The current database version is {dbVersion}. Some features may be missing or broken. Continue?",
+                        "Outdated Version", MessageBoxButton.YesNo, MessageBoxImage.Exclamation) == MessageBoxResult.Yes)
+                    { return true; }
+                    else { return false; }
                 }
                 return true;
             }

@@ -71,7 +71,13 @@
                     </Button>
                 </StackPanel>
                 <GroupBox Header="Items">
-                    <TreeView MinWidth="220" VerticalAlignment="Stretch" x:Name="CalibrationItemTree" SelectedItemChanged="CalibrationItemTree_SelectedItemChanged"/>
+                    <TreeView MinWidth="220" VerticalAlignment="Stretch" x:Name="CalibrationItemTree" SelectedItemChanged="CalibrationItemTree_SelectedItemChanged">
+                        <TreeView.ContextMenu>
+                            <ContextMenu x:Name="TreeViewContextMenu" Opened="TreeViewContextMenu_Opened">
+                                <MenuItem x:Name="TreeViewReplaceItem" Header="Replace Item" Click="TreeViewReplaceItem_Click"/>
+                            </ContextMenu>
+                        </TreeView.ContextMenu>
+                    </TreeView>
                 </GroupBox>
                 <GroupBox Header="Item Details" HorizontalAlignment="Stretch" MinWidth="650" Width="Auto">
                     <Grid x:Name="DetailsGrid">
@@ -140,6 +146,7 @@
                                 <DataGridTextColumn Header="Date" MinWidth="50" Binding="{Binding CompleteDateString, Mode=OneWay}" IsReadOnly="True"/>
                                 <DataGridTextColumn Header="Due Date" MinWidth="50" Binding="{Binding DueDateString, Mode=OneWay}" IsReadOnly="True"/>
                                 <DataGridCheckBoxColumn Header="Due" MinWidth="20" Binding="{Binding Due, Mode=OneWay}" IsReadOnly="True"/>
+                                <DataGridTextColumn Header="Manual Due Date" MinWidth="50" Binding="{Binding ManualFlagString}" IsReadOnly="True"/>
                                 <DataGridComboBoxColumn Header="Action" SelectedItemBinding="{Binding ActionType, Mode=TwoWay}">
                                     <DataGridComboBoxColumn.ElementStyle>
                                         <Style TargetType="ComboBox">
@@ -157,9 +164,10 @@
                                 <DataGridTextColumn Header="Comment" MinWidth="165" Binding="{Binding Comment, Mode=TwoWay}"/>
                             </DataGrid.Columns>
                             <DataGrid.ContextMenu>
-                                <ContextMenu>
-                                    <MenuItem x:Name="ContextViewData" Header="View Data" Click="ContextViewData_Click"/>
+                                <ContextMenu x:Name="TaskDataGridContextMenu" Opened="TaskDataGridContextMenu_Opened">
+                                    <MenuItem x:Name="ContextMarkDue" Header="Manually Mark Due" Click="ContextMarkDue_Click"/>
                                     <MenuItem x:Name="ContextOpenLocation" Header="Open File Location" Click="ContextOpenLocation_Click"/>
+                                    <MenuItem x:Name="ContextViewData" Header="View Data" Click="ContextViewData_Click"/>
                                 </ContextMenu>
                             </DataGrid.ContextMenu>
                         </DataGrid>

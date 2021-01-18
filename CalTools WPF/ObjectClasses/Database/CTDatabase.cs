@@ -274,11 +274,12 @@ namespace CalTools_WPF
             {
                 if (Connect())
                 {
+                    //New task that hasn't yet been inserted into the database
                     if (task.TaskID == -1)
                     {
                         command = $"INSERT OR IGNORE INTO Tasks " +
                             $"(SerialNumber,TaskTitle,ServiceVendor,Mandatory," +
-                            $"Interval,CompleteDate,DueDate,Due,ActionType,Directory,Comments) " +
+                            $"Interval,CompleteDate,DueDate,Due,ActionType,Directory,Comments,ManualFlag) " +
                           $"VALUES ('{task.SerialNumber}'," +
                           $"'{task.TaskTitle}'," +
                           $"'{task.ServiceVendor}'," +
@@ -289,8 +290,10 @@ namespace CalTools_WPF
                           $"'{(task.Due == true ? 1 : 0)}'," +
                           $"'{task.ActionType}'," +
                           $"'{task.TaskDirectory}'," +
-                          $"'{task.Comment}')";
+                          $"'{task.Comment}'," +
+                          $"'{task.ManualFlagString}')";
                     }
+                    //Existing task
                     else
                     {
                         command = $"UPDATE Tasks SET " +
@@ -304,7 +307,8 @@ namespace CalTools_WPF
                             $"Due='{(task.Due == true ? 1 : 0)}'," +
                             $"ActionType='{task.ActionType}'," +
                             $"Directory='{task.TaskDirectory}'," +
-                            $"Comments='{task.Comment}' " +
+                            $"Comments='{task.Comment}'," +
+                            $"ManualFlag='{task.ManualFlagString}' " +
                             $"WHERE TaskID='{task.TaskID}'";
                     }
                     Execute(command);
@@ -498,6 +502,9 @@ namespace CalTools_WPF
             task.ActionType = reader.GetString((int)CTTask.DatabaseColumns.ActionType);
             task.TaskDirectory = reader.GetString((int)CTTask.DatabaseColumns.Directory);
             task.Comment = reader.GetString((int)CTTask.DatabaseColumns.Comments);
+            if (reader.GetString((int)CTTask.DatabaseColumns.ManualFlag).Length > 0)
+            { task.ManualFlag = DateTime.ParseExact(reader.GetString((int)CTTask.DatabaseColumns.ManualFlag), dateFormat, CultureInfo.InvariantCulture); }
+            
             task.ChangesMade = false;
         }
     }

@@ -22,6 +22,7 @@ namespace CalTools_WPF
         private string actionType = "CALIBRATION";
         private string taskDirectory = "";
         private string comment = "";
+        private DateTime? manualFlag = null;
         #endregion
 
         #region Getters and Setters
@@ -64,6 +65,21 @@ namespace CalTools_WPF
         public string ActionType { get => actionType; set { actionType = value; ChangesMade = true; } }
         public string TaskDirectory { get => taskDirectory; set { if (taskDirectory != value) { ChangesMade = true; } taskDirectory = value; } }
         public string Comment { get => comment; set { comment = value; ChangesMade = true; } }
+        public DateTime? ManualFlag
+        { 
+            get => manualFlag;
+            set
+            {
+                manualFlag = value;
+                if (value != null) 
+                {
+                    ManualFlagString = manualFlag.Value.ToString("yyyy-MM-dd");
+                }
+                else { ManualFlagString = ""; }
+                ChangesMade = true; 
+            } 
+        }
+        public string ManualFlagString { get; private set; } = "";
         public bool ChangesMade { get; set; } = false;
         #endregion
 
@@ -83,11 +99,13 @@ namespace CalTools_WPF
             Due,
             ActionType,
             Directory,
-            Comments
+            Comments,
+            ManualFlag
         }
         public bool IsTaskDue(int days, DateTime checkDate)
         {
             if (dueDate == null) { Due = true; return Due; }
+            CheckManualFlag();
             if ((dueDate - checkDate).Value.Days < days) { Due = true; }
             else { Due = false; }
             return Due;
@@ -100,6 +118,7 @@ namespace CalTools_WPF
             if (latestFileDate == latestDataDate & latestDataDate == new DateTime()) { if (CompleteDate != null) { CompleteDate = null; }; }
             else if (latestFileDate > latestDataDate) { if (CompleteDate != latestFileDate) { CompleteDate = latestFileDate; } }
             else if (latestDataDate > latestFileDate) { if (CompleteDate != latestDataDate) { CompleteDate = latestDataDate; } }
+            CheckManualFlag();
         }
         private DateTime CheckFolder(string taskFolder)
         {
@@ -130,6 +149,12 @@ namespace CalTools_WPF
             }
             if (snMatch) { return fileDate; }
             else { return new DateTime(); }
+        }
+        private void CheckManualFlag()
+        {
+            if (ManualFlag == null) {CompleteDate = CompleteDate; return; }
+            if(ManualFlag <= CompleteDate) { ManualFlag = null; CompleteDate = CompleteDate; }
+            else if (ManualFlag < DueDate) { DueDate = ManualFlag; }
         }
         private DateTime CheckTaskData(ref List<TaskData> taskDataList)
         {
