@@ -71,7 +71,13 @@
                     </Button>
                 </StackPanel>
                 <GroupBox Header="Items">
-                    <TreeView MinWidth="220" VerticalAlignment="Stretch" x:Name="CalibrationItemTree" SelectedItemChanged="CalibrationItemTree_SelectedItemChanged"/>
+                    <TreeView MinWidth="220" VerticalAlignment="Stretch" x:Name="CalibrationItemTree" SelectedItemChanged="CalibrationItemTree_SelectedItemChanged">
+                        <TreeView.ContextMenu>
+                            <ContextMenu x:Name="TreeViewContextMenu" Opened="TreeViewContextMenu_Opened">
+                                <MenuItem x:Name="TreeViewReplaceItem" Header="Replace Item" Click="TreeViewReplaceItem_Click"/>
+                            </ContextMenu>
+                        </TreeView.ContextMenu>
+                    </TreeView>
                 </GroupBox>
                 <GroupBox Header="Item Details" HorizontalAlignment="Stretch" MinWidth="650" Width="Auto">
                     <Grid x:Name="DetailsGrid">
@@ -115,35 +121,53 @@
                         <Label Content="Comments:" HorizontalAlignment="Left" Grid.Row="8" Grid.Column="0"/>
                             <TextBox x:Name="DetailsComments" Background="#FFFBFBFB" IsEnabled="False" Grid.Row="8" Grid.Column="1" Margin="0,0,0,5"/>
                         <DataGrid x:Name="DetailsTasksTable" CanUserAddRows="False" CanUserDeleteRows="False" AutoGenerateColumns="False"
-                                  Grid.Row="9" Grid.Column="0" MinHeight="100" Height="Auto" Visibility="Visible" Grid.ColumnSpan="2" IsEnabled="False">
+                                  Grid.Row="9" Grid.Column="0" MinHeight="100" Height="Auto" Visibility="Visible" Grid.ColumnSpan="2" IsReadOnly="True">
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="Task ID" MinWidth="20" Binding="{Binding TaskID}" IsReadOnly="True"/>
                                 <DataGridTextColumn Header="Title" MinWidth="100" Binding="{Binding TaskTitle, Mode=TwoWay}"/>
-                                <DataGridTemplateColumn Header="Vendor" x:Name="TaskVendorCol">
-                                    <DataGridTemplateColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <ComboBox x:Name="TaskVendorColBox" ItemsSource="{Binding ServiceVendorList}" IsEditable="True" Text="{Binding ServiceVendor, Mode=TwoWay}" SelectionChanged="TaskVendorColBox_SelectionChanged"/>
-                                        </DataTemplate>
-                                    </DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
+                                <DataGridComboBoxColumn Header="Vendor">
+                                    <DataGridComboBoxColumn.ElementStyle>
+                                        <Style TargetType="ComboBox">
+                                            <Setter Property="ItemsSource" Value="{Binding ServiceVendorList}"/>
+                                            <Setter Property="Text" Value="{Binding ServiceVendor, Mode=TwoWay}"/>
+                                            <Setter Property="IsEditable" Value="False"/>
+                                        </Style>
+                                    </DataGridComboBoxColumn.ElementStyle>
+                                    <DataGridComboBoxColumn.EditingElementStyle>
+                                        <Style TargetType="ComboBox">
+                                            <Setter Property="ItemsSource" Value="{Binding ServiceVendorList}"/>
+                                            <Setter Property="Text" Value="{Binding ServiceVendor, Mode=TwoWay}"/>
+                                            <Setter Property="IsEditable" Value="True"/>
+                                        </Style>
+                                    </DataGridComboBoxColumn.EditingElementStyle>
+                                </DataGridComboBoxColumn>
                                 <DataGridCheckBoxColumn Header="Mandatory" MinWidth="20" Binding="{Binding Mandatory, Mode=TwoWay}"/>
                                 <DataGridTextColumn Header="Interval" MinWidth="20" Binding="{Binding Interval, Mode=TwoWay}"/>
                                 <DataGridTextColumn Header="Date" MinWidth="50" Binding="{Binding CompleteDateString, Mode=OneWay}" IsReadOnly="True"/>
                                 <DataGridTextColumn Header="Due Date" MinWidth="50" Binding="{Binding DueDateString, Mode=OneWay}" IsReadOnly="True"/>
                                 <DataGridCheckBoxColumn Header="Due" MinWidth="20" Binding="{Binding Due, Mode=OneWay}" IsReadOnly="True"/>
-                                <DataGridTemplateColumn Header="Action" x:Name="TaskActionCol">
-                                    <DataGridTemplateColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <ComboBox x:Name="TaskActionColBox" ItemsSource="{Binding ActionTypes}" IsEditable="False" Text="{Binding ActionType, Mode=TwoWay}" SelectionChanged="TaskActionColBox_SelectionChanged"/>
-                                        </DataTemplate>
-                                    </DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
+                                <DataGridTextColumn Header="Manual Due Date" MinWidth="50" Binding="{Binding ManualFlagString}" IsReadOnly="True"/>
+                                <DataGridComboBoxColumn Header="Action" SelectedItemBinding="{Binding ActionType, Mode=TwoWay}">
+                                    <DataGridComboBoxColumn.ElementStyle>
+                                        <Style TargetType="ComboBox">
+                                            <Setter Property="ItemsSource" Value="{Binding ActionTypes}"/>
+                                            <Setter Property="IsEditable" Value="False"/>
+                                        </Style>
+                                    </DataGridComboBoxColumn.ElementStyle>
+                                    <DataGridComboBoxColumn.EditingElementStyle>
+                                        <Style TargetType="ComboBox">
+                                            <Setter Property="ItemsSource" Value="{Binding ActionTypes}"/>
+                                            <Setter Property="IsEditable" Value="False"/>
+                                        </Style>
+                                    </DataGridComboBoxColumn.EditingElementStyle>
+                                </DataGridComboBoxColumn>
                                 <DataGridTextColumn Header="Comment" MinWidth="165" Binding="{Binding Comment, Mode=TwoWay}"/>
                             </DataGrid.Columns>
                             <DataGrid.ContextMenu>
-                                <ContextMenu>
-                                    <MenuItem x:Name="ContextViewData" Header="View Data" Click="ContextViewData_Click"/>
+                                <ContextMenu x:Name="TaskDataGridContextMenu" Opened="TaskDataGridContextMenu_Opened">
+                                    <MenuItem x:Name="ContextMarkDue" Header="Manually Mark Due" Click="ContextMarkDue_Click"/>
                                     <MenuItem x:Name="ContextOpenLocation" Header="Open File Location" Click="ContextOpenLocation_Click"/>
+                                    <MenuItem x:Name="ContextViewData" Header="View Data" Click="ContextViewData_Click"/>
                                 </ContextMenu>
                             </DataGrid.ContextMenu>
                         </DataGrid>

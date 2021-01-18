@@ -24,30 +24,76 @@ namespace CalTools_WPF
             this.DbPath = dbPath;
             conn = new SqliteConnection($"Data Source={DbPath}");
         }
-        public bool DatabaseReady()
+
+        //Basic Operations-----------------------------------------------------------------------------------------------------------------
+        private bool Connect()
+        {
+            try
+            {
+                if (!IsConnected())
+                {
+                    conn.Open();
+                    //Assumes blank DB. Should only run CreateTables() once.
+                    if (!tablesExist)
+                    {
+                        if (UpdateDatabase())
+                        { tablesExist = true; }
+                        else { Disconnect(); return false; }
+                    }
+                }
+                return true;
+            }
+            catch (Microsoft.Data.Sqlite.SqliteException ex)
+            {
+                MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
+            }
+        }
+        public bool DatabaseReady() //Check for successful connect and disconnect
         {
             if (Connect())
-            { if (Disconnect()) { return true; } else { return false; } }
-            else { return false; }
+            { 
+                if (Disconnect()) 
+                { return true; } 
+                else 
+                { return false; } }
+            else 
+            { return false; }
         }
-        public bool IsConnected()
+        private bool Disconnect() //True if disconnected successfully, false if error
         {
-            if (conn.State == System.Data.ConnectionState.Open) { return true; }
-            else { return false; }
+            if (IsConnected())
+            {
+                try
+                {
+                    conn.Close();
+                    return true;
+                }
+                catch (System.Exception ex)
+                {
+                    MessageBox.Show($"Error disconnecting from database: {ex.Message}", "Database Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return false;
+                }
+            }
+            else { return true; }
         }
         private void Execute(string com)
         {
             SqliteCommand command = new SqliteCommand(com, conn);
             reader = command.ExecuteReader();
         }
+        public bool IsConnected()
+        {
+            if (conn.State == System.Data.ConnectionState.Open) { return true; }
+            else { return false; }
+        }
 
         //Data Retrieval-------------------------------------------------------------------------------------------------------------------
         public List<CTItem> GetAllItems()
         {
             List<CTItem> allItems = new List<CTItem>();
-            string command = "SELECT * FROM Items";
             if (!Connect()) { return allItems; }
-            Execute(command);
+            Execute("SELECT * FROM Items");
             while (reader.Read())
             {
                 CTItem item = new CTItem(reader.GetString(0));
@@ -60,9 +106,8 @@ namespace CalTools_WPF
         public List<CTTask> GetAllTasks()
         {
             List<CTTask> allTasks = new List<CTTask>();
-            string command = "SELECT * FROM Tasks";
             if (!Connect()) { return allTasks; }
-            Execute(command);
+            Execute("SELECT * FROM Tasks");
             while (reader.Read())
             {
                 CTTask task = new CTTask();
@@ -72,13 +117,12 @@ namespace CalTools_WPF
             Disconnect();
             return allTasks;
         }
-        public List<TaskData> GetTaskData(string taskID)
+        public List<TaskData> GetAllTaskData()
         {
             List<TaskData> calData = new List<TaskData>();
             if (Connect())
             {
-                string command = $"SELECT * FROM TaskData WHERE TaskID='{taskID}'";
-                Execute(command);
+                Execute($"SELECT * FROM TaskData");
                 while (reader.Read())
                 {
                     TaskData data = new TaskData();
@@ -89,13 +133,12 @@ namespace CalTools_WPF
             }
             return calData;
         }
-        public List<TaskData> GetAllTaskData()
+        public List<TaskData> GetTaskData(string taskID)
         {
             List<TaskData> calData = new List<TaskData>();
             if (Connect())
             {
-                string command = $"SELECT * FROM TaskData";
-                Execute(command);
+                Execute($"SELECT * FROM TaskData WHERE TaskID='{taskID}'");
                 while (reader.Read())
                 {
                     TaskData data = new TaskData();
@@ -109,9 +152,8 @@ namespace CalTools_WPF
 #nullable enable
         public CTItem? GetItem(string col, string item)
         {
-            string command = $" SELECT * FROM Items WHERE {col}='{item}'";
             if (!Connect()) return null;
-            Execute(command);
+            Execute($" SELECT * FROM Items WHERE {col}='{item}'");
             if (reader.Read())
             {
                 CTItem returnItem = new CTItem(reader.GetString(0));
@@ -124,9 +166,8 @@ namespace CalTools_WPF
         }
         public CTItem? GetItemFromTask(CTTask task)
         {
-            string command = $"SELECT * FROM Items WHERE SerialNumber='{task.SerialNumber}'";
             if (!Connect()) return null;
-            Execute(command);
+            Execute($"SELECT * FROM Items WHERE SerialNumber='{task.SerialNumber}'");
             if (reader.Read())
             {
                 CTItem returnItem = new CTItem(reader.GetString(0));
@@ -137,26 +178,10 @@ namespace CalTools_WPF
             Disconnect();
             return null;
         }
-        public List<CTTask> GetTasks(string col, string item, bool disconnect = true)
-        {
-            List<CTTask> tasks = new List<CTTask>();
-            string command = $"SELECT * FROM Tasks WHERE {col}='{item}'";
-            if (!Connect()) return tasks;
-            Execute(command);
-            while (reader.Read())
-            {
-                CTTask task = new CTTask();
-                AssignTaskValues(ref task);
-                tasks.Add(task);
-            }
-            if (disconnect) { Disconnect(); }
-            return tasks;
-        }
         public TaskData? GetData(string col, string item)
         {
-            string command = $" SELECT * FROM TaskData WHERE {col}='{item}'";
             if (!Connect()) return null;
-            Execute(command);
+            Execute($" SELECT * FROM TaskData WHERE {col}='{item}'");
             if (reader.Read())
             {
                 TaskData returnItem = new TaskData();
@@ -167,7 +192,22 @@ namespace CalTools_WPF
             Disconnect();
             return null;
         }
+        public List<CTTask> GetTasks(string col, string item, bool disconnect = true)
+        {
+            List<CTTask> tasks = new List<CTTask>();
+            if (!Connect()) return tasks;
+            Execute($"SELECT * FROM Tasks WHERE {col}='{item}'");
+            while (reader.Read())
+            {
+                CTTask task = new CTTask();
+                AssignTaskValues(ref task);
+                tasks.Add(task);
+            }
+            if (disconnect) { Disconnect(); }
+            return tasks;
+        }
 #nullable disable
+
         //Save data------------------------------------------------------------------------------------------------------------------------
         public bool CreateItem(string sn)
         {
@@ -175,8 +215,7 @@ namespace CalTools_WPF
             {
                 if (Connect())
                 {
-                    string command = $"INSERT OR IGNORE INTO Items (SerialNumber) VALUES ('{sn}')";
-                    Execute(command);
+                    Execute($"INSERT OR IGNORE INTO Items (SerialNumber) VALUES ('{sn}')");
                     Disconnect();
                     return true;
                 }
@@ -228,28 +267,6 @@ namespace CalTools_WPF
                 return false;
             }
         }
-        public bool UpdateColumn(string sn, string column, string newValue)
-        {
-            try
-            {
-                if (Connect())
-                {
-                    string command = $"UPDATE Items SET {column}='{newValue}' WHERE SerialNumber='{sn}'";
-                    Execute(command);
-                    Disconnect();
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
-            }
-            catch (System.Exception ex)
-            {
-                MessageBox.Show(ex.Message, "Database Write Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return false;
-            }
-        }
         public bool SaveTask(CTTask task, bool disconnect = false)
         {
             string command;
@@ -257,11 +274,12 @@ namespace CalTools_WPF
             {
                 if (Connect())
                 {
+                    //New task that hasn't yet been inserted into the database
                     if (task.TaskID == -1)
                     {
                         command = $"INSERT OR IGNORE INTO Tasks " +
                             $"(SerialNumber,TaskTitle,ServiceVendor,Mandatory," +
-                            $"Interval,CompleteDate,DueDate,Due,ActionType,Directory,Comments) " +
+                            $"Interval,CompleteDate,DueDate,Due,ActionType,Directory,Comments,ManualFlag) " +
                           $"VALUES ('{task.SerialNumber}'," +
                           $"'{task.TaskTitle}'," +
                           $"'{task.ServiceVendor}'," +
@@ -272,8 +290,10 @@ namespace CalTools_WPF
                           $"'{(task.Due == true ? 1 : 0)}'," +
                           $"'{task.ActionType}'," +
                           $"'{task.TaskDirectory}'," +
-                          $"'{task.Comment}')";
+                          $"'{task.Comment}'," +
+                          $"'{task.ManualFlagString}')";
                     }
+                    //Existing task
                     else
                     {
                         command = $"UPDATE Tasks SET " +
@@ -287,7 +307,8 @@ namespace CalTools_WPF
                             $"Due='{(task.Due == true ? 1 : 0)}'," +
                             $"ActionType='{task.ActionType}'," +
                             $"Directory='{task.TaskDirectory}'," +
-                            $"Comments='{task.Comment}' " +
+                            $"Comments='{task.Comment}'," +
+                            $"ManualFlag='{task.ManualFlagString}' " +
                             $"WHERE TaskID='{task.TaskID}'";
                     }
                     Execute(command);
@@ -307,6 +328,7 @@ namespace CalTools_WPF
             if (data.TaskID == null)
             {
                 MessageBox.Show($"Task data TaskID is null.", "Null TaskID", MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
             }
             try
             {
@@ -338,15 +360,16 @@ namespace CalTools_WPF
                 return false;
             }
         }
+
         //Remove data----------------------------------------------------------------------------------------------------------------------
+        //Delete operations in the DB cascade Item -> Task -> TaskData
         public bool RemoveCalItem(string sn)
         {
             try
             {
                 if (Connect())
                 {
-                    string command = $"DELETE FROM Items WHERE SerialNumber='{sn}'";
-                    Execute(command);
+                    Execute($"DELETE FROM Items WHERE SerialNumber='{sn}'");
                     Disconnect();
                     return true;
                 }
@@ -364,8 +387,7 @@ namespace CalTools_WPF
             {
                 if (Connect())
                 {
-                    string command = $"DELETE FROM Tasks WHERE TaskID='{taskID}'";
-                    Execute(command);
+                    Execute($"DELETE FROM Tasks WHERE TaskID='{taskID}'");
                     Disconnect();
                     return true;
                 }
@@ -383,8 +405,7 @@ namespace CalTools_WPF
             {
                 if (Connect())
                 {
-                    string command = $"DELETE FROM TaskData WHERE DataID='{id}'";
-                    Execute(command);
+                    Execute($"DELETE FROM TaskData WHERE DataID='{id}'");
                     Disconnect();
                     return true;
                 }
@@ -397,58 +418,25 @@ namespace CalTools_WPF
             }
         }
 
-        //Private members
-        private bool Connect()
+        //Misc members-------------------------------------------------------------------------------------------------------------
+        public void CleanUp()
         {
-            try
-            {
-                if (!IsConnected())
-                {
-                    conn.Open();
-                    //Assumes blank DB. Should only run CreateTables() once.
-                    if (!tablesExist)
-                    {
-                        if (UpdateDatabase())
-                        { tablesExist = true; }
-                        else { Disconnect(); return false; }
-                    }
-                }
-                return true;
-            }
-            catch (Microsoft.Data.Sqlite.SqliteException ex)
-            {
-                MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return false;
-            }
+            if (IsConnected()) { Disconnect(); }
         }
-        private bool Disconnect() //True if disconnected successfully, false if error
+        private int GetDatabaseVersion()
         {
-            if (IsConnected())
-            {
-                try
-                {
-                    conn.Close();
-                    return true;
-                }
-                catch (System.Exception ex)
-                {
-                    MessageBox.Show($"Error disconnecting from database: {ex.Message}", "Database Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return false;
-                }
-            }
-            else { return true; }
-        }
-        private void ResetConnection()
-        {
-            conn.Close();
-            conn.Open();
+            string command = "PRAGMA user_version";
+            Execute(command);
+            if (reader.Read())
+            { return reader.GetInt32(0); }
+            else
+            { return 0; }
         }
         public int GetLastTaskID()
         {
             if (Connect())
             {
-                string command = "SELECT * FROM Tasks ORDER BY TaskID DESC LIMIT 1";
-                Execute(command);
+                Execute("SELECT * FROM Tasks ORDER BY TaskID DESC LIMIT 1");
                 reader.Read();
                 int taskID = reader.GetInt32(0);
                 Disconnect();
@@ -456,6 +444,12 @@ namespace CalTools_WPF
             }
             else { return -1; }
         }
+        private void ResetConnection()
+        {
+            conn.Close();
+            conn.Open();
+        }
+
         //Data parsing---------------------------------------------------------------------------------------------------------------------
         private void AssignItemValues(ref CTItem item)
         {
@@ -475,26 +469,6 @@ namespace CalTools_WPF
             item.CertificateNumber = reader.GetString((int)CTItem.DatabaseColumns.CertificateNumber);
             item.ChangesMade = false;
         }
-        //Parse DB columns to CTTask Object
-        private void AssignTaskValues(ref CTTask task)
-        {
-            task.TaskID = reader.GetInt32((int)CTTask.DatabaseColumns.TaskID);
-            task.SerialNumber = reader.GetString((int)CTTask.DatabaseColumns.SerialNumber);
-            task.TaskTitle = reader.GetString((int)CTTask.DatabaseColumns.TaskTitle);
-            task.ServiceVendor = reader.GetString((int)CTTask.DatabaseColumns.ServiceVendor);
-            task.Mandatory = reader.GetInt32((int)CTTask.DatabaseColumns.Mandatory) == 1;
-            task.Interval = reader.GetInt32((int)CTTask.DatabaseColumns.Interval);
-            if (reader.GetString((int)CTTask.DatabaseColumns.CompleteDate).Length > 0)
-            { task.CompleteDate = DateTime.ParseExact(reader.GetString((int)CTTask.DatabaseColumns.CompleteDate), dateFormat, CultureInfo.InvariantCulture); }
-            if (reader.GetString((int)CTTask.DatabaseColumns.DueDate).Length > 0)
-            { task.DueDate = DateTime.ParseExact(reader.GetString((int)CTTask.DatabaseColumns.DueDate), dateFormat, CultureInfo.InvariantCulture); }
-            task.Due = reader.GetInt32((int)CTTask.DatabaseColumns.Due) == 1;
-            task.ActionType = reader.GetString((int)CTTask.DatabaseColumns.ActionType);
-            task.TaskDirectory = reader.GetString((int)CTTask.DatabaseColumns.Directory);
-            task.Comment = reader.GetString((int)CTTask.DatabaseColumns.Comments);
-            task.ChangesMade = false;
-        }
-        //Parse DB columns to TaskData object
         private void AssignDataValues(ref TaskData data)
         {
             data.DataID = reader.GetInt32((int)TaskData.DatabaseColumns.ColDataID);
@@ -512,50 +486,26 @@ namespace CalTools_WPF
             data.Technician = reader.GetString((int)TaskData.DatabaseColumns.ColTechnician);
             data.ChangesMade = false;
         }
-
-        private void MoveToTaskFolder(CTItem item, CTTask task)
+        private void AssignTaskValues(ref CTTask task)
         {
-            if (item == null | task == null) { return; }
-            string taskFolder = Path.Combine(item.Directory, $"{task.TaskID}_{task.TaskTitle}");
-            if (Directory.Exists(taskFolder)) { return; }
-            Directory.CreateDirectory(taskFolder);
-            foreach (string file in Directory.GetFiles(item.Directory))
-            {
-                string newLocation = Path.Combine(taskFolder, Path.GetFileName(file));
-                File.Move(file, newLocation);
-            }
-        }
-
-        //Check for task subfolder, create the subfolder if it doesn't exist
-        //Delete? Handled in MainWIndowCTLogic.xaml.cs
-        private void CheckTaskfolders()
-        {
-            List<CTItem> allItems = GetAllItems();
-            List<CTTask> allTasks = GetAllTasks();
-            foreach (CTItem item in allItems)
-            {
-                foreach (CTTask task in allTasks)
-                {
-                    bool taskFolderFound = false;
-                    foreach (string taskFolder in Directory.GetDirectories(item.Directory))
-                    {
-                        if (taskFolder.Split("_")[0] == task.TaskID.ToString())
-                        { taskFolderFound = true; task.TaskDirectory = taskFolder; }
-                    }
-                    if (!taskFolderFound)
-                    {
-                        string newTaskFolder = Path.Join(item.Directory, $"{task.TaskID}_{task.TaskTitle}");
-                        task.TaskDirectory = newTaskFolder;
-                        //Directory.CreateDirectory(newTaskFolder);
-                    }
-                    if (task.ChangesMade) { SaveTask(task); }
-                }
-            }
-        }
-        //Make sure db is disconnected before closing window.
-        public void CleanUp()
-        {
-            if (IsConnected()) { Disconnect(); }
+            task.TaskID = reader.GetInt32((int)CTTask.DatabaseColumns.TaskID);
+            task.SerialNumber = reader.GetString((int)CTTask.DatabaseColumns.SerialNumber);
+            task.TaskTitle = reader.GetString((int)CTTask.DatabaseColumns.TaskTitle);
+            task.ServiceVendor = reader.GetString((int)CTTask.DatabaseColumns.ServiceVendor);
+            task.Mandatory = reader.GetInt32((int)CTTask.DatabaseColumns.Mandatory) == 1;
+            task.Interval = reader.GetInt32((int)CTTask.DatabaseColumns.Interval);
+            if (reader.GetString((int)CTTask.DatabaseColumns.CompleteDate).Length > 0)
+            { task.CompleteDate = DateTime.ParseExact(reader.GetString((int)CTTask.DatabaseColumns.CompleteDate), dateFormat, CultureInfo.InvariantCulture); }
+            if (reader.GetString((int)CTTask.DatabaseColumns.DueDate).Length > 0)
+            { task.DueDate = DateTime.ParseExact(reader.GetString((int)CTTask.DatabaseColumns.DueDate), dateFormat, CultureInfo.InvariantCulture); }
+            task.Due = reader.GetInt32((int)CTTask.DatabaseColumns.Due) == 1;
+            task.ActionType = reader.GetString((int)CTTask.DatabaseColumns.ActionType);
+            task.TaskDirectory = reader.GetString((int)CTTask.DatabaseColumns.Directory);
+            task.Comment = reader.GetString((int)CTTask.DatabaseColumns.Comments);
+            if (reader.GetString((int)CTTask.DatabaseColumns.ManualFlag).Length > 0)
+            { task.ManualFlag = DateTime.ParseExact(reader.GetString((int)CTTask.DatabaseColumns.ManualFlag), dateFormat, CultureInfo.InvariantCulture); }
+            
+            task.ChangesMade = false;
         }
     }
 }

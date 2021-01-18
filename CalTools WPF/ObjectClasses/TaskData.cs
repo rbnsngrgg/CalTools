@@ -4,6 +4,7 @@ namespace CalTools_WPF.ObjectClasses
 {
     public class TaskData
     {
+        #region Private Fields
 #nullable enable
         private int? dataID = null;
         private int? taskID = null;
@@ -18,7 +19,9 @@ namespace CalTools_WPF.ObjectClasses
         private string remarks = "";
         private string technician = "";
         public string timestamp = "";
+        #endregion
 
+        #region Getters and Setters
         public int? DataID { get { return dataID; } set { dataID = value; ChangesMade = true; } }
         public int? TaskID { get { return taskID; } set { taskID = value; ChangesMade = true; } }
         public string SerialNumber { get { return serialNumber; } set { serialNumber = value; ChangesMade = true; } }
@@ -48,6 +51,8 @@ namespace CalTools_WPF.ObjectClasses
         public string Technician { get { return technician; } set { technician = value; ChangesMade = true; } }
         public string Timestamp { get { return timestamp; } set { timestamp = value; ChangesMade = true; } }
         public bool ChangesMade { get; set; } = false;
+        #endregion
+
         public enum DatabaseColumns
         {
             ColDataID,

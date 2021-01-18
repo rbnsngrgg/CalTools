@@ -1,8 +1,16 @@
 [Changes]
+--5.1.0
+	--Changed Task Data Grid to allow tasks to be selected without editing (Issue 75)
+	--New Task Data Grid context menu option to manually mark a task as due (Issue 74)
+		--Database version 6
+	--New item list context menu option, "Replace Item", to swap the locations and "in operation" statuses of two items within the same item group (Issue 45).
+	--Improved source code modularity and readability
+
 --5.0.1
 	--Fixed bug where search wasn't reset when selecting "Go To Item" from calendar mode, preventing the item from being selected in the list. (Issue 72)
 	--Improved performance when saving an item in details view. The entire list is only updated on startup and when "Update All Items" is pressed. (Issue 71)
 	--Fixed bug that caused changes made in the details area to be reverted when a new task is added to the table. (Issue 70)
+
 --5.0.0
 	--Backwards compatibility for database versions < 4 is no longer supported.
 	--Added functionality to check names of folders when checking due dates (Issue 68)
@@ -13,7 +21,7 @@
 	--Added functionality for items to have multiple tasks (Issue 60)
 		--Database has 3 tables: items, tasks, taskdata
 		--Updates and deletes cascade: item -> tasks -> taskdata
-		--Database version 5	
+		--Database version 5
 
 --4.2.0
 	--Changed verbiage of some of the labels in the item details area.

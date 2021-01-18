@@ -9,7 +9,7 @@ namespace CalTools_WPF.ObjectClasses
         public List<string> files = new List<string>();
     }
 
-    public class Param
+    public class Param //To be embedded within Findings object
     {
         public string Name { get; set; }
         public float Tolerance { get; set; }
