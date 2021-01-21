@@ -1,4 +1,8 @@
 [Changes]
+--5.2.0
+	--Enabled menu bar
+	--Added feature in "tools" menu to export the database contents to text files with tab-separated values, one file per table.
+
 --5.1.0
 	--Changed Task Data Grid to allow tasks to be selected without editing (Issue 75)
 	--New Task Data Grid context menu option to manually mark a task as due (Issue 74)

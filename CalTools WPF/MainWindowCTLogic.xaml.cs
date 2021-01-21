@@ -8,8 +8,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using Microsoft.Win32;
-using System.Diagnostics;
+//using System.Diagnostics;
 
 namespace CalTools_WPF
 {
@@ -171,7 +170,6 @@ namespace CalTools_WPF
             string exportsFolder = Path.Join(config.ListDir, "CalTools Exports");
             string targetFolder = Path.Join(exportsFolder, $"{DateTime.UtcNow.ToString(database.timestampFormat)}");
             if (!Directory.Exists(targetFolder)) { Directory.CreateDirectory(targetFolder); }
-            Debug.WriteLine(targetFolder);
             List<string> itemLines = new List<string>() {"SerialNumber\tLocation\tManufacturer\tDirectory\tDescription\tInService\tInServiceDate\tModel\tComment\tTimestamp\tItemGroup\tStandardEquipment\tCertificateNumber"};
             List<string> taskDataLines = new List<string>() {"DataID\tTaskID\tSerialNumber\tStateBeforeAction\tStateAfterAction\tActionTaken\tCompleteDate\tProcedure\tStandardEquipment\tFindings\tRemarks\tTechnician\tEntryTimestamp"};
             List<string> tasksLines = new List<string>() {"TaskID\tSerialNumber\tTaskTitle\tServiceVendor\tMandatory\tInterval\tCompleteDate\tDueDate\tDue\tActionType\tDirectory\tComments\tManualFlag"};
