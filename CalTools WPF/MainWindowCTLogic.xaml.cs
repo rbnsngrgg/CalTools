@@ -8,14 +8,15 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-//using System.Diagnostics;
+using Microsoft.Win32;
+using System.Diagnostics;
 
 namespace CalTools_WPF
 {
     //Main window code-behind logic outside of event handlers
     public partial class MainWindow : Window
     {
-        public readonly string version = "5.1.0";
+        public readonly string version = "5.2.0";
         private CTDatabase database;
         private CTConfig config = new CTConfig();
         private readonly Dictionary<string, string> searchModes = new Dictionary<string, string>() {
@@ -163,6 +164,38 @@ namespace CalTools_WPF
             {
                 group.IsExpanded = true;
             }
+        }
+        private void ExportTSV()
+        {
+            List<string> files = new List<string>() {$"CalTools_dbv{database.currentVersion}_Items.txt",$"CalTools_dbv{database.currentVersion}_TaskData.txt",$"CalTools_dbv{database.currentVersion}_Tasks.txt" };
+            string exportsFolder = Path.Join(config.ListDir, "CalTools Exports");
+            string targetFolder = Path.Join(exportsFolder, $"{DateTime.UtcNow.ToString(database.timestampFormat)}");
+            if (!Directory.Exists(targetFolder)) { Directory.CreateDirectory(targetFolder); }
+            Debug.WriteLine(targetFolder);
+            List<string> itemLines = new List<string>() {"SerialNumber\tLocation\tManufacturer\tDirectory\tDescription\tInService\tInServiceDate\tModel\tComment\tTimestamp\tItemGroup\tStandardEquipment\tCertificateNumber"};
+            List<string> taskDataLines = new List<string>() {"DataID\tTaskID\tSerialNumber\tStateBeforeAction\tStateAfterAction\tActionTaken\tCompleteDate\tProcedure\tStandardEquipment\tFindings\tRemarks\tTechnician\tEntryTimestamp"};
+            List<string> tasksLines = new List<string>() {"TaskID\tSerialNumber\tTaskTitle\tServiceVendor\tMandatory\tInterval\tCompleteDate\tDueDate\tDue\tActionType\tDirectory\tComments\tManualFlag"};
+            foreach(CTItem item in database.GetAllItems())
+            {
+                itemLines.Add($"{item.SerialNumber}\t{item.Location}\t{item.Manufacturer}\t{item.Directory}\t\"{item.Description}\"\t{(item.InService? 1 : 0)}\t" +
+                    $"{item.InServiceDateString}\t\"{item.Model}\"\t\"{item.Comment}\"\t{item.TimeStampString}\t\"{item.ItemGroup}\"\t{(item.StandardEquipment? 1: 0)}\t" +
+                    $"{item.CertificateNumber}");
+            }
+            foreach(TaskData data in database.GetAllTaskData())
+            {
+                taskDataLines.Add($"{data.DataID}\t{data.TaskID}\t{data.SerialNumber}\t{JsonConvert.SerializeObject(data.StateBefore)}\t{JsonConvert.SerializeObject(data.StateAfter)}\t" +
+                    $"{JsonConvert.SerializeObject(data.ActionTaken)}\t{data.CompleteDateString}\t{data.Procedure}\t{data.StandardEquipment}\t" +
+                    $"{JsonConvert.SerializeObject(data.Findings)}\t{data.Remarks}\t{data.Technician}\t{data.Timestamp}");
+            }
+            foreach(CTTask task in database.GetAllTasks())
+            {
+                tasksLines.Add($"{task.TaskID}\t{task.SerialNumber}\t{task.TaskTitle}\t{task.ServiceVendor}\t{(task.Mandatory? 1 : 0)}\t{task.Interval}\t{task.CompleteDateString}\t" +
+                    $"{task.DueDateString}\t{(task.Due? 1 : 0)}\t{task.ActionType}\t{task.TaskDirectory}\t{task.Comment}\t{task.ManualFlagString}");
+            }
+            System.IO.File.WriteAllLines(Path.Join(targetFolder, files[0]), itemLines);
+            System.IO.File.WriteAllLines(Path.Join(targetFolder, files[1]), taskDataLines);
+            System.IO.File.WriteAllLines(Path.Join(targetFolder, files[2]), tasksLines);
+            Process.Start("explorer", targetFolder);
         }
         private string FindItemDirectory(string serialNumber)
         {

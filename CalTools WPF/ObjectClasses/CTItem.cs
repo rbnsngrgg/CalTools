@@ -28,10 +28,36 @@ namespace CalTools_WPF
         public string Directory { get => directory; set { directory = value; ChangesMade = true; } }
         public string Description { get => description; set { description = value; ChangesMade = true; } }
         public bool InService { get => inService; set { inService = value; ChangesMade = true; } }
-        public DateTime? InServiceDate { get => inServiceDate; set { inServiceDate = value; ChangesMade = true; } }
+        public DateTime? InServiceDate//{ get => inServiceDate; set { inServiceDate = value; ChangesMade = true; } }
+        {
+            get => inServiceDate;
+            set
+            {
+                inServiceDate = value;
+
+                if (value != null)
+                { InServiceDateString = inServiceDate.Value.ToString("yyyy-MM-dd"); }
+                else { InServiceDateString = ""; }
+                ChangesMade = true;
+            }
+        }
+        public string InServiceDateString { get; private set; } = "";
         public string Model { get => model; set { model = value; ChangesMade = true; } }
         public string Comment { get => comment; set { comment = value; ChangesMade = true; } }
-        public DateTime? TimeStamp { get => timeStamp; set { timeStamp = value; ChangesMade = true; } }
+        public DateTime? TimeStamp //{ get => timeStamp; set { timeStamp = value; ChangesMade = true; } }
+        {
+            get => timeStamp;
+            set
+            {
+                timeStamp = value;
+
+                if (value != null)
+                { TimeStampString = timeStamp.Value.ToString("yyyy-MM-dd-HH-mm-ss-ffffff"); }
+                else { TimeStampString = ""; }
+                ChangesMade = true;
+            }
+        }
+        public string TimeStampString { get; private set; } = "";
         public string ItemGroup { get => itemGroup; set { itemGroup = value; ChangesMade = true; } }
         public string CertificateNumber { get => certificateNumber; set { certificateNumber = value; ChangesMade = true; } }
         public bool StandardEquipment { get => standardEquipment; set { standardEquipment = value; ChangesMade = true; } }

@@ -11,6 +11,7 @@ namespace CalTools_WPF
 {
     partial class CTDatabase
     {
+        public readonly int currentVersion = 6;
         public readonly string dateFormat = "yyyy-MM-dd";
         public readonly string timestampFormat = "yyyy-MM-dd-HH-mm-ss-ffffff";
         public bool tablesExist = false;
@@ -484,6 +485,7 @@ namespace CalTools_WPF
             data.Findings = JsonConvert.DeserializeObject<Findings>(reader.GetString((int)TaskData.DatabaseColumns.ColFindings));
             data.Remarks = reader.GetString((int)TaskData.DatabaseColumns.ColRemarks);
             data.Technician = reader.GetString((int)TaskData.DatabaseColumns.ColTechnician);
+            data.Timestamp = reader.GetString((int)TaskData.DatabaseColumns.ColEntryTimestamp);
             data.ChangesMade = false;
         }
         private void AssignTaskValues(ref CTTask task)

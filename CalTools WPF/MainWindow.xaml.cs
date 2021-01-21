@@ -419,5 +419,15 @@ namespace CalTools_WPF
         {
             database.CleanUp();
         }
+
+        private void ToolsMenuExportTsv_Click(object sender, RoutedEventArgs e)
+        {
+            ExportTSV();
+        }
+
+        private void FileMenuExit_Click(object sender, RoutedEventArgs e)
+        {
+            CalToolsMainWindow.Close();
+        }
     }
 }

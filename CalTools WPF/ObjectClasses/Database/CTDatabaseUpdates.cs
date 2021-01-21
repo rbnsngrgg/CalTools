@@ -260,7 +260,6 @@ namespace CalTools_WPF
             try
             {
                 //Check DB version
-                int currentVersion = 6;
                 int dbVersion = GetDatabaseVersion();
                 if (dbVersion == currentVersion)
                 {
