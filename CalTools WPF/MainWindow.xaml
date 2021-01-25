@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:CalTools_WPF"
         mc:Ignorable="d"
-        Title="CalTools" Height="760" Width="1100" MinHeight="640" MinWidth="1000"
+        Title="CalTools" Height="780" Width="1100" MinHeight="640" MinWidth="1000"
         x:Name="CalToolsMainWindow" WindowStyle="SingleBorderWindow" Background="WhiteSmoke"
         Icon="C:\Users\grobinson\source\repos\CalTools\CalTools WPF\images\CalToolsIcon.ico" AllowDrop="True" Drop="MainWindow_Drop" Closing="CalToolsMainWindow_Closing">
     <Window.Resources>
@@ -16,17 +16,21 @@
     <Grid>
         <Grid.RowDefinitions>
             <!--Menu bar-->
-            <RowDefinition Height="5" MinHeight="5" MaxHeight="5"/>
+            <RowDefinition Height="20" MinHeight="20" MaxHeight="20"/>
             <!--Top row buttons-->
             <RowDefinition Height="50" MinHeight="50" MaxHeight="50"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="25"/>
         </Grid.RowDefinitions>
         <!--Menu bar-->
-        <DockPanel Grid.Row="0" Visibility="Collapsed">
+        <DockPanel Grid.Row="0" Visibility="Visible">
             <Menu x:Name="MainMenuBar" DockPanel.Dock="Top" Background="White">
-                <!--<MenuItem Header="_File"/>-->
-                <!--<MenuItem Header="_Tools"/>-->
+                <MenuItem Header="_File">
+                    <MenuItem x:Name="FileMenuExit" Header="Exit" Click="FileMenuExit_Click"/>
+                </MenuItem>
+                <MenuItem Header="_Tools">
+                    <MenuItem x:Name="ToolsMenuExportTsv" Header="Export to TSV" Click="ToolsMenuExportTsv_Click"/>
+                </MenuItem>
             </Menu>
         </DockPanel>
         <!--Top row buttons-->
@@ -215,6 +219,7 @@
                         <ContextMenu>
                             <MenuItem x:Name="TableMenuGoto" Header="Go to Item" Click="TableMenuGoto_Click"/>
                             <MenuItem x:Name="TableMenuCalData" Header="Add Calibration Data" Click="TableMenuCalData_Click"/>
+                            <MenuItem x:Name="ExportDueList" Header="Export List" Click="ExportDueList_Click"/>
                         </ContextMenu>
                     </DataGrid.ContextMenu>
                 </DataGrid>
