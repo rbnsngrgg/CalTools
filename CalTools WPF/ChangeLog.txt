@@ -2,6 +2,7 @@
 --5.2.0
 	--Enabled menu bar
 	--Added feature in "tools" menu to export the database contents to text files with tab-separated values, one file per table.
+	--Context menu option in calendar mode to export the items in the "due" list to a tab-separated text file.
 
 --5.1.0
 	--Changed Task Data Grid to allow tasks to be selected without editing (Issue 75)

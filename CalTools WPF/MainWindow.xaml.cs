@@ -213,6 +213,10 @@ namespace CalTools_WPF
                 NewReport(task);
             }
         }
+        private void ExportDueList_Click(object sender, RoutedEventArgs e)
+        {
+            ExportDueListTSV();
+        }
 
         //Task data grid event handlers----------------------------------------------------------------------------------------------------
         private void ContextMarkDue_Click(object sender, RoutedEventArgs e)
@@ -429,5 +433,6 @@ namespace CalTools_WPF
         {
             CalToolsMainWindow.Close();
         }
+
     }
 }

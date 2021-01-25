@@ -219,6 +219,7 @@
                         <ContextMenu>
                             <MenuItem x:Name="TableMenuGoto" Header="Go to Item" Click="TableMenuGoto_Click"/>
                             <MenuItem x:Name="TableMenuCalData" Header="Add Calibration Data" Click="TableMenuCalData_Click"/>
+                            <MenuItem x:Name="ExportDueList" Header="Export List" Click="ExportDueList_Click"/>
                         </ContextMenu>
                     </DataGrid.ContextMenu>
                 </DataGrid>

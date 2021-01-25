@@ -36,6 +36,7 @@ namespace CalTools_WPF
         private List<string> itemGroups = new List<string>();
         private List<string> standardEquipment = new List<string>();
         private List<Dictionary<string, string>> weekTodoItems = new List<Dictionary<string, string>>();
+        //Dict keys: SerialNumber, Model, TaskID, TaskTitle, Description, Location, ServiceVendor, DueDateString
 
         private void AddItemsToList(List<CTItem> items)
         {
@@ -194,6 +195,20 @@ namespace CalTools_WPF
             System.IO.File.WriteAllLines(Path.Join(targetFolder, files[1]), taskDataLines);
             System.IO.File.WriteAllLines(Path.Join(targetFolder, files[2]), tasksLines);
             Process.Start("explorer", targetFolder);
+        }
+        private void ExportDueListTSV()
+        {
+            string file = $"{DateTime.UtcNow.ToString(database.dateFormat)}_Items Due Near {((DateTime)ItemCalendar.SelectedDate).ToString(database.dateFormat)}.txt";
+            string exportsFolder = Path.Join(config.ListDir, "CalTools Exports");
+            if (!Directory.Exists(exportsFolder)) { Directory.CreateDirectory(exportsFolder); }
+            List<string> listLines = new List<string>() { "SerialNumber\tModel\tTaskTitle\tDescription\tLocation\tServiceVendor\tDueDate" };
+            foreach(Dictionary<string,string> item in weekTodoItems)
+            {
+                listLines.Add($"{item["SerialNumber"]}\t{item["Model"]}\t{item["TaskTitle"]}\t{item["Description"]}" +
+                    $"\t{item["Location"]}\t{item["ServiceVendor"]}\t{item["DueDateString"]}");
+            }
+            System.IO.File.WriteAllLines(Path.Join(exportsFolder, file),listLines);
+            Process.Start("explorer", exportsFolder);
         }
         private string FindItemDirectory(string serialNumber)
         {
