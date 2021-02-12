@@ -15,7 +15,7 @@ namespace CalTools_WPF
     //Main window code-behind logic outside of event handlers
     public partial class MainWindow : Window
     {
-        public readonly string version = "5.2.0";
+        public readonly string version = "5.3.0";
         private CTDatabase database;
         private CTConfig config = new CTConfig();
         private readonly Dictionary<string, string> searchModes = new Dictionary<string, string>() {
@@ -499,7 +499,7 @@ namespace CalTools_WPF
             }
             return fileInfo;
         }
-        private void SaveItem()
+        private bool SaveItem()
         {
             if (DetailsSN.Text.Length > 0)
             {
@@ -527,7 +527,7 @@ namespace CalTools_WPF
                     if (DetailsCertificateNum.Text.Length == 0)
                     {
                         MessageBox.Show("A certificate number is required for items marked as Standard Equipment.", "Certificate Number", MessageBoxButton.OK, MessageBoxImage.Exclamation);
-                        return;
+                        return false;
                     }
                 }
                 else { item.StandardEquipment = false; }
@@ -556,6 +556,7 @@ namespace CalTools_WPF
                 }
                 UpdateListsSingle(item);
             }
+            return true;
         }
         private void SaveTaskChanges(ref List<CTTask> tasks)
         {

@@ -91,11 +91,13 @@ namespace CalTools_WPF
         }
         private void SaveItemButton_Click(object sender, RoutedEventArgs e)
         {
-            SaveItem();
-            SaveTasksTable();
-            //Update specific item
-            //UpdateSingleItem(SelectedSN());
-            UpdateItemList(true);
+            if(SaveItem())
+            {
+                SaveTasksTable();
+                //Update specific item
+                //UpdateSingleItem(SelectedSN());
+                UpdateItemList(true);
+            }
         }
         private void OpenFolderButton_Click(object sender, RoutedEventArgs e)
         {
