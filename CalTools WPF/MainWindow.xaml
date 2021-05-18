@@ -78,6 +78,7 @@
                     <TreeView MinWidth="220" VerticalAlignment="Stretch" x:Name="CalibrationItemTree" SelectedItemChanged="CalibrationItemTree_SelectedItemChanged">
                         <TreeView.ContextMenu>
                             <ContextMenu x:Name="TreeViewContextMenu" Opened="TreeViewContextMenu_Opened">
+                                <MenuItem x:Name="TreeViewNewItem" Header="New Item" Click="TreeViewNewItem_Click"/>
                                 <MenuItem x:Name="TreeViewReplaceItem" Header="Replace Item" Click="TreeViewReplaceItem_Click"/>
                             </ContextMenu>
                         </TreeView.ContextMenu>

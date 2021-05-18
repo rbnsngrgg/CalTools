@@ -8,7 +8,9 @@ namespace CalTools_WPF
     /// </summary>
     public partial class NewItemFolderSelect : Window
     {
-        public NewItemFolderSelect()
+        private bool FolderSelected = false;
+        private bool SnEntered = false;
+        public NewItemFolderSelect(string serialNumber = "")
         {
             InitializeComponent();
         }
@@ -19,7 +21,26 @@ namespace CalTools_WPF
         //Enable the OK button once a selection is made
         private void FolderSelectComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (!FolderSelectOK.IsEnabled) { FolderSelectOK.IsEnabled = true; }
+            FolderSelected = true;
+            ButtonEnable();
+        }
+
+
+        private void FolderSelectSerialNumber_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if(FolderSelectSerialNumber.Text != "")
+            {
+                SnEntered = true;
+            }
+            else
+            {
+                SnEntered = false;
+            }
+            ButtonEnable();
+        }
+        private void ButtonEnable()
+        {
+            FolderSelectOK.IsEnabled = SnEntered & FolderSelected;
         }
     }
 }

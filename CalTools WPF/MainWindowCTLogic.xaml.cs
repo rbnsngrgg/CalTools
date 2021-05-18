@@ -98,13 +98,31 @@ namespace CalTools_WPF
                 ComboBoxItem boxItem = new ComboBoxItem { Content = configFolder };
                 folderDialog.FolderSelectComboBox.Items.Add(boxItem);
             }
+            folderDialog.FolderSelectSerialNumber.Text = sn;
+            folderDialog.FolderSelectSerialNumber.IsReadOnly = true;
             if (folderDialog.ShowDialog() == true)
             {
                 //Check that the folder from the config exists before the new item folder is allowed to be created.
-                if (Directory.Exists($"{config.ItemScansDir}\\{folderDialog.FolderSelectComboBox.Text}"))
-                { folder = $"{config.ItemScansDir}\\{folderDialog.FolderSelectComboBox.Text}\\{sn}"; Directory.CreateDirectory(folder); }
+                folder = CreateFolderIfNotExists($"{config.ItemScansDir}\\{folderDialog.FolderSelectComboBox.Text}", folderDialog.FolderSelectSerialNumber.Text);
             }
             return folder;
+        }
+        private string CreateFolderIfNotExists(string folder, string sn)
+        {
+            string newFolder = "";
+            if (Directory.Exists(folder))
+            { 
+                newFolder = $"{folder}\\{sn}";
+                try
+                {
+                    Directory.CreateDirectory(newFolder);
+                }
+                catch(Exception e)
+                {
+                    MessageBox.Show(e.Message, "Error creating a folder for the new item", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            return newFolder;
         }
         private bool MoveToItemFolder(string file, string newFileName = "")
         {
@@ -470,6 +488,26 @@ namespace CalTools_WPF
                     }
                 }
                 CalibrationItemTree.Items.Add(group);
+            }
+        }
+        private void CreateNewItem()
+        {
+            string folder = "";
+            NewItemFolderSelect folderDialog = new NewItemFolderSelect();
+            foreach (string configFolder in config.Folders)
+            {
+                ComboBoxItem boxItem = new ComboBoxItem { Content = configFolder };
+                folderDialog.FolderSelectComboBox.Items.Add(boxItem);
+            }
+            if (folderDialog.ShowDialog() == true)
+            {
+                //Check that the folder from the config exists before the new item folder is allowed to be created.
+                folder = CreateFolderIfNotExists($"{config.ItemScansDir}\\{folderDialog.FolderSelectComboBox.Text}", folderDialog.FolderSelectSerialNumber.Text);
+                CTItem newItem = new CTItem(folderDialog.FolderSelectSerialNumber.Text);
+                newItem.Directory = folder;
+                database.SaveItem(newItem);
+                UpdateItemList();
+                GoToItem(newItem.SerialNumber);
             }
         }
         private void ExpandTreeItems()

@@ -2,7 +2,7 @@
 --5.3.0
 	--Added functionality to the calendar table that shows if an item has a replacement available in the same group that is not in service and not due.
 	--Added text to the "Replace Item" dialog box for clarity on what the function does.
-	--
+	--Added context menu item to add a new item to the database. Dialog box updated to suit. Issue #79
 
 --5.2.0
 	--Enabled menu bar

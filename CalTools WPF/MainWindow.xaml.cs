@@ -229,6 +229,8 @@ namespace CalTools_WPF
                 CTItem selectedItem = database.GetItem("SerialNumber", SelectedSN());
                 NewItemFolderSelect selection = new NewItemFolderSelect();
                 selection.FolderSelectComboBox.ItemsSource = config.Folders;
+                selection.FolderSelectSerialNumber.Text = selectedItem.SerialNumber;
+                selection.FolderSelectSerialNumber.IsReadOnly = true;
                 if ((bool)selection.ShowDialog() & selectedItem != null)
                 {
                     string selectedFolder = selection.FolderSelectComboBox.SelectedItem.ToString();
@@ -257,6 +259,10 @@ namespace CalTools_WPF
             UpdateTasksTable();
         }
         //TreeView Context Menu
+        private void TreeViewNewItem_Click(object sender, RoutedEventArgs e)
+        {
+            CreateNewItem();
+        }
         private void TreeViewReplaceItem_Click(object sender, RoutedEventArgs e)
         {
             SwapItems();
