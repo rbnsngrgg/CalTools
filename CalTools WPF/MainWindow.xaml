@@ -78,6 +78,7 @@
                     <TreeView MinWidth="220" VerticalAlignment="Stretch" x:Name="CalibrationItemTree" SelectedItemChanged="CalibrationItemTree_SelectedItemChanged">
                         <TreeView.ContextMenu>
                             <ContextMenu x:Name="TreeViewContextMenu" Opened="TreeViewContextMenu_Opened">
+                                <MenuItem x:Name="TreeViewNewItem" Header="New Item" Click="TreeViewNewItem_Click"/>
                                 <MenuItem x:Name="TreeViewReplaceItem" Header="Replace Item" Click="TreeViewReplaceItem_Click"/>
                             </ContextMenu>
                         </TreeView.ContextMenu>
@@ -214,6 +215,7 @@
                         <DataGridTextColumn Header="Location" Width="100" Binding="{Binding [Location]}"/>
                         <DataGridTextColumn Header="Vendor" Width="100" Binding="{Binding [ServiceVendor]}"/>
                         <DataGridTextColumn Header="Due By" Width="75" Binding="{Binding [DueDateString]}"/>
+                        <DataGridTextColumn Header="Replacement Available" Width="75" Binding="{Binding [ReplacementAvailable]}"/>
                     </DataGrid.Columns>
                     <DataGrid.ContextMenu>
                         <ContextMenu>

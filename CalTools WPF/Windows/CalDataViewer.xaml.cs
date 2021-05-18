@@ -86,7 +86,7 @@ namespace CalTools_WPF
             DateBox.Text = data.CompleteDate.Value.ToString("yyyy-MM-dd");
             ProcedureBox.Text = data.Procedure;
             CTItem standardEquipment = JsonConvert.DeserializeObject<CTItem>(data.StandardEquipment);
-            EquipmentBox.Text = standardEquipment.SerialNumber;
+            if (standardEquipment != null) { EquipmentBox.Text = standardEquipment.SerialNumber; }
             findings = data.Findings;
             RemarksBox.Text = data.Remarks;
             TechnicianBox.Text = data.Technician;

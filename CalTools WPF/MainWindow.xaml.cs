@@ -15,6 +15,7 @@ namespace CalTools_WPF
     /// This file is reserved for event handlers in the main window.
     public partial class MainWindow : Window
     {
+        #region Main
         public MainWindow()
         {
             config.LoadConfig();
@@ -32,9 +33,9 @@ namespace CalTools_WPF
                 UpdateItemList();
                 HighlightNonExistent();
                 MandatoryOnlyBox.IsChecked = true;
-                List<string> searchOptionsList = new List<string>(searchModes.Keys);
+                List<string> searchOptionsList = new(searchModes.Keys);
                 searchOptionsList.Sort();
-                SearchOptions.ItemsSource = (searchOptionsList);
+                SearchOptions.ItemsSource = searchOptionsList;
                 SearchOptions.SelectedItem = "Serial Number";
                 ItemCalendar.SelectedDate = DateTime.Today;
             }
@@ -43,249 +44,6 @@ namespace CalTools_WPF
             DetailsItemGroup.ItemsSource = itemGroups;
             todoTable.ItemsSource = weekTodoItems;
         }
-        private void CalendarButton_Click(object sender, RoutedEventArgs e)
-        {
-            ToggleView();
-        }
-        private void CalFolderButton_Click(object sender, RoutedEventArgs e)
-        {
-            try { Process.Start("explorer", config.ListDir); }
-            catch (System.Exception ex) { MessageBox.Show($"Error opening calibrations folder: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error); }
-        }
-        private void ReceivingFolderButton_Click(object sender, RoutedEventArgs e)
-        {
-            try { Process.Start("explorer", $"{config.ListDir}\\receiving"); }
-            catch (System.Exception ex) { MessageBox.Show($"Error opening receiving folder: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error); }
-        }
-        private void CalibrationItemTree_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
-        {
-            if (DetailsSN.IsEnabled)
-            {
-                SaveItemButton.Visibility = Visibility.Collapsed;
-                DetailsEditToggle();
-                EditItemButton.Visibility = Visibility.Visible;
-            }
-            UpdateDetails(database.GetItem("SerialNumber", SelectedSN()));
-            UpdateTasksTable();
-        }
-        //Prevent calendar from holding focus, requiring two clicks to escape
-        private void ItemCalendar_PreviewMouseUp(object sender, MouseButtonEventArgs e)
-        {
-            if (Mouse.Captured is CalendarItem)
-            {
-                Mouse.Capture(null);
-            }
-        }
-        private void EditItemButton_Click(object sender, RoutedEventArgs e)
-        {
-            TreeViewItem selectedItem = (TreeViewItem)CalibrationItemTree.SelectedItem;
-            if (selectedItem != null)
-            {
-                if (!config.Folders.Contains(selectedItem.Header))
-                {
-                    EditItemButton.Visibility = Visibility.Collapsed;
-                    DetailsEditToggle();
-                    SaveItemButton.Visibility = Visibility.Visible;
-                }
-            }
-        }
-        private void SaveItemButton_Click(object sender, RoutedEventArgs e)
-        {
-            SaveItem();
-            SaveTasksTable();
-            //Update specific item
-            //UpdateSingleItem(SelectedSN());
-            UpdateItemList(true);
-        }
-        private void OpenFolderButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (IsItemSelected())
-            {
-                string directory = database.GetItem("SerialNumber", SelectedSN()).Directory;
-                Process.Start("explorer", directory);
-            }
-        }
-        private void UpdateButton_Click(object sender, RoutedEventArgs e)
-        {
-            UpdateItemList();
-            HighlightNonExistent();
-        }
-        private void NewReportButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (!IsItemSelected()) { return; }
-            if (DetailsTasksTable.SelectedItem == null)
-            {
-                MessageBox.Show("A task in the details area must be selected to add data.", "No Task Selected", MessageBoxButton.OK, MessageBoxImage.Exclamation);
-                return;
-            }
-            NewReport((CTTask)DetailsTasksTable.SelectedItem);
-        }
-        private void DetailsStandardBox_Checked(object sender, RoutedEventArgs e)
-        {
-            if ((bool)DetailsStandardBox.IsChecked)
-            {
-                //Make all tasks mandatory for standard equipment
-                foreach (CTTask task in database.GetTasks("SerialNumber", SelectedSN()))
-                {
-                    if (!task.Mandatory)
-                    {
-                        task.Mandatory = true;
-                        database.SaveTask(task);
-                    }
-                }
-                DetailsCertificateLabel.Visibility = Visibility.Visible;
-                DetailsCertificateNum.Visibility = Visibility.Visible;
-            }
-            else
-            {
-                DetailsCertificateLabel.Visibility = Visibility.Collapsed;
-                DetailsCertificateNum.Clear();
-                DetailsCertificateNum.Visibility = Visibility.Collapsed;
-            }
-
-        }
-        private void DeleteItemButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (IsItemSelected())
-            {
-                string selectedItem = SelectedSN();
-                if (MessageBox.Show($"This will delete {selectedItem} from the database. Any files will remain (the item will be re-added if its folder isn't removed). Continue?",
-                    "Delete Item", MessageBoxButton.YesNo, MessageBoxImage.Information) == MessageBoxResult.Yes)
-                {
-                    database.RemoveCalItem(selectedItem);
-                    UpdateItemList();
-                }
-            }
-        }
-        private void MoveItemButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (IsItemSelected())
-            {
-                CTItem selectedItem = database.GetItem("SerialNumber", SelectedSN());
-                NewItemFolderSelect selection = new NewItemFolderSelect();
-                selection.FolderSelectComboBox.ItemsSource = config.Folders;
-                if ((bool)selection.ShowDialog() & selectedItem != null)
-                {
-                    string selectedFolder = selection.FolderSelectComboBox.SelectedItem.ToString();
-                    string newDirectory = $"{config.ItemScansDir}\\{selectedFolder}";
-                    if (Directory.Exists(newDirectory)) { newDirectory += $"\\{selectedItem.SerialNumber}"; }
-                    else { MessageBox.Show($"The directory \"{newDirectory}\" is missing or inaccessible.", "Folder Not Found", MessageBoxButton.OK, MessageBoxImage.Error); return; }
-                    if (selectedItem.Directory == newDirectory) { return; }
-                    Directory.Move(selectedItem.Directory, newDirectory);
-                    UpdateItemList();
-                }
-            }
-        }
-        private void SearchOptions_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            SearchItems();
-        }
-        private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            AddItemsToList(ItemListFilter(searchModes[SearchOptions.SelectedItem.ToString()], SearchBox.Text));
-            ExpandTreeItems();
-        }
-        //Calendar event handlers----------------------------------------------------------------------------------------------------------
-        private void ItemCalendar_SelectedDatesChanged(object sender, SelectionChangedEventArgs e)
-        {
-            weekTodoLabel.Content = "To do during week of: " + ItemCalendar.SelectedDate.Value.ToString(database.dateFormat);
-            UpdateItemsTable();
-        }
-        private void MandatoryOnlyBox_Checked(object sender, RoutedEventArgs e)
-        {
-            UpdateItemsTable();
-        }
-        private void TableMenuGoto_Click(object sender, RoutedEventArgs e)
-        {
-            if (todoTable.SelectedItem != null)
-            {
-                ToggleView();
-                if (SearchOptions.SelectedItem.ToString() == "Serial Number") { SearchItems(); }
-                else { SearchOptions.SelectedItem = "Serial Number"; }
-                GoToItem(((Dictionary<string, string>)todoTable.SelectedItem)["SerialNumber"]);
-            }
-        }
-        private void TableMenuCalData_Click(object sender, RoutedEventArgs e)
-        {
-            if (todoTable.SelectedItem != null)
-            {
-                CTTask task = database.GetTasks("TaskID", ((Dictionary<string, string>)todoTable.SelectedItem)["TaskID"])[0];
-                NewReport(task);
-            }
-        }
-        private void ExportDueList_Click(object sender, RoutedEventArgs e)
-        {
-            ExportDueListTSV();
-        }
-
-        //Task data grid event handlers----------------------------------------------------------------------------------------------------
-        private void ContextMarkDue_Click(object sender, RoutedEventArgs e)
-        {
-            CTTask currentTask = DetailsTasksTable.SelectedItem as CTTask;
-            if(currentTask.ManualFlag != null)
-            {
-                currentTask.ManualFlag = null;
-            }
-            else { currentTask.ManualFlag = DateTime.UtcNow; }
-        }
-        private void ContextViewData_Click(object sender, RoutedEventArgs e)
-        {
-            if (DetailsTasksTable.SelectedItem != null)
-            {
-                CTTask currentTask = (CTTask)DetailsTasksTable.SelectedItem;
-                List<TaskData> currentTaskData = database.GetTaskData(currentTask.TaskID.ToString());
-                CalDataViewer viewer = new CalDataViewer(ref currentTaskData, currentTask);
-                if (viewer.ShowDialog() == true)
-                {
-                    foreach (TaskData dbData in database.GetTaskData(currentTask.TaskID.ToString()))
-                    {
-                        bool delete = true;
-                        foreach (TaskData windowData in currentTaskData)
-                        {
-                            if (windowData.DataID == dbData.DataID)
-                            {
-                                delete = false;
-                            }
-                        }
-                        if (delete) { database.RemoveTaskData(dbData.DataID.ToString()); }
-                    }
-                }
-            }
-        }
-        private void ContextOpenLocation_Click(object sender, RoutedEventArgs e)
-        {
-            if (DetailsTasksTable.SelectedItem != null)
-            {
-                CTTask task = (CTTask)DetailsTasksTable.SelectedItem;
-                CTItem item = database.GetItem("SerialNumber", task.SerialNumber);
-                if (Directory.Exists(task.TaskDirectory))
-                { Process.Start("explorer", task.TaskDirectory); }
-                else if (Directory.Exists(item.Directory))
-                { Process.Start("explorer", item.Directory); }
-                else { Process.Start("explorer", config.ListDir); }
-            }
-        }
-        private void TaskDataGridContextMenu_Opened(object sender, RoutedEventArgs e)
-        {
-            //Change ContextMarkDue_Click depending on if the task is already flagged
-            CTTask currentTask = DetailsTasksTable.SelectedItem as CTTask;
-            if (IsTaskSelected())
-            {
-                if (DetailsSN.IsEnabled) { ContextMarkDue.IsEnabled = true; }
-                else { ContextMarkDue.IsEnabled = false; }
-                ContextViewData.IsEnabled = true;
-                ContextOpenLocation.IsEnabled = true;
-                if (currentTask.ManualFlag != null) { ContextMarkDue.Header = "Clear Due Flag"; }
-                else { ContextMarkDue.Header = "Manually Mark Due"; }
-            }
-            else 
-            {
-                ContextMarkDue.IsEnabled = false;
-                ContextViewData.IsEnabled = false;
-                ContextOpenLocation.IsEnabled = false;
-            }
-        }
-
         private void MainWindow_Drop(object sender, DragEventArgs e)
         {
             if (!IsItemSelected())
@@ -374,7 +132,251 @@ namespace CalTools_WPF
             }
             UpdateItemList();
         }
+        //On program exit
+        private void CalToolsMainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            database.CleanUp();
+        }
+        #endregion
 
+
+        #region Main_Buttons
+        private void FileMenuExit_Click(object sender, RoutedEventArgs e)
+        {
+            CalToolsMainWindow.Close();
+        }
+        private void ToolsMenuExportTsv_Click(object sender, RoutedEventArgs e)
+        {
+            ExportTSV();
+        }
+        private void ReceivingFolderButton_Click(object sender, RoutedEventArgs e)
+        {
+            try { Process.Start("explorer", $"{config.ListDir}\\receiving"); }
+            catch (System.Exception ex) { MessageBox.Show($"Error opening receiving folder: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error); }
+        }
+        private void UpdateButton_Click(object sender, RoutedEventArgs e)
+        {
+            UpdateItemList();
+            HighlightNonExistent();
+        }
+        private void CalFolderButton_Click(object sender, RoutedEventArgs e)
+        {
+            try { Process.Start("explorer", config.ListDir); }
+            catch (System.Exception ex) { MessageBox.Show($"Error opening calibrations folder: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error); }
+        }
+        private void CalendarButton_Click(object sender, RoutedEventArgs e)
+        {
+            ToggleView();
+        }
+        private void EditItemButton_Click(object sender, RoutedEventArgs e)
+        {
+            TreeViewItem selectedItem = (TreeViewItem)CalibrationItemTree.SelectedItem;
+            if (selectedItem != null)
+            {
+                if (!config.Folders.Contains(selectedItem.Header))
+                {
+                    EditItemButton.Visibility = Visibility.Collapsed;
+                    DetailsEditToggle();
+                    SaveItemButton.Visibility = Visibility.Visible;
+                }
+            }
+        }
+        private void SaveItemButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (SaveItem())
+            {
+                SaveTasksTable();
+                //Update specific item
+                //UpdateSingleItem(SelectedSN());
+                UpdateItemList(true);
+            }
+        }
+        private void OpenFolderButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (IsItemSelected())
+            {
+                string directory = database.GetItem("SerialNumber", SelectedSN()).Directory;
+                Process.Start("explorer", directory);
+            }
+        }
+        private void NewReportButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!IsItemSelected()) { return; }
+            if (DetailsTasksTable.SelectedItem == null)
+            {
+                MessageBox.Show("A task in the details area must be selected to add data.", "No Task Selected", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                return;
+            }
+            NewReport((CTTask)DetailsTasksTable.SelectedItem);
+        }
+        private void DeleteItemButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (IsItemSelected())
+            {
+                string selectedItem = SelectedSN();
+                if (MessageBox.Show($"This will delete {selectedItem} from the database. Any files will remain (the item will be re-added if its folder isn't removed). Continue?",
+                    "Delete Item", MessageBoxButton.YesNo, MessageBoxImage.Information) == MessageBoxResult.Yes)
+                {
+                    database.RemoveCalItem(selectedItem);
+                    UpdateItemList();
+                }
+            }
+        }
+        private void MoveItemButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (IsItemSelected())
+            {
+                CTItem selectedItem = database.GetItem("SerialNumber", SelectedSN());
+                NewItemFolderSelect selection = new NewItemFolderSelect();
+                selection.FolderSelectComboBox.ItemsSource = config.Folders;
+                selection.FolderSelectSerialNumber.Text = selectedItem.SerialNumber;
+                selection.FolderSelectSerialNumber.IsReadOnly = true;
+                if ((bool)selection.ShowDialog() & selectedItem != null)
+                {
+                    string selectedFolder = selection.FolderSelectComboBox.SelectedItem.ToString();
+                    string newDirectory = $"{config.ItemScansDir}\\{selectedFolder}";
+                    if (Directory.Exists(newDirectory)) { newDirectory += $"\\{selectedItem.SerialNumber}"; }
+                    else { MessageBox.Show($"The directory \"{newDirectory}\" is missing or inaccessible.", "Folder Not Found", MessageBoxButton.OK, MessageBoxImage.Error); return; }
+                    if (selectedItem.Directory == newDirectory) { return; }
+                    Directory.Move(selectedItem.Directory, newDirectory);
+                    UpdateItemList();
+                }
+            }
+        }
+        #endregion
+
+
+        #region Item_List
+        private void CalibrationItemTree_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+        {
+            if (DetailsSN.IsEnabled)
+            {
+                SaveItemButton.Visibility = Visibility.Collapsed;
+                DetailsEditToggle();
+                EditItemButton.Visibility = Visibility.Visible;
+            }
+            UpdateDetails(database.GetItem("SerialNumber", SelectedSN()));
+            UpdateTasksTable();
+        }
+        //TreeView Context Menu
+        private void TreeViewNewItem_Click(object sender, RoutedEventArgs e)
+        {
+            CreateNewItem();
+        }
+        private void TreeViewReplaceItem_Click(object sender, RoutedEventArgs e)
+        {
+            SwapItems();
+        }
+        private void TreeViewContextMenu_Opened(object sender, RoutedEventArgs e)
+        {
+            if (IsItemSelected()) { TreeViewReplaceItem.IsEnabled = true; }
+            else { TreeViewReplaceItem.IsEnabled = false; }
+        }
+        //Search box-----------------------------------------------------------------------------------------------------------------------
+        private void SearchOptions_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            SearchItems();
+        }
+        private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            AddItemsToList(ItemListFilter(searchModes[SearchOptions.SelectedItem.ToString()], SearchBox.Text));
+            ExpandTreeItems();
+        }
+        #endregion
+
+
+        #region Item_Details
+        private void DetailsStandardBox_Checked(object sender, RoutedEventArgs e)
+        {
+            if ((bool)DetailsStandardBox.IsChecked)
+            {
+                //Make all tasks mandatory for standard equipment
+                foreach (CTTask task in database.GetTasks("SerialNumber", SelectedSN()))
+                {
+                    if (!task.Mandatory)
+                    {
+                        task.Mandatory = true;
+                        database.SaveTask(task);
+                    }
+                }
+                DetailsCertificateLabel.Visibility = Visibility.Visible;
+                DetailsCertificateNum.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                DetailsCertificateLabel.Visibility = Visibility.Collapsed;
+                DetailsCertificateNum.Clear();
+                DetailsCertificateNum.Visibility = Visibility.Collapsed;
+            }
+
+        }
+        //Task data grid event handlers----------------------------------------------------------------------------------------------------
+        private void ContextMarkDue_Click(object sender, RoutedEventArgs e)
+        {
+            CTTask currentTask = DetailsTasksTable.SelectedItem as CTTask;
+            if (currentTask.ManualFlag != null)
+            {
+                currentTask.ManualFlag = null;
+            }
+            else { currentTask.ManualFlag = DateTime.UtcNow; }
+        }
+        private void ContextViewData_Click(object sender, RoutedEventArgs e)
+        {
+            if (DetailsTasksTable.SelectedItem != null)
+            {
+                CTTask currentTask = (CTTask)DetailsTasksTable.SelectedItem;
+                List<TaskData> currentTaskData = database.GetTaskData(currentTask.TaskID.ToString());
+                CalDataViewer viewer = new CalDataViewer(ref currentTaskData, currentTask);
+                if (viewer.ShowDialog() == true)
+                {
+                    foreach (TaskData dbData in database.GetTaskData(currentTask.TaskID.ToString()))
+                    {
+                        bool delete = true;
+                        foreach (TaskData windowData in currentTaskData)
+                        {
+                            if (windowData.DataID == dbData.DataID)
+                            {
+                                delete = false;
+                            }
+                        }
+                        if (delete) { database.RemoveTaskData(dbData.DataID.ToString()); }
+                    }
+                }
+            }
+        }
+        private void ContextOpenLocation_Click(object sender, RoutedEventArgs e)
+        {
+            if (DetailsTasksTable.SelectedItem != null)
+            {
+                CTTask task = (CTTask)DetailsTasksTable.SelectedItem;
+                CTItem item = database.GetItem("SerialNumber", task.SerialNumber);
+                if (Directory.Exists(task.TaskDirectory))
+                { Process.Start("explorer", task.TaskDirectory); }
+                else if (Directory.Exists(item.Directory))
+                { Process.Start("explorer", item.Directory); }
+                else { Process.Start("explorer", config.ListDir); }
+            }
+        }
+        private void TaskDataGridContextMenu_Opened(object sender, RoutedEventArgs e)
+        {
+            //Change ContextMarkDue_Click depending on if the task is already flagged
+            CTTask currentTask = DetailsTasksTable.SelectedItem as CTTask;
+            if (IsTaskSelected())
+            {
+                if (DetailsSN.IsEnabled) { ContextMarkDue.IsEnabled = true; }
+                else { ContextMarkDue.IsEnabled = false; }
+                ContextViewData.IsEnabled = true;
+                ContextOpenLocation.IsEnabled = true;
+                if (currentTask.ManualFlag != null) { ContextMarkDue.Header = "Clear Due Flag"; }
+                else { ContextMarkDue.Header = "Manually Mark Due"; }
+            }
+            else
+            {
+                ContextMarkDue.IsEnabled = false;
+                ContextViewData.IsEnabled = false;
+                ContextOpenLocation.IsEnabled = false;
+            }
+        }
         private void AddTaskButton_Click(object sender, RoutedEventArgs e)
         {
             CTItem currentItem = database.GetItem("SerialNumber", SelectedSN());
@@ -405,34 +407,51 @@ namespace CalTools_WPF
                 }
             }
         }
+        #endregion
 
-        //TreeView Context Menu
-        private void TreeViewReplaceItem_Click(object sender, RoutedEventArgs e)
+
+        #region Calendar
+        //Calendar event handlers----------------------------------------------------------------------------------------------------------
+        //Prevent calendar from holding focus, requiring two clicks to escape
+        private void ItemCalendar_PreviewMouseUp(object sender, MouseButtonEventArgs e)
         {
-            SwapItems();
+            if (Mouse.Captured is CalendarItem)
+            {
+                Mouse.Capture(null);
+            }
         }
-
-        private void TreeViewContextMenu_Opened(object sender, RoutedEventArgs e)
+        private void ItemCalendar_SelectedDatesChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (IsItemSelected()) { TreeViewReplaceItem.IsEnabled = true; }
-            else { TreeViewReplaceItem.IsEnabled = false; }
+            weekTodoLabel.Content = "To do during week of: " + ItemCalendar.SelectedDate.Value.ToString(database.dateFormat);
+            UpdateItemsTable();
         }
-
-        //On program exit
-        private void CalToolsMainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        private void MandatoryOnlyBox_Checked(object sender, RoutedEventArgs e)
         {
-            database.CleanUp();
+            UpdateItemsTable();
         }
-
-        private void ToolsMenuExportTsv_Click(object sender, RoutedEventArgs e)
+        private void TableMenuGoto_Click(object sender, RoutedEventArgs e)
         {
-            ExportTSV();
+            if (todoTable.SelectedItem != null)
+            {
+                ToggleView();
+                if (SearchOptions.SelectedItem.ToString() == "Serial Number") { SearchItems(); }
+                else { SearchOptions.SelectedItem = "Serial Number"; }
+                GoToItem(((Dictionary<string, string>)todoTable.SelectedItem)["SerialNumber"]);
+            }
         }
-
-        private void FileMenuExit_Click(object sender, RoutedEventArgs e)
+        private void TableMenuCalData_Click(object sender, RoutedEventArgs e)
         {
-            CalToolsMainWindow.Close();
+            if (todoTable.SelectedItem != null)
+            {
+                CTTask task = database.GetTasks("TaskID", ((Dictionary<string, string>)todoTable.SelectedItem)["TaskID"])[0];
+                NewReport(task);
+                UpdateItemsTable();
+            }
         }
-
+        private void ExportDueList_Click(object sender, RoutedEventArgs e)
+        {
+            ExportDueListTSV();
+        }
+        #endregion
     }
 }
