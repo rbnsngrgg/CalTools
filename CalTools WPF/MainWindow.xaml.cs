@@ -445,6 +445,7 @@ namespace CalTools_WPF
             {
                 CTTask task = database.GetTasks("TaskID", ((Dictionary<string, string>)todoTable.SelectedItem)["TaskID"])[0];
                 NewReport(task);
+                UpdateItemsTable();
             }
         }
         private void ExportDueList_Click(object sender, RoutedEventArgs e)

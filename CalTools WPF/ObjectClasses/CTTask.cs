@@ -40,7 +40,7 @@ namespace CalTools_WPF
                 completeDate = value;
 
                 if (value != null)
-                { value.Value.AddMonths(Interval); CompleteDateString = completeDate.Value.ToString("yyyy-MM-dd"); }
+                { DueDate = value.Value.AddMonths(Interval); CompleteDateString = completeDate.Value.ToString("yyyy-MM-dd"); }
                 else { DueDate = null; Due = true; CompleteDateString = ""; }
                 ChangesMade = true;
             }
@@ -75,7 +75,11 @@ namespace CalTools_WPF
                 {
                     ManualFlagString = manualFlag.Value.ToString("yyyy-MM-dd");
                 }
-                else { ManualFlagString = ""; }
+                else 
+                { 
+                    ManualFlagString = "";
+                    DueDate = completeDate.Value.AddMonths(Interval);
+                }
                 ChangesMade = true; 
             } 
         }
