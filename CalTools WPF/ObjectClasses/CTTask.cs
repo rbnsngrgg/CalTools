@@ -40,7 +40,7 @@ namespace CalTools_WPF
                 completeDate = value;
 
                 if (value != null)
-                { DueDate = value.Value.AddMonths(Interval); CompleteDateString = completeDate.Value.ToString("yyyy-MM-dd"); }
+                { value.Value.AddMonths(Interval); CompleteDateString = completeDate.Value.ToString("yyyy-MM-dd"); }
                 else { DueDate = null; Due = true; CompleteDateString = ""; }
                 ChangesMade = true;
             }
@@ -60,8 +60,8 @@ namespace CalTools_WPF
                 ChangesMade = true;
             }
         }
-        public bool Due { get => due; set { if (due != value) { due = value; ChangesMade = true; } } }
         public string DueDateString { get; private set; } = "";
+        public bool Due { get => due; set { if (due != value) { due = value; ChangesMade = true; } } }
         public string ActionType { get => actionType; set { actionType = value; ChangesMade = true; } }
         public string TaskDirectory { get => taskDirectory; set { if (taskDirectory != value) { ChangesMade = true; } taskDirectory = value; } }
         public string Comment { get => comment; set { comment = value; ChangesMade = true; } }
@@ -102,10 +102,10 @@ namespace CalTools_WPF
             Comments,
             ManualFlag
         }
-        public bool IsTaskDue(int days, DateTime checkDate)
+        public bool IsTaskDue(int days, DateTime checkDate) //Check whether task is due within (days) days of checkDate
         {
-            if (dueDate == null) { Due = true; return Due; }
             CheckManualFlag();
+            if (dueDate == null) { Due = true; return Due; }
             if ((dueDate - checkDate).Value.Days < days) { Due = true; }
             else { Due = false; }
             return Due;

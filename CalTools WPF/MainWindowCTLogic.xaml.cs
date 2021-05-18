@@ -9,6 +9,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Diagnostics;
+using System.Linq;
 
 namespace CalTools_WPF
 {
@@ -38,26 +39,7 @@ namespace CalTools_WPF
         private List<Dictionary<string, string>> weekTodoItems = new List<Dictionary<string, string>>();
         //Dict keys: SerialNumber, Model, TaskID, TaskTitle, Description, Location, ServiceVendor, DueDateString
 
-        private void AddItemsToList(List<CTItem> items)
-        {
-            items.Sort((x, y) => x.SerialNumber.CompareTo(y.SerialNumber));
-            CalibrationItemTree.Items.Clear();
-            foreach (string folder in config.Folders)
-            {
-                TreeViewItem group = new TreeViewItem();
-                group.Header = folder;
-                foreach (var item in items)
-                {
-                    if (item.Directory.Contains(folder))
-                    {
-                        TreeViewItem treeItem = new TreeViewItem();
-                        treeItem.Header = item.SerialNumber;
-                        group.Items.Add(treeItem);
-                    }
-                }
-                CalibrationItemTree.Items.Add(group);
-            }
-        }
+        #region FileOps
         private void CheckReceiving()
         {
             string receivingFolder = $"{config.ListDir}\\receiving";
@@ -70,64 +52,6 @@ namespace CalTools_WPF
                     MoveToItemFolder(file);
                 }
             }
-        }
-        private void CheckTasks(string folder, ref List<CTTask> tasks, ref List<TaskData> taskData)
-        {
-            foreach (string taskFolder in Directory.GetDirectories(folder))
-            {
-                string folderTaskID = Path.GetFileName(taskFolder).Split("_")[0];
-                foreach (CTTask task in tasks)
-                {
-                    List<TaskData> currentData = new List<TaskData>();
-                    foreach (TaskData data in taskData)
-                    {
-                        if (data.TaskID == task.TaskID) { currentData.Add(data); }
-                    }
-                    if (folderTaskID == task.TaskID.ToString() & Path.GetFileName(folder) == task.SerialNumber)
-                    {
-                        task.TaskDirectory = taskFolder;
-                        task.CheckDates(taskFolder, currentData);
-                    }
-                }
-            }
-            SaveTaskChanges(ref tasks);
-        }
-        private List<Dictionary<string, string>> CreateCalendarList(bool mandatoryOnly, DateTime calendarDate)
-        {
-            List<Dictionary<string, string>> compositeList = new List<Dictionary<string, string>>();
-            List<CTTask> allTasks = database.GetAllTasks();
-            List<CTItem> allItems = database.GetAllItems();
-            foreach (CTTask task in allTasks)
-            {
-                if (ItemCalendar.SelectedDate != null)
-                {
-                    if ((task.Mandatory & mandatoryOnly) | (!mandatoryOnly))
-                    {
-                        foreach (CTItem item in allItems)
-                        {
-                            if (item.InService & item.SerialNumber == task.SerialNumber)
-                            {
-                                if (task.IsTaskDue(config.MarkDueDays, calendarDate))
-                                {
-                                    Dictionary<string, string> compositeItem = new Dictionary<string, string>
-                                    {
-                                        {"SerialNumber",item.SerialNumber},
-                                        {"Model", item.Model},
-                                        {"TaskID", task.TaskID.ToString()},
-                                        {"TaskTitle",$"({task.TaskID}){task.TaskTitle}" },
-                                        {"Description",item.Description},
-                                        {"Location",item.Location},
-                                        {"ServiceVendor",task.ServiceVendor},
-                                        {"DueDateString",task.DueDateString}
-                                    };
-                                    compositeList.Add(compositeItem);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            return compositeList;
         }
         private void CreateTaskFolders(ref List<CTTask> tasks)
         {
@@ -144,71 +68,6 @@ namespace CalTools_WPF
                     }
                 }
             }
-        }
-        private void DetailsEditToggle()
-        {
-            bool enable = !DetailsSN.IsEnabled;
-            foreach (UIElement child in DetailsGrid.Children)
-            {
-                child.IsEnabled = enable;
-            }
-            DetailsComments.IsEnabled = enable;
-            DetailsTasksTable.IsEnabled = true;
-            DetailsTasksTable.IsReadOnly = !enable;
-            AddTaskButton.IsEnabled = enable;
-            RemoveTaskButton.IsEnabled = enable;
-        }
-        private void ExpandTreeItems()
-        {
-            foreach (TreeViewItem group in CalibrationItemTree.Items)
-            {
-                group.IsExpanded = true;
-            }
-        }
-        private void ExportTSV()
-        {
-            List<string> files = new List<string>() {$"CalTools_dbv{database.currentVersion}_Items.txt",$"CalTools_dbv{database.currentVersion}_TaskData.txt",$"CalTools_dbv{database.currentVersion}_Tasks.txt" };
-            string exportsFolder = Path.Join(config.ListDir, "CalTools Exports");
-            string targetFolder = Path.Join(exportsFolder, $"{DateTime.UtcNow.ToString(database.timestampFormat)}");
-            if (!Directory.Exists(targetFolder)) { Directory.CreateDirectory(targetFolder); }
-            List<string> itemLines = new List<string>() {"SerialNumber\tLocation\tManufacturer\tDirectory\tDescription\tInService\tInServiceDate\tModel\tComment\tTimestamp\tItemGroup\tStandardEquipment\tCertificateNumber"};
-            List<string> taskDataLines = new List<string>() {"DataID\tTaskID\tSerialNumber\tStateBeforeAction\tStateAfterAction\tActionTaken\tCompleteDate\tProcedure\tStandardEquipment\tFindings\tRemarks\tTechnician\tEntryTimestamp"};
-            List<string> tasksLines = new List<string>() {"TaskID\tSerialNumber\tTaskTitle\tServiceVendor\tMandatory\tInterval\tCompleteDate\tDueDate\tDue\tActionType\tDirectory\tComments\tManualFlag"};
-            foreach(CTItem item in database.GetAllItems())
-            {
-                itemLines.Add($"{item.SerialNumber}\t{item.Location}\t{item.Manufacturer}\t{item.Directory}\t\"{item.Description}\"\t{(item.InService? 1 : 0)}\t" +
-                    $"{item.InServiceDateString}\t\"{item.Model}\"\t\"{item.Comment}\"\t{item.TimeStampString}\t\"{item.ItemGroup}\"\t{(item.StandardEquipment? 1: 0)}\t" +
-                    $"{item.CertificateNumber}");
-            }
-            foreach(TaskData data in database.GetAllTaskData())
-            {
-                taskDataLines.Add($"{data.DataID}\t{data.TaskID}\t{data.SerialNumber}\t{JsonConvert.SerializeObject(data.StateBefore)}\t{JsonConvert.SerializeObject(data.StateAfter)}\t" +
-                    $"{JsonConvert.SerializeObject(data.ActionTaken)}\t{data.CompleteDateString}\t{data.Procedure}\t{data.StandardEquipment}\t" +
-                    $"{JsonConvert.SerializeObject(data.Findings)}\t{data.Remarks}\t{data.Technician}\t{data.Timestamp}");
-            }
-            foreach(CTTask task in database.GetAllTasks())
-            {
-                tasksLines.Add($"{task.TaskID}\t{task.SerialNumber}\t{task.TaskTitle}\t{task.ServiceVendor}\t{(task.Mandatory? 1 : 0)}\t{task.Interval}\t{task.CompleteDateString}\t" +
-                    $"{task.DueDateString}\t{(task.Due? 1 : 0)}\t{task.ActionType}\t{task.TaskDirectory}\t{task.Comment}\t{task.ManualFlagString}");
-            }
-            System.IO.File.WriteAllLines(Path.Join(targetFolder, files[0]), itemLines);
-            System.IO.File.WriteAllLines(Path.Join(targetFolder, files[1]), taskDataLines);
-            System.IO.File.WriteAllLines(Path.Join(targetFolder, files[2]), tasksLines);
-            Process.Start("explorer", targetFolder);
-        }
-        private void ExportDueListTSV()
-        {
-            string file = $"{DateTime.UtcNow.ToString(database.dateFormat)}_Items Due Near {((DateTime)ItemCalendar.SelectedDate).ToString(database.dateFormat)}.txt";
-            string exportsFolder = Path.Join(config.ListDir, "CalTools Exports");
-            if (!Directory.Exists(exportsFolder)) { Directory.CreateDirectory(exportsFolder); }
-            List<string> listLines = new List<string>() { "SerialNumber\tModel\tTaskTitle\tDescription\tLocation\tServiceVendor\tDueDate" };
-            foreach(Dictionary<string,string> item in weekTodoItems)
-            {
-                listLines.Add($"{item["SerialNumber"]}\t{item["Model"]}\t{item["TaskTitle"]}\t{item["Description"]}" +
-                    $"\t{item["Location"]}\t{item["ServiceVendor"]}\t{item["DueDateString"]}");
-            }
-            System.IO.File.WriteAllLines(Path.Join(exportsFolder, file),listLines);
-            Process.Start("explorer", exportsFolder);
         }
         private string FindItemDirectory(string serialNumber)
         {
@@ -247,164 +106,6 @@ namespace CalTools_WPF
             }
             return folder;
         }
-        private void SwapItems()
-        {
-            string selectedSN = ((TreeViewItem)CalibrationItemTree.SelectedItem).Header.ToString();
-            List<string> itemsInGroup = new List<string>();
-            CTItem selectedItem = database.GetItem("SerialNumber", selectedSN);
-            foreach(CTItem item in database.GetAllItems())
-            {
-                if(item.ItemGroup == selectedItem.ItemGroup)
-                {
-                    itemsInGroup.Add(item.SerialNumber);
-                }
-            }
-            ReplaceItemSelection selectionDialog = new ReplaceItemSelection();
-            selectionDialog.ReplaceSelectComboBox.ItemsSource = itemsInGroup;
-            if(selectionDialog.ShowDialog() == true)
-            {
-                CTItem newItem1 = database.GetItem("SerialNumber", selectedItem.SerialNumber);
-                CTItem newItem2 = database.GetItem("SerialNumber", selectionDialog.ReplaceSelectComboBox.SelectedItem.ToString());
-
-                newItem1.Location = newItem2.Location;
-                newItem1.InService = newItem2.InService;
-
-                newItem2.Location = selectedItem.Location;
-                newItem2.InService = selectedItem.InService;
-
-                database.SaveItem(newItem1);
-                database.SaveItem(newItem2);
-            }    
-        }
-        private void GoToItem(string sn)
-        {
-            foreach (TreeViewItem item in CalibrationItemTree.Items)
-            {
-                foreach (TreeViewItem subItem in item.Items)
-                {
-                    if ((string)subItem.Header == sn)
-                    {
-                        item.IsExpanded = true;
-                        subItem.IsSelected = true;
-                        subItem.BringIntoView();
-                        return;
-                    }
-                }
-                item.IsExpanded = false;
-            }
-        }
-        private void HighlightNonExistent()
-        {
-            List<string> nonExistent = new List<string>();
-            foreach (CTItem calItem in database.GetAllItems())
-            {
-                if (!Directory.Exists(calItem.Directory))
-                {
-                    nonExistent.Add(calItem.SerialNumber);
-                }
-            }
-            foreach (TreeViewItem item in CalibrationItemTree.Items)
-            {
-                foreach (TreeViewItem subItem in item.Items)
-                {
-                    if (nonExistent.Contains((string)subItem.Header)) { subItem.Foreground = Brushes.Red; subItem.ToolTip = "Missing folder"; }
-                    else { subItem.Foreground = Brushes.Black; subItem.ToolTip = null; }
-                }
-            }
-        }
-        private bool IsItemSelected()
-        {
-            TreeViewItem selectedItem = (TreeViewItem)CalibrationItemTree.SelectedItem;
-            if (selectedItem != null)
-            {
-                if (!config.Folders.Contains(selectedItem.Header.ToString()))
-                { return true; }
-            }
-            return false;
-        }
-        private bool IsTaskSelected()
-        {
-            if (DetailsTasksTable.SelectedItem == null) { return false; }
-            else { return true; }
-        }
-        private List<CTItem> ItemListFilter(string mode, string searchText) //Filters items when search is used
-        {
-            List<CTItem> filteredItems = new List<CTItem>();
-            List<CTTask> allTasks = database.GetAllTasks();
-            var property = typeof(CTItem).GetProperty(mode);
-            foreach (CTItem item in database.GetAllItems())
-            {
-                if (mode == "ActionType")
-                {
-                    foreach (CTTask task in allTasks)
-                    {
-                        if (task.ActionType.Contains(searchText.ToUpper()) & task.SerialNumber == item.SerialNumber)
-                        {
-                            filteredItems.Add(item);
-                            break;
-                        }
-                    }
-                }
-                else if (mode == "Comment") { if (property.GetValue(item).ToString().Length > 0) { filteredItems.Add(item); } }
-                else if (mode == "StandardEquipment") { if ((bool)property.GetValue(item) == true) { filteredItems.Add(item); } }
-                else if (mode == "Due")
-                {
-                    foreach (CTTask task in allTasks)
-                    {
-                        if (task.SerialNumber == item.SerialNumber & task.IsTaskDue(config.MarkDueDays, DateTime.UtcNow)) { filteredItems.Add(item); break; }
-                    }
-                }
-                else if (mode == "Vendor")
-                {
-                    foreach (CTTask task in allTasks)
-                    {
-                        if (task.SerialNumber == item.SerialNumber & task.ServiceVendor.ToLower().Contains(searchText.ToLower()))
-                        {
-                            filteredItems.Add(item);
-                            break;
-                        }
-                    }
-                }
-                else if (property.GetValue(item).ToString().ToLower().Contains(searchText.ToLower()))
-                {
-                    filteredItems.Add(item);
-                }
-            }
-            return filteredItems;
-        }
-        private void UpdateItemList(bool single = false)
-        {
-            if (!database.tablesExist) { return; }
-            CheckReceiving();
-            string currentItem = SelectedSN();
-            if (single) { ScanFoldersSingle(database.GetItem("SerialNumber", currentItem)); }
-            else { ScanFolders(); }
-            if (SearchBox.Text.Length != 0)
-            {
-                AddItemsToList(ItemListFilter(searchModes[SearchOptions.SelectedItem.ToString()], SearchBox.Text));
-                ExpandTreeItems();
-            }
-            else { AddItemsToList(database.GetAllItems()); }
-            UpdateLists();
-            GoToItem(currentItem);
-        }
-        private void UpdateDetails(CTItem item)
-        {
-            if (item != null)
-            {
-                DetailsSN.Text = item.SerialNumber;
-                DetailsModel.Text = item.Model;
-                DetailsDescription.Text = item.Description;
-                DetailsLocation.Text = item.Location;
-                DetailsManufacturer.Text = item.Manufacturer;
-                if (item.InServiceDate != null) { DetailsOperationDate.Text = item.InServiceDate.Value.ToString("yyyy-MM-dd"); } else { DetailsOperationDate.Clear(); }
-                DetailsInOperation.IsChecked = item.InService;
-                DetailsItemGroup.Text = item.ItemGroup;
-                DetailsComments.Text = item.Comment;
-                DetailsStandardBox.IsChecked = item.StandardEquipment;
-                DetailsCertificateNum.Text = item.CertificateNumber;
-            }
-        }
         private bool MoveToItemFolder(string file, string newFileName = "")
         {
             Dictionary<string, string> fileInfo;
@@ -441,42 +142,6 @@ namespace CalTools_WPF
             }
             else { return false; }
         }
-        private void NewReport(CTTask task)
-        {
-            CalDataEntry dataEntry = new CalDataEntry();
-            dataEntry.SerialNumberBox.Text = task.SerialNumber;
-            dataEntry.MaintenanceSerialNumberBox.Text = task.SerialNumber;
-            dataEntry.DateBox.Text = DateTime.UtcNow.ToString(database.dateFormat);
-            dataEntry.MaintenanceDateBox.Text = DateTime.UtcNow.ToString(database.dateFormat);
-            dataEntry.ProcedureBox.ItemsSource = config.Procedures;
-            dataEntry.MaintenanceProcedureBox.ItemsSource = config.Procedures;
-            dataEntry.EquipmentBox.ItemsSource = standardEquipment;
-            dataEntry.MaintenanceEquipmentBox.ItemsSource = standardEquipment;
-            dataEntry.TaskBox.Text = $"({task.TaskID}) {task.TaskTitle}";
-            dataEntry.MaintenanceTaskBox.Text = dataEntry.TaskBox.Text;
-            dataEntry.data.TaskID = task.TaskID;
-            if (task.ActionType == "MAINTENANCE")
-            { dataEntry.MaintenanceSelection.IsSelected = true; }
-            if (config.Procedures.Count > 0) { dataEntry.ProcedureBox.SelectedIndex = 0; }
-            if (standardEquipment.Count > 0) { dataEntry.EquipmentBox.SelectedIndex = 0; }
-            dataEntry.findings.parameters.Add(new Param($"Parameter {dataEntry.findings.parameters.Count + 1}"));
-            if (dataEntry.ShowDialog() == true)
-            {
-                try
-                {
-                    dataEntry.data.StandardEquipment = JsonConvert.SerializeObject(database.GetItem("SerialNumber", dataEntry.EquipmentBox.Text));
-                }
-                catch
-                { MessageBox.Show($"Invalid \"Standard Equipment\" entry.", "Invalid Entry", MessageBoxButton.OK, MessageBoxImage.Error); return; }
-                database.SaveTaskData(dataEntry.data);
-            }
-            SaveTasksTable();
-            CTItem item = database.GetItemFromTask(task);
-            List<CTTask> tasks = database.GetTasks("SerialNumber", item.SerialNumber);
-            List<TaskData> taskData = database.GetAllTaskData();
-            CheckTasks(item.Directory, ref tasks, ref taskData);
-            UpdateTasksTable();
-        }
         private Dictionary<string, string> ParseFileName(string filePath)
         {
             Dictionary<string, string> fileInfo = new Dictionary<string, string>
@@ -498,6 +163,76 @@ namespace CalTools_WPF
                 }
             }
             return fileInfo;
+        }
+        private void ExportTSV()
+        {
+            List<string> files = new List<string>() { $"CalTools_dbv{database.currentVersion}_Items.txt", $"CalTools_dbv{database.currentVersion}_TaskData.txt", $"CalTools_dbv{database.currentVersion}_Tasks.txt" };
+            string exportsFolder = Path.Join(config.ListDir, "CalTools Exports");
+            string targetFolder = Path.Join(exportsFolder, $"{DateTime.UtcNow.ToString(database.timestampFormat)}");
+            if (!Directory.Exists(targetFolder)) { Directory.CreateDirectory(targetFolder); }
+            List<string> itemLines = new List<string>() { "SerialNumber\tLocation\tManufacturer\tDirectory\tDescription\tInService\tInServiceDate\tModel\tComment\tTimestamp\tItemGroup\tStandardEquipment\tCertificateNumber" };
+            List<string> taskDataLines = new List<string>() { "DataID\tTaskID\tSerialNumber\tStateBeforeAction\tStateAfterAction\tActionTaken\tCompleteDate\tProcedure\tStandardEquipment\tFindings\tRemarks\tTechnician\tEntryTimestamp" };
+            List<string> tasksLines = new List<string>() { "TaskID\tSerialNumber\tTaskTitle\tServiceVendor\tMandatory\tInterval\tCompleteDate\tDueDate\tDue\tActionType\tDirectory\tComments\tManualFlag" };
+            foreach (CTItem item in database.GetAllItems())
+            {
+                itemLines.Add($"{item.SerialNumber}\t{item.Location}\t{item.Manufacturer}\t{item.Directory}\t\"{item.Description}\"\t{(item.InService ? 1 : 0)}\t" +
+                    $"{item.InServiceDateString}\t\"{item.Model}\"\t\"{item.Comment}\"\t{item.TimeStampString}\t\"{item.ItemGroup}\"\t{(item.StandardEquipment ? 1 : 0)}\t" +
+                    $"{item.CertificateNumber}");
+            }
+            foreach (TaskData data in database.GetAllTaskData())
+            {
+                taskDataLines.Add($"{data.DataID}\t{data.TaskID}\t{data.SerialNumber}\t{JsonConvert.SerializeObject(data.StateBefore)}\t{JsonConvert.SerializeObject(data.StateAfter)}\t" +
+                    $"{JsonConvert.SerializeObject(data.ActionTaken)}\t{data.CompleteDateString}\t{data.Procedure}\t{data.StandardEquipment}\t" +
+                    $"{JsonConvert.SerializeObject(data.Findings)}\t{data.Remarks}\t{data.Technician}\t{data.Timestamp}");
+            }
+            foreach (CTTask task in database.GetAllTasks())
+            {
+                tasksLines.Add($"{task.TaskID}\t{task.SerialNumber}\t{task.TaskTitle}\t{task.ServiceVendor}\t{(task.Mandatory ? 1 : 0)}\t{task.Interval}\t{task.CompleteDateString}\t" +
+                    $"{task.DueDateString}\t{(task.Due ? 1 : 0)}\t{task.ActionType}\t{task.TaskDirectory}\t{task.Comment}\t{task.ManualFlagString}");
+            }
+            System.IO.File.WriteAllLines(Path.Join(targetFolder, files[0]), itemLines);
+            System.IO.File.WriteAllLines(Path.Join(targetFolder, files[1]), taskDataLines);
+            System.IO.File.WriteAllLines(Path.Join(targetFolder, files[2]), tasksLines);
+            Process.Start("explorer", targetFolder);
+        }
+        private void ExportDueListTSV()
+        {
+            string file = $"{DateTime.UtcNow.ToString(database.dateFormat)}_Items Due Near {((DateTime)ItemCalendar.SelectedDate).ToString(database.dateFormat)}.txt";
+            string exportsFolder = Path.Join(config.ListDir, "CalTools Exports");
+            if (!Directory.Exists(exportsFolder)) { Directory.CreateDirectory(exportsFolder); }
+            List<string> listLines = new List<string>() { "SerialNumber\tModel\tTaskTitle\tDescription\tLocation\tServiceVendor\tDueDate" };
+            foreach (Dictionary<string, string> item in weekTodoItems)
+            {
+                listLines.Add($"{item["SerialNumber"]}\t{item["Model"]}\t{item["TaskTitle"]}\t{item["Description"]}" +
+                    $"\t{item["Location"]}\t{item["ServiceVendor"]}\t{item["DueDateString"]}");
+            }
+            System.IO.File.WriteAllLines(Path.Join(exportsFolder, file), listLines);
+            Process.Start("explorer", exportsFolder);
+        }
+        #endregion
+
+
+        #region ToDatabase
+        private void CheckTasks(string folder, ref List<CTTask> tasks, ref List<TaskData> taskData)
+        {
+            foreach (string taskFolder in Directory.GetDirectories(folder))
+            {
+                string folderTaskID = Path.GetFileName(taskFolder).Split("_")[0];
+                foreach (CTTask task in tasks)
+                {
+                    List<TaskData> currentData = new List<TaskData>();
+                    foreach (TaskData data in taskData)
+                    {
+                        if (data.TaskID == task.TaskID) { currentData.Add(data); }
+                    }
+                    if (folderTaskID == task.TaskID.ToString() & Path.GetFileName(folder) == task.SerialNumber)
+                    {
+                        task.TaskDirectory = taskFolder;
+                        task.CheckDates(taskFolder, currentData);
+                    }
+                }
+            }
+            SaveTaskChanges(ref tasks);
         }
         private bool SaveItem()
         {
@@ -604,7 +339,12 @@ namespace CalTools_WPF
                         string itemSN = System.IO.Path.GetFileName(itemFolder);
                         foreach (CTItem item in allItems)                                       //Match folder to CTItem in list
                         {
-                            if (item.SerialNumber == itemSN) { calItem = item; break; }
+                            if (item.SerialNumber == itemSN)
+                            {
+                                calItem = item;
+
+                                break;
+                            }
                         }
                         if (calItem == null) { calItem = new CTItem(itemSN); newItem = true; }  //If existing item wasn't found, create new
                         if (calItem.Directory != itemFolder)                                    //Check if directory is valid. Set to the found folder if not
@@ -618,6 +358,217 @@ namespace CalTools_WPF
                 }
             }
             CreateTaskFolders(ref allTasks);
+        }
+        #endregion
+
+
+        #region FromDatabase
+        private void CheckReplacements(ref List<CTItem> itemList)
+        {
+            Dictionary<string, List<CTItem>> groups = new Dictionary<string, List<CTItem>>();
+            foreach (CTItem item in itemList) //Get item groups, add items to list in dictionary
+            {
+                if (item.ItemGroup != "")
+                {
+                    if (groups.ContainsKey(item.ItemGroup))
+                    { groups[item.ItemGroup].Add(item); }
+                    else
+                    {
+                        groups.Add(item.ItemGroup, new List<CTItem>() { item });
+                    }
+                }
+            }
+            foreach (List<CTItem> group in groups.Values) //for item in group
+            {
+                if (group.Count < 2) { continue; }
+                int availableItems = 0;
+                foreach (CTItem item in group) //get number of available items
+                {
+                    if (IsItemAvailable("", item))
+                    {
+                        availableItems += 1;
+                    }
+                }
+                foreach (CTItem item in group) //expend replacements
+                {
+                    if (availableItems == 0)
+                    {
+                        break;
+                    }
+                    bool itemDue = false;
+                    foreach (CTTask task in database.GetTasks("SerialNumber", item.SerialNumber))
+                    {
+                        if (task.IsTaskDue(config.MarkDueDays, DateTime.UtcNow) & task.Mandatory)
+                        { itemDue = true; break; }
+                    }
+                    if (itemDue & availableItems > 0)
+                    {
+                        if (itemList.Any(i => i.SerialNumber == item.SerialNumber))
+                        {
+                            itemList[itemList.FindIndex(i => i.SerialNumber == item.SerialNumber)].ReplacementAvailable = true;
+                            availableItems -= 1;
+                        }
+                    }
+                }
+            }
+        }
+        private bool IsItemAvailable(string sn = "", CTItem item = null)
+        {
+            CTItem currentItem = item ?? database.GetItem("SerialNumber", sn);
+            bool tasksDue = false;
+            foreach (CTTask task in database.GetTasks("SerialNumber", item.SerialNumber))
+            {
+                if (task.IsTaskDue(config.MarkDueDays, DateTime.UtcNow) & task.Mandatory)
+                {
+                    tasksDue = true;
+                }
+            }
+            return !tasksDue & !item.InService;
+        }
+        private void UpdateLists() //Get lists required to pre-populate combo-boxes
+        {
+            manufacturers.Clear();
+            serviceVendors.Clear();
+            locations.Clear();
+            itemGroups.Clear();
+            standardEquipment.Clear();
+            foreach (CTItem calItem in database.GetAllItems())
+            {
+                if (!manufacturers.Contains(calItem.Manufacturer)) { manufacturers.Add(calItem.Manufacturer); }
+                if (!locations.Contains(calItem.Location)) { locations.Add(calItem.Location); }
+                if (!itemGroups.Contains(calItem.ItemGroup)) { itemGroups.Add(calItem.ItemGroup); }
+                if (calItem.StandardEquipment & !standardEquipment.Contains(calItem.SerialNumber)) { standardEquipment.Add(calItem.SerialNumber); }
+            }
+            foreach (CTTask task in database.GetAllTasks())
+            { if (!serviceVendors.Contains(task.ServiceVendor)) { serviceVendors.Add(task.ServiceVendor); } }
+            manufacturers.Sort();
+            serviceVendors.Sort();
+            locations.Sort();
+            itemGroups.Sort();
+            standardEquipment.Add("");
+            standardEquipment.Sort();
+        }
+        #endregion
+
+
+        #region ItemListOps
+        private void AddItemsToList(List<CTItem> items)
+        {
+            items.Sort((x, y) => x.SerialNumber.CompareTo(y.SerialNumber));
+            CalibrationItemTree.Items.Clear();
+            foreach (string folder in config.Folders)
+            {
+                TreeViewItem group = new TreeViewItem();
+                group.Header = folder;
+                foreach (var item in items)
+                {
+                    if (item.Directory.Contains(folder))
+                    {
+                        TreeViewItem treeItem = new TreeViewItem();
+                        treeItem.Header = item.SerialNumber;
+                        group.Items.Add(treeItem);
+                    }
+                }
+                CalibrationItemTree.Items.Add(group);
+            }
+        }
+        private void ExpandTreeItems()
+        {
+            foreach (TreeViewItem group in CalibrationItemTree.Items)
+            {
+                group.IsExpanded = true;
+            }
+        }
+        private void GoToItem(string sn)
+        {
+            foreach (TreeViewItem item in CalibrationItemTree.Items)
+            {
+                foreach (TreeViewItem subItem in item.Items)
+                {
+                    if ((string)subItem.Header == sn)
+                    {
+                        item.IsExpanded = true;
+                        subItem.IsSelected = true;
+                        subItem.BringIntoView();
+                        return;
+                    }
+                }
+                item.IsExpanded = false;
+            }
+        }
+        private void HighlightNonExistent()
+        {
+            List<string> nonExistent = new List<string>();
+            foreach (CTItem calItem in database.GetAllItems())
+            {
+                if (!Directory.Exists(calItem.Directory))
+                {
+                    nonExistent.Add(calItem.SerialNumber);
+                }
+            }
+            foreach (TreeViewItem item in CalibrationItemTree.Items)
+            {
+                foreach (TreeViewItem subItem in item.Items)
+                {
+                    if (nonExistent.Contains((string)subItem.Header)) { subItem.Foreground = Brushes.Red; subItem.ToolTip = "Missing folder"; }
+                    else { subItem.Foreground = Brushes.Black; subItem.ToolTip = null; }
+                }
+            }
+        }
+        private List<CTItem> ItemListFilter(string mode, string searchText) //Filters items when search is used
+        {
+            List<CTItem> filteredItems = new List<CTItem>();
+            List<CTTask> allTasks = database.GetAllTasks();
+            var property = typeof(CTItem).GetProperty(mode);
+            foreach (CTItem item in database.GetAllItems())
+            {
+                if (mode == "ActionType")
+                {
+                    foreach (CTTask task in allTasks)
+                    {
+                        if (task.ActionType.Contains(searchText.ToUpper()) & task.SerialNumber == item.SerialNumber)
+                        {
+                            filteredItems.Add(item);
+                            break;
+                        }
+                    }
+                }
+                else if (mode == "Comment") { if (property.GetValue(item).ToString().Length > 0) { filteredItems.Add(item); } }
+                else if (mode == "StandardEquipment") { if ((bool)property.GetValue(item) == true) { filteredItems.Add(item); } }
+                else if (mode == "Due")
+                {
+                    foreach (CTTask task in allTasks)
+                    {
+                        if (task.SerialNumber == item.SerialNumber & task.IsTaskDue(config.MarkDueDays, DateTime.UtcNow)) { filteredItems.Add(item); break; }
+                    }
+                }
+                else if (mode == "Vendor")
+                {
+                    foreach (CTTask task in allTasks)
+                    {
+                        if (task.SerialNumber == item.SerialNumber & task.ServiceVendor.ToLower().Contains(searchText.ToLower()))
+                        {
+                            filteredItems.Add(item);
+                            break;
+                        }
+                    }
+                }
+                else if (property.GetValue(item).ToString().ToLower().Contains(searchText.ToLower()))
+                {
+                    filteredItems.Add(item);
+                }
+            }
+            return filteredItems;
+        }
+        private bool IsItemSelected()
+        {
+            TreeViewItem selectedItem = (TreeViewItem)CalibrationItemTree.SelectedItem;
+            if (selectedItem != null)
+            {
+                if (!config.Folders.Contains(selectedItem.Header.ToString()))
+                { return true; }
+            }
+            return false;
         }
         private void SearchItems()
         {
@@ -652,41 +603,21 @@ namespace CalTools_WPF
                 MainViewGrid.Visibility = Visibility.Visible;
             }
         }
-        private void UpdateItemsTable()
+        private void UpdateItemList(bool single = false)
         {
-            weekTodoItems.Clear();
-            todoTable.Items.Refresh();
-
-            if (ItemCalendar.SelectedDate != null)
+            if (!database.tablesExist) { return; }
+            CheckReceiving();
+            string currentItem = SelectedSN();
+            if (single) { ScanFoldersSingle(database.GetItem("SerialNumber", currentItem)); }
+            else { ScanFolders(); }
+            if (SearchBox.Text.Length != 0)
             {
-                DateTime calendarDate = (DateTime)ItemCalendar.SelectedDate;
-                weekTodoItems = CreateCalendarList((bool)MandatoryOnlyBox.IsChecked, calendarDate);
-                todoTable.ItemsSource = weekTodoItems;
-                todoTable.Items.Refresh();
+                AddItemsToList(ItemListFilter(searchModes[SearchOptions.SelectedItem.ToString()], SearchBox.Text));
+                ExpandTreeItems();
             }
-        }
-        private void UpdateLists() //Get lists required to pre-populate combo-boxes
-        {
-            manufacturers.Clear();
-            serviceVendors.Clear();
-            locations.Clear();
-            itemGroups.Clear();
-            standardEquipment.Clear();
-            foreach (CTItem calItem in database.GetAllItems())
-            {
-                if (!manufacturers.Contains(calItem.Manufacturer)) { manufacturers.Add(calItem.Manufacturer); }
-                if (!locations.Contains(calItem.Location)) { locations.Add(calItem.Location); }
-                if (!itemGroups.Contains(calItem.ItemGroup)) { itemGroups.Add(calItem.ItemGroup); }
-                if (calItem.StandardEquipment & !standardEquipment.Contains(calItem.SerialNumber)) { standardEquipment.Add(calItem.SerialNumber); }
-            }
-            foreach (CTTask task in database.GetAllTasks())
-            { if (!serviceVendors.Contains(task.ServiceVendor)) { serviceVendors.Add(task.ServiceVendor); } }
-            manufacturers.Sort();
-            serviceVendors.Sort();
-            locations.Sort();
-            itemGroups.Sort();
-            standardEquipment.Add("");
-            standardEquipment.Sort();
+            else { AddItemsToList(database.GetAllItems()); }
+            UpdateLists();
+            GoToItem(currentItem);
         }
         private void UpdateListsSingle(CTItem calItem)
         {
@@ -701,6 +632,45 @@ namespace CalTools_WPF
             locations.Sort();
             itemGroups.Sort();
             standardEquipment.Sort();
+        }
+        #endregion
+
+
+        #region ItemDetailsOps
+        private void DetailsEditToggle()
+        {
+            bool enable = !DetailsSN.IsEnabled;
+            foreach (UIElement child in DetailsGrid.Children)
+            {
+                child.IsEnabled = enable;
+            }
+            DetailsComments.IsEnabled = enable;
+            DetailsTasksTable.IsEnabled = true;
+            DetailsTasksTable.IsReadOnly = !enable;
+            AddTaskButton.IsEnabled = enable;
+            RemoveTaskButton.IsEnabled = enable;
+        }
+        private bool IsTaskSelected()
+        {
+            if (DetailsTasksTable.SelectedItem == null) { return false; }
+            else { return true; }
+        }
+        private void UpdateDetails(CTItem item)
+        {
+            if (item != null)
+            {
+                DetailsSN.Text = item.SerialNumber;
+                DetailsModel.Text = item.Model;
+                DetailsDescription.Text = item.Description;
+                DetailsLocation.Text = item.Location;
+                DetailsManufacturer.Text = item.Manufacturer;
+                if (item.InServiceDate != null) { DetailsOperationDate.Text = item.InServiceDate.Value.ToString("yyyy-MM-dd"); } else { DetailsOperationDate.Clear(); }
+                DetailsInOperation.IsChecked = item.InService;
+                DetailsItemGroup.Text = item.ItemGroup;
+                DetailsComments.Text = item.Comment;
+                DetailsStandardBox.IsChecked = item.StandardEquipment;
+                DetailsCertificateNum.Text = item.CertificateNumber;
+            }
         }
         private void UpdateTasksTable(bool keepChanges = false)
         {
@@ -736,5 +706,135 @@ namespace CalTools_WPF
                 DetailsTasksTable.ItemsSource = detailsTasks;
             }
         }
+        #endregion
+
+
+        #region CalendarOps
+        private List<Dictionary<string, string>> CreateCalendarList(bool mandatoryOnly, DateTime calendarDate)
+        {
+            List<Dictionary<string, string>> compositeList = new List<Dictionary<string, string>>();
+            List<CTTask> allTasks = database.GetAllTasks();
+            List<CTItem> allItems = database.GetAllItems();
+            CheckReplacements(ref allItems);
+            foreach (CTTask task in allTasks)
+            {
+                if (ItemCalendar.SelectedDate != null)
+                {
+                    if ((task.Mandatory & mandatoryOnly) | (!mandatoryOnly))
+                    {
+                        foreach (CTItem item in allItems)
+                        {
+                            if (item.InService & item.SerialNumber == task.SerialNumber)
+                            {
+                                if (task.IsTaskDue(config.MarkDueDays, calendarDate))
+                                {
+                                    Dictionary<string, string> compositeItem = new Dictionary<string, string>
+                                    {
+                                        {"SerialNumber",item.SerialNumber},
+                                        {"Model", item.Model},
+                                        {"TaskID", task.TaskID.ToString()},
+                                        {"TaskTitle",$"({task.TaskID}) {task.TaskTitle}" },
+                                        {"Description",item.Description},
+                                        {"Location",item.Location},
+                                        {"ServiceVendor",task.ServiceVendor},
+                                        {"DueDateString",task.DueDateString},
+                                        {"ReplacementAvailable", item.ReplacementAvailable.ToString() }
+                                    };
+                                    compositeList.Add(compositeItem);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            return compositeList;
+        }
+        private void UpdateItemsTable()
+        {
+            weekTodoItems.Clear();
+            todoTable.Items.Refresh();
+
+            if (ItemCalendar.SelectedDate != null)
+            {
+                DateTime calendarDate = (DateTime)ItemCalendar.SelectedDate;
+                weekTodoItems = CreateCalendarList((bool)MandatoryOnlyBox.IsChecked, calendarDate);
+                todoTable.ItemsSource = weekTodoItems;
+                todoTable.Items.Refresh();
+            }
+        }
+        #endregion
+
+
+        #region WindowsAndDialogs
+        private void NewReport(CTTask task)
+        {
+            CalDataEntry dataEntry = new CalDataEntry();
+            if (database.GetItemFromTask(task).StandardEquipment)
+            {
+                dataEntry.ItemIsStandard = true;
+            }
+            dataEntry.SerialNumberBox.Text = task.SerialNumber;
+            dataEntry.MaintenanceSerialNumberBox.Text = task.SerialNumber;
+            dataEntry.DateBox.Text = DateTime.UtcNow.ToString(database.dateFormat);
+            dataEntry.MaintenanceDateBox.Text = DateTime.UtcNow.ToString(database.dateFormat);
+            dataEntry.ProcedureBox.ItemsSource = config.Procedures;
+            dataEntry.MaintenanceProcedureBox.ItemsSource = config.Procedures;
+            dataEntry.EquipmentBox.ItemsSource = standardEquipment;
+            dataEntry.MaintenanceEquipmentBox.ItemsSource = standardEquipment;
+            dataEntry.TaskBox.Text = $"({task.TaskID}) {task.TaskTitle}";
+            dataEntry.MaintenanceTaskBox.Text = dataEntry.TaskBox.Text;
+            dataEntry.data.TaskID = task.TaskID;
+            if (task.ActionType == "MAINTENANCE")
+            { dataEntry.MaintenanceSelection.IsSelected = true; }
+            if (config.Procedures.Count > 0) { dataEntry.ProcedureBox.SelectedIndex = 0; }
+            if (standardEquipment.Count > 0) { dataEntry.EquipmentBox.SelectedIndex = 0; }
+            dataEntry.findings.parameters.Add(new Param($"Parameter {dataEntry.findings.parameters.Count + 1}"));
+            if (dataEntry.ShowDialog() == true)
+            {
+                try
+                {
+                    dataEntry.data.StandardEquipment = JsonConvert.SerializeObject(database.GetItem("SerialNumber", dataEntry.EquipmentBox.Text));
+                }
+                catch
+                { MessageBox.Show($"Invalid \"Standard Equipment\" entry.", "Invalid Entry", MessageBoxButton.OK, MessageBoxImage.Error); return; }
+                database.SaveTaskData(dataEntry.data);
+            }
+            SaveTasksTable();
+            CTItem item = database.GetItemFromTask(task);
+            List<CTTask> tasks = database.GetTasks("SerialNumber", item.SerialNumber);
+            List<TaskData> taskData = database.GetAllTaskData();
+            CheckTasks(item.Directory, ref tasks, ref taskData);
+            UpdateTasksTable();
+        }
+        private void SwapItems()
+        {
+            string selectedSN = ((TreeViewItem)CalibrationItemTree.SelectedItem).Header.ToString();
+            List<string> itemsInGroup = new List<string>();
+            CTItem selectedItem = database.GetItem("SerialNumber", selectedSN);
+            foreach (CTItem item in database.GetAllItems())
+            {
+                if (item.ItemGroup == selectedItem.ItemGroup)
+                {
+                    itemsInGroup.Add(item.SerialNumber);
+                }
+            }
+            ReplaceItemSelection selectionDialog = new ReplaceItemSelection();
+            selectionDialog.ReplaceSelectComboBox.ItemsSource = itemsInGroup;
+            if (selectionDialog.ShowDialog() == true)
+            {
+                CTItem newItem1 = database.GetItem("SerialNumber", selectedItem.SerialNumber);
+                CTItem newItem2 = database.GetItem("SerialNumber", selectionDialog.ReplaceSelectComboBox.SelectedItem.ToString());
+
+                newItem1.Location = newItem2.Location;
+                newItem1.InService = newItem2.InService;
+
+                newItem2.Location = selectedItem.Location;
+                newItem2.InService = selectedItem.InService;
+
+                database.SaveItem(newItem1);
+                database.SaveItem(newItem2);
+            }
+        }
+        #endregion
     }
 }

@@ -3,7 +3,7 @@ using System;
 
 namespace CalTools_WPF
 {
-    class CTItem
+    public class CTItem
     {
         #region Private Fields
         private string serialNumber = "";
@@ -60,6 +60,7 @@ namespace CalTools_WPF
         public string TimeStampString { get; private set; } = "";
         public string ItemGroup { get => itemGroup; set { itemGroup = value; ChangesMade = true; } }
         public string CertificateNumber { get => certificateNumber; set { certificateNumber = value; ChangesMade = true; } }
+        public bool ReplacementAvailable { get; set; } = false;
         public bool StandardEquipment { get => standardEquipment; set { standardEquipment = value; ChangesMade = true; } }
         public bool ChangesMade { get; set; } = false;
         #endregion
@@ -83,6 +84,7 @@ namespace CalTools_WPF
         public CTItem(string sn)
         {
             this.SerialNumber = sn;
+            this.ChangesMade = false;
         }
 
         //Return a JSON string that represents this instance

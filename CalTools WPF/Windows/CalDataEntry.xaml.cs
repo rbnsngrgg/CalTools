@@ -14,6 +14,17 @@ namespace CalTools_WPF
     {
         public TaskData data = new TaskData();
         public Findings findings = new Findings();
+        public bool ItemIsStandard
+        {
+            get { return ItemIsStandard; }
+            set
+            {
+                if (value)
+                {
+                    //show certificate number box
+                }
+            }
+        }
         public CalDataEntry()
         {
             InitializeComponent();

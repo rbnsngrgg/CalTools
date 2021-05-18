@@ -214,6 +214,7 @@
                         <DataGridTextColumn Header="Location" Width="100" Binding="{Binding [Location]}"/>
                         <DataGridTextColumn Header="Vendor" Width="100" Binding="{Binding [ServiceVendor]}"/>
                         <DataGridTextColumn Header="Due By" Width="75" Binding="{Binding [DueDateString]}"/>
+                        <DataGridTextColumn Header="Replacement Available" Width="75" Binding="{Binding [ReplacementAvailable]}"/>
                     </DataGrid.Columns>
                     <DataGrid.ContextMenu>
                         <ContextMenu>
