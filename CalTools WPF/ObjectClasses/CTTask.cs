@@ -37,6 +37,8 @@ namespace CalTools_WPF
             get => completeDate;
             set
             {
+                if(completeDate != value & completeDate != null)
+                { CompleteDateChanged = true; }
                 completeDate = value;
 
                 if (value != null)
@@ -85,6 +87,7 @@ namespace CalTools_WPF
         }
         public string ManualFlagString { get; private set; } = "";
         public bool ChangesMade { get; set; } = false;
+        public bool CompleteDateChanged { get; set; } = false;
         #endregion
 
         //For use with the DetailsTasksTable. Used to populate the datagrid combobox with vendors. Transient

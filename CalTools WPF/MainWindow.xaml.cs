@@ -326,6 +326,7 @@ namespace CalTools_WPF
             {
                 CTTask currentTask = (CTTask)DetailsTasksTable.SelectedItem;
                 List<TaskData> currentTaskData = database.GetTaskData(currentTask.TaskID.ToString());
+                //Viewer may modify currentTaskData
                 CalDataViewer viewer = new CalDataViewer(ref currentTaskData, currentTask);
                 if (viewer.ShowDialog() == true)
                 {
@@ -336,10 +337,17 @@ namespace CalTools_WPF
                         {
                             if (windowData.DataID == dbData.DataID)
                             {
+                                //If the data is found in a fresh db query, it wasn't deleted in the viewer
                                 delete = false;
                             }
                         }
-                        if (delete) { database.RemoveTaskData(dbData.DataID.ToString()); }
+                        if (delete)
+                        {
+                            database.RemoveTaskData(dbData.DataID.ToString());
+                            SaveTasksTable();
+                            //Save the new data and prompt for a certificate number update if the item is standard equipment
+                            UpdateItemList(true);
+                        }
                     }
                 }
             }

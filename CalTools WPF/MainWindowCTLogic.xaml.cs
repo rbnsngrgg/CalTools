@@ -315,7 +315,13 @@ namespace CalTools_WPF
         {
             foreach (CTTask task in tasks)
             {
-                if (task.ChangesMade) { database.SaveTask(task); task.ChangesMade = false; }
+                if (task.ChangesMade)
+                {
+                    database.SaveTask(task);
+                    if (task.CompleteDateChanged) { PromptCertificateNumber(task.SerialNumber); }
+                    task.ChangesMade = false;
+                    task.CompleteDateChanged = false;
+                }
             }
         }
         private void SaveTasksTable()
@@ -327,7 +333,11 @@ namespace CalTools_WPF
                 string newFolder = Path.Combine(itemFolder, $"{task.TaskID}_{task.TaskTitle}");
 
                 if (currentFolder != newFolder) { Directory.Move(currentFolder, newFolder); task.TaskDirectory = newFolder; }
-                if (task.ChangesMade) { database.SaveTask(task); }
+                if (task.ChangesMade)
+                {
+                    database.SaveTask(task);
+                    if (task.CompleteDateChanged) { PromptCertificateNumber(task.SerialNumber); task.CompleteDateChanged = false; }
+                }
             }
         }
         private void ScanFoldersSingle(CTItem item)
@@ -871,6 +881,14 @@ namespace CalTools_WPF
 
                 database.SaveItem(newItem1);
                 database.SaveItem(newItem2);
+            }
+        }
+        private void PromptCertificateNumber(string sn)
+        {
+            if (standardEquipment.Contains(sn))
+            {
+                MessageBox.Show("This item is standard equipment, be sure to update the certificate number.",
+                    "Certificate Number Update", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
         #endregion
