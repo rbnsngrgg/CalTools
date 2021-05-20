@@ -64,7 +64,7 @@
                     <Button x:Name="OpenFolderButton" Width="35" Height="35" HorizontalAlignment="Left" Margin="10,10,0,0" ToolTip="Open Item Folder" Click="OpenFolderButton_Click">
                         <Image Source="C:\Users\grobinson\source\repos\CalTools\CalTools WPF\images\LightTheme\folder.png"/>
                     </Button>
-                    <Button x:Name="NewReportButton" Width="35" Height="35" HorizontalAlignment="Left" Margin="10,10,0,0" ToolTip="Add Calibration Data" Click="NewReportButton_Click">
+                    <Button x:Name="NewReportButton" Width="35" Height="35" HorizontalAlignment="Left" Margin="10,10,0,0" ToolTip="Add Data" Click="NewReportButton_Click">
                         <Image Source="C:\Users\grobinson\source\repos\CalTools\CalTools WPF\images\LightTheme\report.png"/>
                     </Button>
                     <Button x:Name="DeleteItemButton" Width="35" Height="35" HorizontalAlignment="Left" Margin="10,10,0,0" ToolTip="Delete Item" Click="DeleteItemButton_Click">
@@ -220,7 +220,7 @@
                     <DataGrid.ContextMenu>
                         <ContextMenu>
                             <MenuItem x:Name="TableMenuGoto" Header="Go to Item" Click="TableMenuGoto_Click"/>
-                            <MenuItem x:Name="TableMenuCalData" Header="Add Calibration Data" Click="TableMenuCalData_Click"/>
+                            <MenuItem x:Name="TableMenuCalData" Header="Add Data" Click="TableMenuCalData_Click"/>
                             <MenuItem x:Name="ExportDueList" Header="Export List" Click="ExportDueList_Click"/>
                         </ContextMenu>
                     </DataGrid.ContextMenu>
