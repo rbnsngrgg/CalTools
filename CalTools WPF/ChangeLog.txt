@@ -1,10 +1,13 @@
 [Changes]
 --5.3.0
-	--Added functionality to the calendar table that shows if an item has a replacement available in the same group that is not in service and not due.
+	--Added functionality to the calendar table that shows if an item has a replacement available in the same group that is not in service and not due.(Issue #80)
 	--Added text to the "Replace Item" dialog box for clarity on what the function does.
-	--Added context menu item to add a new item to the database. Dialog box updated to suit. Issue #79
-	--Calendar table now refreshes automatically after adding data for an item's task.
+	--Added context menu item to add a new item to the database. Dialog box updated to suit. (Issue #79)
+	--Added a prompt to update the certificate number of standard equipment if the date for a task changes while the user is editing. (Issue #78)
+	--Calendar table now refreshes automatically after adding data for an item's task. (Issue #82)
 	--Fixed a bug where task due dates would not update properly when clearing a manual due date.
+	--Removed unused config elements. (Issue #84)
+	--Replaced instances of "Add Calibration Data" with "Add Data" (Issue #85)
 
 --5.2.0
 	--Enabled menu bar
