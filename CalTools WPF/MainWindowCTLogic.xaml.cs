@@ -446,9 +446,13 @@ namespace CalTools_WPF
             bool tasksDue = false;
             foreach (CTTask task in database.GetTasks("SerialNumber", item.SerialNumber))
             {
-                if (task.IsTaskDue(config.MarkDueDays, DateTime.UtcNow) & task.Mandatory)
+                if (ItemCalendar.SelectedDate != null)
                 {
-                    tasksDue = true;
+                    DateTime calendarDate = (DateTime)ItemCalendar.SelectedDate;
+                    if (task.IsTaskDue(config.MarkDueDays, calendarDate) & task.Mandatory)
+                    {
+                        tasksDue = true;
+                    }
                 }
             }
             return !tasksDue & !item.InService;
