@@ -1,4 +1,7 @@
 [Changes]
+--5.3.1
+	--Fixed configuration issue that prevented e_sqlite3.dll from being packaged in the executable.
+
 --5.3.0
 	--Added functionality to the calendar table that shows if an item has a replacement available in the same group that is not in service and not due.(Issue #80)
 	--Added text to the "Replace Item" dialog box for clarity on what the function does.

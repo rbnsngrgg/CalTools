@@ -16,7 +16,7 @@ namespace CalTools_WPF
     //Main window code-behind logic outside of event handlers
     public partial class MainWindow : Window
     {
-        public readonly string version = "5.3.0";
+        public readonly string version = "5.3.1";
         private CTDatabase database;
         private CTConfig config = new CTConfig();
         private readonly Dictionary<string, string> searchModes = new Dictionary<string, string>() {
