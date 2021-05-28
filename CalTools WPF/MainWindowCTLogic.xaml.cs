@@ -411,7 +411,7 @@ namespace CalTools_WPF
                 int availableItems = 0;
                 foreach (CTItem item in group) //get number of available items
                 {
-                    if (IsItemAvailable("", item))
+                    if (IsItemAvailable(item))
                     {
                         availableItems += 1;
                     }
@@ -439,7 +439,7 @@ namespace CalTools_WPF
                 }
             }
         }
-        private bool IsItemAvailable(string sn = "", CTItem item = null)
+        private bool IsItemAvailable(CTItem item = null)
         {
             bool tasksDue = false;
             foreach (CTTask task in database.GetTasks("SerialNumber", item.SerialNumber))
