@@ -205,7 +205,7 @@
             </StackPanel>
             <!--Text boxes and tables-->
             <StackPanel Grid.Column="1" Grid.ColumnSpan="2">
-                <Label x:Name="weekTodoLabel" Content="To-do during week of...:"/>
+                <Label x:Name="weekTodoLabel" Content="Due within...:"/>
                 <DataGrid x:Name="todoTable" Height="480" VerticalAlignment="Stretch" CanUserResizeColumns="True" Width="Auto" 
                           AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" IsReadOnly="True" Margin="5,0,5,0">
                     <DataGrid.Columns>

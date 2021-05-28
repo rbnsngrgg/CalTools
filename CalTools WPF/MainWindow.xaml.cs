@@ -431,7 +431,7 @@ namespace CalTools_WPF
         }
         private void ItemCalendar_SelectedDatesChanged(object sender, SelectionChangedEventArgs e)
         {
-            weekTodoLabel.Content = "To do during week of: " + ItemCalendar.SelectedDate.Value.ToString(database.dateFormat);
+            weekTodoLabel.Content = $"Due within {config.MarkDueDays} days of: {ItemCalendar.SelectedDate.Value.ToString(database.dateFormat)}";
             UpdateItemsTable();
         }
         private void MandatoryOnlyBox_Checked(object sender, RoutedEventArgs e)
