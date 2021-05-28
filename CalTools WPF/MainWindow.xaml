@@ -200,7 +200,8 @@
                 <Viewbox MinHeight="250" MaxHeight="400">
                     <Calendar x:Name="ItemCalendar" PreviewMouseUp="ItemCalendar_PreviewMouseUp" SelectedDatesChanged="ItemCalendar_SelectedDatesChanged" Margin="5,0,0,0"/>
                 </Viewbox>
-                <CheckBox x:Name="MandatoryOnlyBox" Content="Show only mandatory, in operation items." Checked="MandatoryOnlyBox_Checked" Unchecked="MandatoryOnlyBox_Checked" Margin="9,0,0,0"/>
+                <CheckBox x:Name="MandatoryOnlyBox" Content="Show only mandatory items." Checked="MandatoryOnlyBox_Checked" Unchecked="MandatoryOnlyBox_Checked" Margin="9,0,0,0"/>
+                <CheckBox x:Name="InOperationOnlyBox" Content='Show only "in operation" items.' Checked="InOperationOnlyBox_Checked" Unchecked="InOperationOnlyBox_Checked" Margin="9,0,0,0"/>
             </StackPanel>
             <!--Text boxes and tables-->
             <StackPanel Grid.Column="1" Grid.ColumnSpan="2">

@@ -12,8 +12,8 @@ namespace CalTools_WPF
     /// </summary>
     public partial class CalDataEntry : Window
     {
-        public TaskData data = new TaskData();
-        public Findings findings = new Findings();
+        public TaskData data = new();
+        public Findings findings = new();
         public bool ItemIsStandard
         {
             get { return ItemIsStandard; }
@@ -28,7 +28,7 @@ namespace CalTools_WPF
         public CalDataEntry()
         {
             InitializeComponent();
-            Binding paramBinding = new Binding();
+            Binding paramBinding = new();
             paramBinding.Source = findings.parameters;
             paramBinding.UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged;
             FindingsDataGrid.SetBinding(DataGrid.ItemsSourceProperty, paramBinding);

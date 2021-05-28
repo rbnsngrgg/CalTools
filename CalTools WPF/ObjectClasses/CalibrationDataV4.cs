@@ -15,7 +15,7 @@ namespace CalTools_WPF.ObjectClasses
         public string Procedure { get; set; } = "";
         //StandardEquipment should be JSON serialization of CalibrationItem class. Certificate number is required.
         public string StandardEquipment { get; set; } = "";
-        public Findings? findings = new Findings();
+        public Findings? findings = new();
         public string Remarks { get; set; } = "";
         public string Technician { get; set; } = "";
         public string Timestamp { get; set; } = "";

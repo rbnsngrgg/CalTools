@@ -18,7 +18,7 @@ namespace CalTools_WPF
         public List<string> Folders { get; set; } = new List<string>();
         public List<string> Procedures { get; set; } = new List<string>();
 
-        public bool CreateConfig(string configPath)
+        public static bool CreateConfig(string configPath)
         {
             try
             {
@@ -48,7 +48,7 @@ namespace CalTools_WPF
             }
             try
             {
-                XmlDocument config = new XmlDocument();
+                XmlDocument config = new();
                 config.Load(configPath);
                 if(config.LastChild.Attributes[0].Name == "Theme") { throw new System.Exception("Old config version"); }
                 Folders.AddRange(config.LastChild.Attributes[0].Value.Split(","));

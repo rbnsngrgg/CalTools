@@ -14,9 +14,9 @@ namespace CalTools_WPF
     /// </summary>
     public partial class CalDataViewer : Window
     {
-        List<TaskData> taskDataList;
-        private CTTask currentTask;
-        public Findings findings = new Findings();
+        readonly List<TaskData> taskDataList;
+        private readonly CTTask currentTask;
+        public Findings findings = new();
         public CalDataViewer(ref List<TaskData> inputData, CTTask task)
         {
             InitializeComponent();
@@ -25,14 +25,14 @@ namespace CalTools_WPF
             taskDataList.Sort((y, x) => x.CompleteDateString.CompareTo(y.CompleteDateString));
             foreach (TaskData data in taskDataList)
             {
-                TreeViewItem newItem = new TreeViewItem();
+                TreeViewItem newItem = new();
                 newItem.Header = data.CompleteDateString;
                 TaskDataTree.Items.Add(newItem);
             }
             TaskDataTree.Items.Refresh();
             foreach (string file in Directory.GetFiles(currentTask.TaskDirectory))
             {
-                TreeViewItem newItem = new TreeViewItem();
+                TreeViewItem newItem = new();
                 newItem.Header = Path.GetFileName(file);
                 TaskFilesTree.Items.Add(newItem);
             }
@@ -43,7 +43,7 @@ namespace CalTools_WPF
         {
             if (data.Findings != null)
             {
-                Binding paramBinding = new Binding();
+                Binding paramBinding = new();
                 paramBinding.Source = data.Findings.parameters;
                 paramBinding.UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged;
                 FindingsDataGrid.SetBinding(DataGrid.ItemsSourceProperty, paramBinding);

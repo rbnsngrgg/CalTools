@@ -17,7 +17,7 @@ namespace CalTools_WPF
         public bool tablesExist = false;
         public string ItemScansDir { get; set; }
         public List<string> Folders { get; set; }
-        private SqliteConnection conn;
+        private readonly SqliteConnection conn;
         private SqliteDataReader reader;
         public string DbPath { get; set; }
         public CTDatabase(string dbPath)
@@ -80,7 +80,7 @@ namespace CalTools_WPF
         }
         private void Execute(string com)
         {
-            SqliteCommand command = new SqliteCommand(com, conn);
+            SqliteCommand command = new(com, conn);
             reader = command.ExecuteReader();
         }
         public bool IsConnected()
@@ -92,12 +92,12 @@ namespace CalTools_WPF
         //Data Retrieval-------------------------------------------------------------------------------------------------------------------
         public List<CTItem> GetAllItems()
         {
-            List<CTItem> allItems = new List<CTItem>();
+            List<CTItem> allItems = new();
             if (!Connect()) { return allItems; }
             Execute("SELECT * FROM Items");
             while (reader.Read())
             {
-                CTItem item = new CTItem(reader.GetString(0));
+                CTItem item = new(reader.GetString(0));
                 AssignItemValues(ref item);
                 allItems.Add(item);
             }
@@ -106,12 +106,12 @@ namespace CalTools_WPF
         }
         public List<CTTask> GetAllTasks()
         {
-            List<CTTask> allTasks = new List<CTTask>();
+            List<CTTask> allTasks = new();
             if (!Connect()) { return allTasks; }
             Execute("SELECT * FROM Tasks");
             while (reader.Read())
             {
-                CTTask task = new CTTask();
+                CTTask task = new();
                 AssignTaskValues(ref task);
                 allTasks.Add(task);
             }
@@ -120,13 +120,13 @@ namespace CalTools_WPF
         }
         public List<TaskData> GetAllTaskData()
         {
-            List<TaskData> calData = new List<TaskData>();
+            List<TaskData> calData = new();
             if (Connect())
             {
                 Execute($"SELECT * FROM TaskData");
                 while (reader.Read())
                 {
-                    TaskData data = new TaskData();
+                    TaskData data = new();
                     AssignDataValues(ref data);
                     calData.Add(data);
                 }
@@ -136,13 +136,13 @@ namespace CalTools_WPF
         }
         public List<TaskData> GetTaskData(string taskID)
         {
-            List<TaskData> calData = new List<TaskData>();
+            List<TaskData> calData = new();
             if (Connect())
             {
                 Execute($"SELECT * FROM TaskData WHERE TaskID='{taskID}'");
                 while (reader.Read())
                 {
-                    TaskData data = new TaskData();
+                    TaskData data = new();
                     AssignDataValues(ref data);
                     calData.Add(data);
                 }
@@ -157,7 +157,7 @@ namespace CalTools_WPF
             Execute($" SELECT * FROM Items WHERE {col}='{item}'");
             if (reader.Read())
             {
-                CTItem returnItem = new CTItem(reader.GetString(0));
+                CTItem returnItem = new(reader.GetString(0));
                 AssignItemValues(ref returnItem);
                 Disconnect();
                 return returnItem;
@@ -171,7 +171,7 @@ namespace CalTools_WPF
             Execute($"SELECT * FROM Items WHERE SerialNumber='{task.SerialNumber}'");
             if (reader.Read())
             {
-                CTItem returnItem = new CTItem(reader.GetString(0));
+                CTItem returnItem = new(reader.GetString(0));
                 AssignItemValues(ref returnItem);
                 Disconnect();
                 return returnItem;
@@ -185,7 +185,7 @@ namespace CalTools_WPF
             Execute($" SELECT * FROM TaskData WHERE {col}='{item}'");
             if (reader.Read())
             {
-                TaskData returnItem = new TaskData();
+                TaskData returnItem = new();
                 AssignDataValues(ref returnItem);
                 Disconnect();
                 return returnItem;
@@ -195,12 +195,12 @@ namespace CalTools_WPF
         }
         public List<CTTask> GetTasks(string col, string item, bool disconnect = true)
         {
-            List<CTTask> tasks = new List<CTTask>();
+            List<CTTask> tasks = new();
             if (!Connect()) return tasks;
             Execute($"SELECT * FROM Tasks WHERE {col}='{item}'");
             while (reader.Read())
             {
-                CTTask task = new CTTask();
+                CTTask task = new();
                 AssignTaskValues(ref task);
                 tasks.Add(task);
             }

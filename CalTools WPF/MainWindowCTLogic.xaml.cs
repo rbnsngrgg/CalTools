@@ -16,10 +16,10 @@ namespace CalTools_WPF
     //Main window code-behind logic outside of event handlers
     public partial class MainWindow : Window
     {
-        public readonly string version = "5.3.1";
-        private CTDatabase database;
-        private CTConfig config = new CTConfig();
-        private readonly Dictionary<string, string> searchModes = new Dictionary<string, string>() {
+        public readonly string version = "5.4.0";
+        private readonly CTDatabase database;
+        private readonly CTConfig config = new();
+        private readonly Dictionary<string, string> searchModes = new() {
             { "Serial Number","SerialNumber" },
             { "Location","Location" },
             { "Service Vendor","Vendor" },
@@ -31,12 +31,12 @@ namespace CalTools_WPF
             { "Item Group","ItemGroup" },
             { "Action","ActionType" },
             { "Standard Equipment","StandardEquipment"} };
-        private List<string> manufacturers = new List<string>();
-        private List<string> locations = new List<string>();
-        private List<string> serviceVendors = new List<string>();
-        private List<string> itemGroups = new List<string>();
-        private List<string> standardEquipment = new List<string>();
-        private List<Dictionary<string, string>> weekTodoItems = new List<Dictionary<string, string>>();
+        private readonly List<string> manufacturers = new();
+        private readonly List<string> locations = new();
+        private readonly List<string> serviceVendors = new();
+        private readonly List<string> itemGroups = new();
+        private readonly List<string> standardEquipment = new();
+        private readonly List<Dictionary<string, string>> weekTodoItems = new();
         //Dict keys: SerialNumber, Model, TaskID, TaskTitle, Description, Location, ServiceVendor, DueDateString
 
         #region FileOps
@@ -44,7 +44,7 @@ namespace CalTools_WPF
         {
             string receivingFolder = $"{config.ListDir}\\receiving";
             if (!Directory.Exists(receivingFolder) & Directory.Exists(config.ListDir)) { Directory.CreateDirectory(receivingFolder); }
-            List<string> files = new List<string>(Directory.GetFiles(receivingFolder));
+            List<string> files = new(Directory.GetFiles(receivingFolder));
             if (files.Count > 0)
             {
                 foreach (string file in files)
@@ -92,10 +92,10 @@ namespace CalTools_WPF
         private string GetNewItemFolder(string sn)
         {
             string folder = "";
-            NewItemFolderSelect folderDialog = new NewItemFolderSelect();
+            NewItemFolderSelect folderDialog = new();
             foreach (string configFolder in config.Folders)
             {
-                ComboBoxItem boxItem = new ComboBoxItem { Content = configFolder };
+                ComboBoxItem boxItem = new() { Content = configFolder };
                 folderDialog.FolderSelectComboBox.Items.Add(boxItem);
             }
             folderDialog.FolderSelectSerialNumber.Text = sn;
@@ -162,7 +162,7 @@ namespace CalTools_WPF
         }
         private Dictionary<string, string> ParseFileName(string filePath)
         {
-            Dictionary<string, string> fileInfo = new Dictionary<string, string>
+            Dictionary<string, string> fileInfo = new()
             {
                 { "Date", "" },
                 { "SN", "" }
@@ -184,13 +184,13 @@ namespace CalTools_WPF
         }
         private void ExportTSV()
         {
-            List<string> files = new List<string>() { $"CalTools_dbv{database.currentVersion}_Items.txt", $"CalTools_dbv{database.currentVersion}_TaskData.txt", $"CalTools_dbv{database.currentVersion}_Tasks.txt" };
+            List<string> files = new() { $"CalTools_dbv{database.currentVersion}_Items.txt", $"CalTools_dbv{database.currentVersion}_TaskData.txt", $"CalTools_dbv{database.currentVersion}_Tasks.txt" };
             string exportsFolder = Path.Join(config.ListDir, "CalTools Exports");
             string targetFolder = Path.Join(exportsFolder, $"{DateTime.UtcNow.ToString(database.timestampFormat)}");
             if (!Directory.Exists(targetFolder)) { Directory.CreateDirectory(targetFolder); }
-            List<string> itemLines = new List<string>() { "SerialNumber\tLocation\tManufacturer\tDirectory\tDescription\tInService\tInServiceDate\tModel\tComment\tTimestamp\tItemGroup\tStandardEquipment\tCertificateNumber" };
-            List<string> taskDataLines = new List<string>() { "DataID\tTaskID\tSerialNumber\tStateBeforeAction\tStateAfterAction\tActionTaken\tCompleteDate\tProcedure\tStandardEquipment\tFindings\tRemarks\tTechnician\tEntryTimestamp" };
-            List<string> tasksLines = new List<string>() { "TaskID\tSerialNumber\tTaskTitle\tServiceVendor\tMandatory\tInterval\tCompleteDate\tDueDate\tDue\tActionType\tDirectory\tComments\tManualFlag" };
+            List<string> itemLines = new() { "SerialNumber\tLocation\tManufacturer\tDirectory\tDescription\tInService\tInServiceDate\tModel\tComment\tTimestamp\tItemGroup\tStandardEquipment\tCertificateNumber" };
+            List<string> taskDataLines = new() { "DataID\tTaskID\tSerialNumber\tStateBeforeAction\tStateAfterAction\tActionTaken\tCompleteDate\tProcedure\tStandardEquipment\tFindings\tRemarks\tTechnician\tEntryTimestamp" };
+            List<string> tasksLines = new() { "TaskID\tSerialNumber\tTaskTitle\tServiceVendor\tMandatory\tInterval\tCompleteDate\tDueDate\tDue\tActionType\tDirectory\tComments\tManualFlag" };
             foreach (CTItem item in database.GetAllItems())
             {
                 itemLines.Add($"{item.SerialNumber}\t{item.Location}\t{item.Manufacturer}\t{item.Directory}\t\"{item.Description}\"\t{(item.InService ? 1 : 0)}\t" +
@@ -218,7 +218,7 @@ namespace CalTools_WPF
             string file = $"{DateTime.UtcNow.ToString(database.dateFormat)}_Items Due Near {((DateTime)ItemCalendar.SelectedDate).ToString(database.dateFormat)}.txt";
             string exportsFolder = Path.Join(config.ListDir, "CalTools Exports");
             if (!Directory.Exists(exportsFolder)) { Directory.CreateDirectory(exportsFolder); }
-            List<string> listLines = new List<string>() { "SerialNumber\tModel\tTaskTitle\tDescription\tLocation\tServiceVendor\tDueDate" };
+            List<string> listLines = new() { "SerialNumber\tModel\tTaskTitle\tDescription\tLocation\tServiceVendor\tDueDate" };
             foreach (Dictionary<string, string> item in weekTodoItems)
             {
                 listLines.Add($"{item["SerialNumber"]}\t{item["Model"]}\t{item["TaskTitle"]}\t{item["Description"]}" +
@@ -238,7 +238,7 @@ namespace CalTools_WPF
                 string folderTaskID = Path.GetFileName(taskFolder).Split("_")[0];
                 foreach (CTTask task in tasks)
                 {
-                    List<TaskData> currentData = new List<TaskData>();
+                    List<TaskData> currentData = new();
                     foreach (TaskData data in taskData)
                     {
                         if (data.TaskID == task.TaskID) { currentData.Add(data); }
@@ -268,8 +268,7 @@ namespace CalTools_WPF
                 item.Description = DetailsDescription.Text;
                 item.Location = DetailsLocation.Text;
                 item.Manufacturer = DetailsManufacturer.Text;
-                DateTime inservice;
-                if (DateTime.TryParseExact(DetailsOperationDate.Text, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out inservice))
+                if (DateTime.TryParseExact(DetailsOperationDate.Text, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out DateTime inservice))
                 { item.InServiceDate = inservice; };
                 item.InService = DetailsInOperation.IsChecked == true;
                 item.ItemGroup = DetailsItemGroup.Text;
@@ -393,7 +392,7 @@ namespace CalTools_WPF
         #region FromDatabase
         private void CheckReplacements(ref List<CTItem> itemList)
         {
-            Dictionary<string, List<CTItem>> groups = new Dictionary<string, List<CTItem>>();
+            Dictionary<string, List<CTItem>> groups = new();
             foreach (CTItem item in itemList) //Get item groups, add items to list in dictionary
             {
                 if (item.ItemGroup != "")
@@ -442,7 +441,6 @@ namespace CalTools_WPF
         }
         private bool IsItemAvailable(string sn = "", CTItem item = null)
         {
-            CTItem currentItem = item ?? database.GetItem("SerialNumber", sn);
             bool tasksDue = false;
             foreach (CTTask task in database.GetTasks("SerialNumber", item.SerialNumber))
             {
@@ -490,13 +488,13 @@ namespace CalTools_WPF
             CalibrationItemTree.Items.Clear();
             foreach (string folder in config.Folders)
             {
-                TreeViewItem group = new TreeViewItem();
+                TreeViewItem group = new();
                 group.Header = folder;
                 foreach (var item in items)
                 {
                     if (item.Directory.Contains(folder))
                     {
-                        TreeViewItem treeItem = new TreeViewItem();
+                        TreeViewItem treeItem = new();
                         treeItem.Header = item.SerialNumber;
                         group.Items.Add(treeItem);
                     }
@@ -506,18 +504,17 @@ namespace CalTools_WPF
         }
         private void CreateNewItem()
         {
-            string folder = "";
-            NewItemFolderSelect folderDialog = new NewItemFolderSelect();
+            NewItemFolderSelect folderDialog = new();
             foreach (string configFolder in config.Folders)
             {
-                ComboBoxItem boxItem = new ComboBoxItem { Content = configFolder };
+                ComboBoxItem boxItem = new() { Content = configFolder };
                 folderDialog.FolderSelectComboBox.Items.Add(boxItem);
             }
             if (folderDialog.ShowDialog() == true)
             {
                 //Check that the folder from the config exists before the new item folder is allowed to be created.
-                folder = CreateFolderIfNotExists($"{config.ItemScansDir}\\{folderDialog.FolderSelectComboBox.Text}", folderDialog.FolderSelectSerialNumber.Text);
-                CTItem newItem = new CTItem(folderDialog.FolderSelectSerialNumber.Text);
+                string folder = CreateFolderIfNotExists($"{config.ItemScansDir}\\{folderDialog.FolderSelectComboBox.Text}", folderDialog.FolderSelectSerialNumber.Text);
+                CTItem newItem = new(folderDialog.FolderSelectSerialNumber.Text);
                 newItem.Directory = folder;
                 database.SaveItem(newItem);
                 UpdateItemList();
@@ -550,7 +547,7 @@ namespace CalTools_WPF
         }
         private void HighlightNonExistent()
         {
-            List<string> nonExistent = new List<string>();
+            List<string> nonExistent = new();
             foreach (CTItem calItem in database.GetAllItems())
             {
                 if (!Directory.Exists(calItem.Directory))
@@ -569,7 +566,7 @@ namespace CalTools_WPF
         }
         private List<CTItem> ItemListFilter(string mode, string searchText) //Filters items when search is used
         {
-            List<CTItem> filteredItems = new List<CTItem>();
+            List<CTItem> filteredItems = new();
             List<CTTask> allTasks = database.GetAllTasks();
             var property = typeof(CTItem).GetProperty(mode);
             foreach (CTItem item in database.GetAllItems())
@@ -732,7 +729,7 @@ namespace CalTools_WPF
                 if (keepChanges)
                 {
                     //Add new items to table without reverting changes made to existing items.
-                    List<CTTask> currentTaskList = new List<CTTask>();
+                    List<CTTask> currentTaskList = new();
                     foreach (CTTask task in DetailsTasksTable.Items)
                     {
                         currentTaskList.Add(task);
@@ -762,9 +759,9 @@ namespace CalTools_WPF
 
 
         #region CalendarOps
-        private List<Dictionary<string, string>> CreateCalendarList(bool mandatoryOnly, DateTime calendarDate)
+        private List<Dictionary<string, string>> CreateCalendarList(bool mandatoryOnly, bool inOperationOnly, DateTime calendarDate)
         {
-            List<Dictionary<string, string>> compositeList = new List<Dictionary<string, string>>();
+            List<Dictionary<string, string>> compositeList = new();
             List<CTTask> allTasks = database.GetAllTasks();
             List<CTItem> allItems = database.GetAllItems();
             CheckReplacements(ref allItems);
@@ -772,28 +769,33 @@ namespace CalTools_WPF
             {
                 if (ItemCalendar.SelectedDate != null)
                 {
-                    if ((task.Mandatory & mandatoryOnly) | (!mandatoryOnly))
+                    if (mandatoryOnly)
                     {
-                        foreach (CTItem item in allItems)
+                        if (!task.Mandatory) { continue; }
+                    }
+                    if (inOperationOnly)
+                    {
+                        if (!allItems.Find(x => x.SerialNumber == task.SerialNumber).InService) { continue; }
+                    }
+                    foreach (CTItem item in allItems)
+                    {
+                        if (item.SerialNumber == task.SerialNumber)
                         {
-                            if (item.InService & item.SerialNumber == task.SerialNumber)
+                            if (task.IsTaskDue(config.MarkDueDays, calendarDate))
                             {
-                                if (task.IsTaskDue(config.MarkDueDays, calendarDate))
+                                Dictionary<string, string> compositeItem = new()
                                 {
-                                    Dictionary<string, string> compositeItem = new Dictionary<string, string>
-                                    {
-                                        {"SerialNumber",item.SerialNumber},
-                                        {"Model", item.Model},
-                                        {"TaskID", task.TaskID.ToString()},
-                                        {"TaskTitle",$"({task.TaskID}) {task.TaskTitle}" },
-                                        {"Description",item.Description},
-                                        {"Location",item.Location},
-                                        {"ServiceVendor",task.ServiceVendor},
-                                        {"DueDateString",task.DueDateString},
-                                        {"ReplacementAvailable", item.ReplacementAvailable.ToString() }
-                                    };
-                                    compositeList.Add(compositeItem);
-                                }
+                                    {"SerialNumber",item.SerialNumber},
+                                    {"Model", item.Model},
+                                    {"TaskID", task.TaskID.ToString()},
+                                    {"TaskTitle",$"({task.TaskID}) {task.TaskTitle}" },
+                                    {"Description",item.Description},
+                                    {"Location",item.Location},
+                                    {"ServiceVendor",task.ServiceVendor},
+                                    {"DueDateString",task.DueDateString},
+                                    {"ReplacementAvailable", item.ReplacementAvailable.ToString() }
+                                };
+                                compositeList.Add(compositeItem);
                             }
                         }
                     }
@@ -809,7 +811,7 @@ namespace CalTools_WPF
             if (ItemCalendar.SelectedDate != null)
             {
                 DateTime calendarDate = (DateTime)ItemCalendar.SelectedDate;
-                weekTodoItems = CreateCalendarList((bool)MandatoryOnlyBox.IsChecked, calendarDate);
+                weekTodoItems.AddRange(CreateCalendarList((bool)MandatoryOnlyBox.IsChecked, (bool)InOperationOnlyBox.IsChecked, calendarDate));
                 todoTable.ItemsSource = weekTodoItems;
                 todoTable.Items.Refresh();
             }
@@ -820,7 +822,7 @@ namespace CalTools_WPF
         #region WindowsAndDialogs
         private void NewReport(CTTask task)
         {
-            CalDataEntry dataEntry = new CalDataEntry();
+            CalDataEntry dataEntry = new();
             if (database.GetItemFromTask(task).StandardEquipment)
             {
                 dataEntry.ItemIsStandard = true;
@@ -861,7 +863,7 @@ namespace CalTools_WPF
         private void SwapItems()
         {
             string selectedSN = ((TreeViewItem)CalibrationItemTree.SelectedItem).Header.ToString();
-            List<string> itemsInGroup = new List<string>();
+            List<string> itemsInGroup = new();
             CTItem selectedItem = database.GetItem("SerialNumber", selectedSN);
             foreach (CTItem item in database.GetAllItems())
             {
@@ -870,7 +872,7 @@ namespace CalTools_WPF
                     itemsInGroup.Add(item.SerialNumber);
                 }
             }
-            ReplaceItemSelection selectionDialog = new ReplaceItemSelection();
+            ReplaceItemSelection selectionDialog = new();
             selectionDialog.ReplaceSelectComboBox.ItemsSource = itemsInGroup;
             if (selectionDialog.ShowDialog() == true)
             {

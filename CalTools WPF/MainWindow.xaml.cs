@@ -19,7 +19,7 @@ namespace CalTools_WPF
         public MainWindow()
         {
             config.LoadConfig();
-            database = new CTDatabase(config.DbPath);
+            database = new(config.DbPath);
             database.ItemScansDir = config.ItemScansDir;
             database.Folders = config.Folders;
             InitializeComponent();
@@ -33,6 +33,7 @@ namespace CalTools_WPF
                 UpdateItemList();
                 HighlightNonExistent();
                 MandatoryOnlyBox.IsChecked = true;
+                InOperationOnlyBox.IsChecked = true;
                 List<string> searchOptionsList = new(searchModes.Keys);
                 searchOptionsList.Sort();
                 SearchOptions.ItemsSource = searchOptionsList;
@@ -51,23 +52,23 @@ namespace CalTools_WPF
             //Handle an Outlook attachment being dropped
             if (e.Data.GetDataPresent("FileGroupDescriptorW"))
             {
-                OutlookDataObject outlookData = new OutlookDataObject(e.Data);
+                OutlookDataObject outlookData = new(e.Data);
                 string[] files = (string[])outlookData.GetData("FileGroupDescriptorW");
                 if (files.Length > 1) { MessageBox.Show("Only one item can be dropped into the window at a time.", "Multiple Items", MessageBoxButton.OK, MessageBoxImage.Exclamation); return; }
                 string file = files[0];
                 //Move file from memory to receiving folder
                 MemoryStream[] fileContents = (MemoryStream[])outlookData.GetData("FileContents");
-                FileStream fileStream = new FileStream($"{config.ListDir}\\receiving\\{file}", FileMode.Create);
+                FileStream fileStream = new($"{config.ListDir}\\receiving\\{file}", FileMode.Create);
 
                 string filePath = $"{config.ListDir}\\receiving\\{file}";
                 fileContents[0].CopyTo(fileStream);
                 fileStream.Close();
                 //Try to move the file to item folder
-                string newFileName = "";
-                string taskFolder = "";
+                string newFileName;
+                string taskFolder = null;
                 do
                 {
-                    DropFileInfo info = new DropFileInfo();
+                    DropFileInfo info = new();
                     if (IsItemSelected()) { info.SerialNumberBox.Text = SelectedSN(); }
                     info.DateBox.Text = DateTime.UtcNow.ToString(database.dateFormat);
                     info.TaskBox.ItemsSource = database.GetTasks("SerialNumber", SelectedSN());
@@ -84,7 +85,7 @@ namespace CalTools_WPF
                         newFileName = $"{info.DateBox.Text}_{info.SerialNumberBox.Text}{Path.GetExtension(file)}";
                         CTTask currentTask = (CTTask)info.TaskBox.SelectedItem;
                         taskFolder = currentTask.GetTaskFolder();
-                        if (taskFolder == "")
+                        if (taskFolder == null)
                         {
                             MessageBox.Show($"{info.SerialNumberBox.Text} Task: ({currentTask.TaskID}){currentTask.TaskTitle} does not have a valid folder.",
                                 "Invalid Directory", MessageBoxButton.OK, MessageBoxImage.Error);
@@ -100,8 +101,8 @@ namespace CalTools_WPF
                 string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
                 if (files.Length > 1) { MessageBox.Show("Only one item can be dropped into the window at a time.", "Multiple Items", MessageBoxButton.OK, MessageBoxImage.Exclamation); return; }
                 string file = files[0];
-                string newFileName = "";
-                string taskFolder = "";
+                string newFileName;
+                string taskFolder = null;
                 do
                 {
                     if (Directory.Exists(file))
@@ -110,7 +111,7 @@ namespace CalTools_WPF
                             "Drag and Drop", MessageBoxButton.OK, MessageBoxImage.Error);
                         return;
                     }
-                    DropFileInfo info = new DropFileInfo();
+                    DropFileInfo info = new();
                     if (IsItemSelected()) { info.SerialNumberBox.Text = SelectedSN(); }
                     info.TaskBox.ItemsSource = database.GetTasks("SerialNumber", SelectedSN());
                     info.DateBox.Text = DateTime.UtcNow.ToString(database.dateFormat);
@@ -120,7 +121,7 @@ namespace CalTools_WPF
                         newFileName = $"{info.DateBox.Text}_{info.SerialNumberBox.Text}{Path.GetExtension(file)}";
                         CTTask currentTask = (CTTask)info.TaskBox.SelectedItem;
                         taskFolder = currentTask.GetTaskFolder();
-                        if (taskFolder == "")
+                        if (taskFolder == null)
                         {
                             MessageBox.Show($"{info.SerialNumberBox.Text} Task: ({currentTask.TaskID}){currentTask.TaskTitle} does not have a valid folder.",
                                 "Invalid Directory", MessageBoxButton.OK, MessageBoxImage.Error);
@@ -227,7 +228,7 @@ namespace CalTools_WPF
             if (IsItemSelected())
             {
                 CTItem selectedItem = database.GetItem("SerialNumber", SelectedSN());
-                NewItemFolderSelect selection = new NewItemFolderSelect();
+                NewItemFolderSelect selection = new();
                 selection.FolderSelectComboBox.ItemsSource = config.Folders;
                 selection.FolderSelectSerialNumber.Text = selectedItem.SerialNumber;
                 selection.FolderSelectSerialNumber.IsReadOnly = true;
@@ -327,7 +328,7 @@ namespace CalTools_WPF
                 CTTask currentTask = (CTTask)DetailsTasksTable.SelectedItem;
                 List<TaskData> currentTaskData = database.GetTaskData(currentTask.TaskID.ToString());
                 //Viewer may modify currentTaskData
-                CalDataViewer viewer = new CalDataViewer(ref currentTaskData, currentTask);
+                CalDataViewer viewer = new(ref currentTaskData, currentTask);
                 if (viewer.ShowDialog() == true)
                 {
                     foreach (TaskData dbData in database.GetTaskData(currentTask.TaskID.ToString()))
@@ -434,6 +435,10 @@ namespace CalTools_WPF
             UpdateItemsTable();
         }
         private void MandatoryOnlyBox_Checked(object sender, RoutedEventArgs e)
+        {
+            UpdateItemsTable();
+        }
+        private void InOperationOnlyBox_Checked(object sender, RoutedEventArgs e)
         {
             UpdateItemsTable();
         }

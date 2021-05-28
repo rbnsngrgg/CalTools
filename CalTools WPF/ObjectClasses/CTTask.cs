@@ -130,8 +130,8 @@ namespace CalTools_WPF
         private DateTime CheckFolder(string taskFolder)
         {
             if (!FolderIsValid(taskFolder)) { return new DateTime(); }
-            DateTime latestFileDate = new DateTime();
-            List<string> filesAndFolders = new List<string>();
+            DateTime latestFileDate = new();
+            List<string> filesAndFolders = new();
             filesAndFolders.AddRange(Directory.GetFiles(taskFolder));
             filesAndFolders.AddRange(Directory.GetDirectories(taskFolder));
             foreach (string file in filesAndFolders)
@@ -144,7 +144,7 @@ namespace CalTools_WPF
         }
         private DateTime CheckFile(string file)
         {
-            DateTime fileDate = new DateTime();
+            DateTime fileDate = new();
             string[] fileSplit = file.Split("_");
             bool snMatch = false;
 
@@ -165,7 +165,7 @@ namespace CalTools_WPF
         }
         private DateTime CheckTaskData(ref List<TaskData> taskDataList)
         {
-            DateTime latestData = new DateTime();
+            DateTime latestData = new();
             foreach (TaskData data in taskDataList)
             {
                 if (data.CompleteDate != null) { if (data.CompleteDate > latestData) { latestData = (DateTime)data.CompleteDate; } }

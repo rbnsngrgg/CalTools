@@ -85,10 +85,10 @@ namespace CalTools_WPF
                             if (itemExists) { continue; }
                             else if (GetItem("SerialNumber", Path.GetFileName(itemFolder)) == null)
                             {
-                                CTItem newItem = new CTItem(Path.GetFileName(itemFolder));
+                                CTItem newItem = new(Path.GetFileName(itemFolder));
                                 newItem.Directory = itemFolder;
                                 SaveItem(newItem);
-                                CTTask newTask = new CTTask();
+                                CTTask newTask = new();
                                 newTask.SerialNumber = newItem.SerialNumber;
                                 SaveTask(newTask);
                                 MoveToTaskFolder(newItem, GetTasks("SerialNumber", newItem.SerialNumber)[0]);
@@ -156,7 +156,7 @@ namespace CalTools_WPF
             //Convert old CalibrationItems to CTItems and CTTasks
             foreach (CalibrationItemV4 calItem in legacyItems)
             {
-                CTItem item = new CTItem(calItem.SerialNumber);
+                CTItem item = new(calItem.SerialNumber);
                 item.Location = calItem.Location;
                 item.Manufacturer = calItem.Manufacturer;
                 item.Directory = calItem.Directory;
@@ -169,7 +169,7 @@ namespace CalTools_WPF
                 item.StandardEquipment = calItem.StandardEquipment;
                 item.CertificateNumber = calItem.CertificateNumber;
 
-                CTTask task = new CTTask();
+                CTTask task = new();
                 task.SerialNumber = calItem.SerialNumber;
                 task.TaskTitle = calItem.VerifyOrCalibrate;
                 task.ServiceVendor = calItem.CalVendor;
@@ -186,7 +186,7 @@ namespace CalTools_WPF
             //Convert old CalibrationData to TaskData
             foreach (CalibrationDataV4 calData in GetAllCalDataLegacy())
             {
-                TaskData taskData = new TaskData();
+                TaskData taskData = new();
                 taskData.TaskID = GetTasks("SerialNumber", calData.SerialNumber, false)[0].TaskID;
                 taskData.SerialNumber = calData.SerialNumber;
                 taskData.StateBefore = calData.StateBefore;
@@ -215,14 +215,14 @@ namespace CalTools_WPF
         }
         public List<CalibrationDataV4> GetAllCalDataLegacy()
         {
-            List<CalibrationDataV4> calData = new List<CalibrationDataV4>();
+            List<CalibrationDataV4> calData = new();
             if (Connect())
             {
                 string command = $"SELECT * FROM calibration_data";
                 Execute(command);
                 while (reader.Read())
                 {
-                    CalibrationDataV4 data = new CalibrationDataV4();
+                    CalibrationDataV4 data = new();
                     AssignDataValuesLegacy(ref data);
                     calData.Add(data);
                 }
@@ -231,13 +231,13 @@ namespace CalTools_WPF
         }
         public List<CalibrationItemV4> GetAllItemsLegacy()
         {
-            List<CalibrationItemV4> allItems = new List<CalibrationItemV4>();
+            List<CalibrationItemV4> allItems = new();
             string command = "SELECT * FROM calibration_items";
             if (!Connect()) { return allItems; }
             Execute(command);
             while (reader.Read())
             {
-                CalibrationItemV4 item = new CalibrationItemV4(reader.GetString(0));
+                CalibrationItemV4 item = new(reader.GetString(0));
                 AssignItemValuesLegacy(ref item);
                 allItems.Add(item);
             }

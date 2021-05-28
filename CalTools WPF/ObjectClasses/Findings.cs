@@ -4,9 +4,9 @@ namespace CalTools_WPF.ObjectClasses
 {
     public class Findings
     {
-        public List<Param> parameters = new List<Param>();
+        public List<Param> parameters = new();
         public bool DataFiles { get; set; } = false;
-        public List<string> files = new List<string>();
+        public List<string> files = new();
     }
 
     public class Param //To be embedded within Findings object

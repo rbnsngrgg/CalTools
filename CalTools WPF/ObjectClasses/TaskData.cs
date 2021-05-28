@@ -15,7 +15,7 @@ namespace CalTools_WPF.ObjectClasses
         private DateTime? completeDate = null;
         private string procedure = "";
         private string standardEquipment = "";
-        private Findings? findings = new Findings();
+        private Findings? findings = new();
         private string remarks = "";
         private string technician = "";
         public string timestamp = "";

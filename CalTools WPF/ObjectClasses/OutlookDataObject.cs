@@ -351,7 +351,7 @@ namespace Helpers
         public MemoryStream GetData(string format, int index)
         {
             //create a FORMATETC struct to request the data with
-            FORMATETC formatetc = new FORMATETC();
+            FORMATETC formatetc = new();
             formatetc.cfFormat = (short)DataFormats.GetDataFormat(format).Id;
             formatetc.dwAspect = DVASPECT.DVASPECT_CONTENT;
             formatetc.lindex = index;
@@ -359,7 +359,7 @@ namespace Helpers
             formatetc.tymed = TYMED.TYMED_ISTREAM | TYMED.TYMED_ISTORAGE | TYMED.TYMED_HGLOBAL;
 
             //create STGMEDIUM to output request results into
-            STGMEDIUM medium = new STGMEDIUM();
+            STGMEDIUM medium = new();
 
             //using the Com IDataObject interface get the data using the defined FORMATETC
             this.comUnderlyingDataObject.GetData(ref formatetc, out medium);
