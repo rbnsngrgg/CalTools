@@ -174,7 +174,7 @@ namespace CalTools_WPF
             TreeViewItem selectedItem = (TreeViewItem)CalibrationItemTree.SelectedItem;
             if (selectedItem != null)
             {
-                if (!config.Folders.Contains(selectedItem.Header))
+                if (!config.Folders.Contains(selectedItem.Header)) //Check that the selected item is not a folder, but one of the database items.
                 {
                     EditItemButton.Visibility = Visibility.Collapsed;
                     DetailsEditToggle();
@@ -187,8 +187,6 @@ namespace CalTools_WPF
             if (SaveItem())
             {
                 SaveTasksTable();
-                //Update specific item
-                //UpdateSingleItem(SelectedSN());
                 UpdateItemList(true);
             }
         }
