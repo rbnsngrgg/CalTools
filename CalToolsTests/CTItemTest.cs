@@ -22,7 +22,7 @@ namespace CalToolsTests
             Assert.IsNull(item.InServiceDate);
             Assert.AreEqual(item.InServiceDateString, "");
             Assert.AreEqual(item.Model, "");
-            Assert.AreEqual(item.Comment, "");
+            Assert.AreEqual(item.Remarks, "");
             Assert.IsNull(item.TimeStamp);
             Assert.AreEqual(item.TimeStampString, "");
             Assert.AreEqual(item.ItemGroup, "");

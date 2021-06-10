@@ -1,5 +1,6 @@
 ﻿using CalTools_WPF.ObjectClasses;
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
@@ -13,7 +14,7 @@ namespace CalTools_WPF
     public partial class CalDataEntry : Window
     {
         public TaskData data = new();
-        public Findings findings = new();
+        public List<Parameter> parameters = new();
         public bool ItemIsStandard
         {
             get { return ItemIsStandard; }
@@ -29,7 +30,7 @@ namespace CalTools_WPF
         {
             InitializeComponent();
             Binding paramBinding = new();
-            paramBinding.Source = findings.parameters;
+            paramBinding.Source = parameters;
             paramBinding.UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged;
             FindingsDataGrid.SetBinding(DataGrid.ItemsSourceProperty, paramBinding);
 
@@ -46,15 +47,11 @@ namespace CalTools_WPF
             data.StateBefore = new State
             {
                 InTolerance = (bool)InToleranceBox1.IsChecked,
-                OutOfTolerance = (bool)OutOfToleranceBox1.IsChecked,
-                Malfunctioning = (bool)MalfunctioningBox1.IsChecked,
                 Operational = (bool)OperationalBox1.IsChecked
             };
             data.StateAfter = new State
             {
                 InTolerance = (bool)InToleranceBox2.IsChecked,
-                OutOfTolerance = (bool)OutOfToleranceBox2.IsChecked,
-                Malfunctioning = (bool)MalfunctioningBox2.IsChecked,
                 Operational = (bool)OperationalBox2.IsChecked
             };
             data.ActionTaken = new ActionTaken
@@ -78,8 +75,10 @@ namespace CalTools_WPF
             if (EquipmentBox.Text.Length == 0)
             { if (MessageBox.Show("\"Standard Equipment\" is blank. Continue?", "Blank Field", MessageBoxButton.YesNo, MessageBoxImage.Exclamation) == MessageBoxResult.No) { return false; } }
             else { data.StandardEquipment = EquipmentBox.Text; }
-            data.Findings = findings;
-            if (RemarksBox.Text.Length == 0 & findings.parameters.Count == 0)
+            data.Findings.AddRange(parameters);
+            
+            //TODO: Implement task data files
+            if (RemarksBox.Text.Length == 0 & parameters.Count == 0)
             { MessageBox.Show("Remarks are required if there are no findings parameters.", "Remarks", MessageBoxButton.OK, MessageBoxImage.Exclamation); return false; }
             data.Remarks = RemarksBox.Text;
             if (TechnicianBox.Text.Length == 0) { MessageBox.Show("A technician name is required", "Technician Required", MessageBoxButton.OK, MessageBoxImage.Exclamation); return false; }
@@ -93,15 +92,11 @@ namespace CalTools_WPF
             data.StateBefore = new State
             {
                 InTolerance = false,
-                OutOfTolerance = false,
-                Malfunctioning = (bool)MaintenanceMalfunctioningBox1.IsChecked,
                 Operational = (bool)MaintenanceOperationalBox1.IsChecked
             };
             data.StateAfter = new State
             {
                 InTolerance = false,
-                OutOfTolerance = false,
-                Malfunctioning = (bool)MaintenanceMalfunctioningBox2.IsChecked,
                 Operational = (bool)MaintenanceOperationalBox2.IsChecked
             };
             data.ActionTaken = new ActionTaken
@@ -146,13 +141,13 @@ namespace CalTools_WPF
         }
         private void AddParameter_Click(object sender, RoutedEventArgs e)
         {
-            findings.parameters.Add(new Param($"Parameter {findings.parameters.Count + 1}"));
+            parameters.Add(new Parameter($"Parameter {parameters.Count + 1}"));
             FindingsDataGrid.Items.Refresh();
         }
         private void RemoveParameter_Click(object sender, RoutedEventArgs e)
         {
-            Param selectedItem = (Param)FindingsDataGrid.SelectedItem;
-            if (selectedItem != null) { findings.parameters.Remove(selectedItem); }
+            Parameter selectedItem = (Parameter)FindingsDataGrid.SelectedItem;
+            if (selectedItem != null) { parameters.Remove(selectedItem); }
             FindingsDataGrid.Items.Refresh();
         }
 

@@ -43,7 +43,7 @@ namespace CalTools_WPF
         }
         public string InServiceDateString { get; private set; } = "";
         public string Model { get => model; set { model = value; ChangesMade = true; } }
-        public string Comment { get => comment; set { comment = value; ChangesMade = true; } }
+        public string Remarks { get => comment; set { comment = value; ChangesMade = true; } }
         public DateTime? TimeStamp //{ get => timeStamp; set { timeStamp = value; ChangesMade = true; } }
         {
             get => timeStamp;
@@ -65,22 +65,6 @@ namespace CalTools_WPF
         public bool ChangesMade { get; set; } = false;
         #endregion
 
-        public enum DatabaseColumns
-        {
-            SerialNumber = 0,
-            Location,
-            Manufacturer,
-            Directory,
-            Description,
-            InService,
-            InServiceDate,
-            Model,
-            Comments,
-            Timestamp,
-            ItemGroup,
-            StandardEquipment,
-            CertificateNumber
-        }
         public CTItem(string sn)
         {
             this.SerialNumber = sn;
@@ -91,6 +75,55 @@ namespace CalTools_WPF
         public string ToJson()
         {
             return JsonConvert.SerializeObject(this);
+        }
+    }
+    public class CTStandardEquipment
+    {
+        #region Private Fields
+        private int id = -1;
+        private string serialNumber = "";
+        private string manufacturer = "";
+        private string description = "";
+        private string model = "";
+        private string remarks = "";
+        private DateTime? timestamp = null;
+        private string itemGroup = "";
+        private string certificateNumber = "";
+        #endregion
+
+        #region Getters and Setters
+        public int Id { get => id; set { id = value; ChangesMade = true; } }
+        public string SerialNumber { get => serialNumber; set { serialNumber = value; ChangesMade = true; } }
+        public string Manufacturer { get => manufacturer; set { manufacturer = value; ChangesMade = true; } }
+        public string Description { get => description; set { description = value; ChangesMade = true; } }
+        public string InServiceDateString { get; private set; } = "";
+        public string Model { get => model; set { model = value; ChangesMade = true; } }
+        public string Remarks { get => remarks; set { remarks = value; ChangesMade = true; } }
+        public DateTime? TimeStamp //{ get => timeStamp; set { timeStamp = value; ChangesMade = true; } }
+        {
+            get => timestamp;
+            set
+            {
+                timestamp = value;
+
+                if (value != null)
+                { TimeStampString = timestamp.Value.ToString("yyyy-MM-dd-HH-mm-ss-ffffff"); }
+                else { TimeStampString = ""; }
+                ChangesMade = true;
+            }
+        }
+        public string TimeStampString { get; private set; } = "";
+        public string ItemGroup { get => itemGroup; set { itemGroup = value; ChangesMade = true; } }
+        public string CertificateNumber { get => certificateNumber; set { certificateNumber = value; ChangesMade = true; } }
+        public bool ReplacementAvailable { get; set; } = false;
+        public bool ChangesMade { get; set; } = false;
+        #endregion
+
+        public CTStandardEquipment(string sn, int id = -1)
+        {
+            this.SerialNumber = sn;
+            this.id = id;
+            this.ChangesMade = false;
         }
     }
 }

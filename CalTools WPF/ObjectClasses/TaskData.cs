@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace CalTools_WPF.ObjectClasses
 {
@@ -15,10 +16,11 @@ namespace CalTools_WPF.ObjectClasses
         private DateTime? completeDate = null;
         private string procedure = "";
         private string standardEquipment = "";
-        private Findings? findings = new();
+        private List<Parameter> findings = new();
         private string remarks = "";
         private string technician = "";
         public string timestamp = "";
+        private List<string> dataFiles = new();
         #endregion
 
         #region Getters and Setters
@@ -46,37 +48,19 @@ namespace CalTools_WPF.ObjectClasses
         public string Procedure { get { return procedure; } set { procedure = value; ChangesMade = true; } }
         //StandardEquipment should be JSON serialization of CalibrationItem class. Certificate number is required.
         public string StandardEquipment { get { return standardEquipment; } set { standardEquipment = value; ChangesMade = true; } }
-        public Findings? Findings { get { return findings; } set { findings = value; ChangesMade = true; } }
+        public List<Parameter> Findings { get { return findings; } set { findings = value; ChangesMade = true; } }
         public string Remarks { get { return remarks; } set { remarks = value; ChangesMade = true; } }
         public string Technician { get { return technician; } set { technician = value; ChangesMade = true; } }
         public string Timestamp { get { return timestamp; } set { timestamp = value; ChangesMade = true; } }
+        public List<string> DataFiles { get { return dataFiles; } set { dataFiles = value; ChangesMade = true; } }
         public bool ChangesMade { get; set; } = false;
         #endregion
-
-        public enum DatabaseColumns
-        {
-            ColDataID,
-            ColTaskID,
-            ColSerialNumber,
-            ColStateBeforeAction,
-            ColStateAfterAction,
-            ColActionTaken,
-            ColCompleteDate,
-            ColProcedure,
-            ColStandardEquipment,
-            ColFindings,
-            ColRemarks,
-            ColTechnician,
-            ColEntryTimestamp
-        }
 
     }
 #nullable disable
     public struct State
     {
         public bool InTolerance;
-        public bool OutOfTolerance;
-        public bool Malfunctioning;
         public bool Operational;
     }
     public struct ActionTaken

@@ -67,7 +67,7 @@ namespace CalTools_WPF
         public string ActionType { get => actionType; set { actionType = value; ChangesMade = true; } }
         public string TaskDirectory { get => taskDirectory; set { if (taskDirectory != value) { ChangesMade = true; } taskDirectory = value; } }
         public string Comment { get => comment; set { comment = value; ChangesMade = true; } }
-        public DateTime? ManualFlag
+        public DateTime? DateOverride
         { 
             get => manualFlag;
             set
@@ -75,17 +75,17 @@ namespace CalTools_WPF
                 manualFlag = value;
                 if (value != null) 
                 {
-                    ManualFlagString = manualFlag.Value.ToString("yyyy-MM-dd");
+                    DateOverrideString = manualFlag.Value.ToString("yyyy-MM-dd");
                 }
                 else 
                 { 
-                    ManualFlagString = "";
+                    DateOverrideString = "";
                     DueDate = completeDate.Value.AddMonths(Interval);
                 }
                 ChangesMade = true; 
             } 
         }
-        public string ManualFlagString { get; private set; } = "";
+        public string DateOverrideString { get; private set; } = "";
         public bool ChangesMade { get; set; } = false;
         public bool CompleteDateChanged { get; set; } = false;
         #endregion
@@ -93,22 +93,7 @@ namespace CalTools_WPF
         //For use with the DetailsTasksTable. Used to populate the datagrid combobox with vendors. Transient
         public List<string> ServiceVendorList { get; set; }
         //---------------------------------------------------------------------------------------------------------------------------------
-        public enum DatabaseColumns
-        {
-            TaskID,
-            SerialNumber,
-            TaskTitle,
-            ServiceVendor,
-            Mandatory,
-            Interval,
-            CompleteDate,
-            DueDate,
-            Due,
-            ActionType,
-            Directory,
-            Comments,
-            ManualFlag
-        }
+
         public bool IsTaskDue(int days, DateTime checkDate) //Check whether task is due within (days) days of checkDate
         {
             CheckManualFlag();
@@ -159,9 +144,9 @@ namespace CalTools_WPF
         }
         private void CheckManualFlag()
         {
-            if (ManualFlag == null) {CompleteDate = CompleteDate; return; }
-            if(ManualFlag <= CompleteDate) { ManualFlag = null; CompleteDate = CompleteDate; }
-            else if (ManualFlag < DueDate) { DueDate = ManualFlag; }
+            if (DateOverride == null) {CompleteDate = CompleteDate; return; }
+            if(DateOverride <= CompleteDate) { DateOverride = null; CompleteDate = CompleteDate; }
+            else if (DateOverride < DueDate) { DueDate = DateOverride; }
         }
         private DateTime CheckTaskData(ref List<TaskData> taskDataList)
         {

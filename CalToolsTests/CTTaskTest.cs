@@ -31,7 +31,7 @@ namespace CalToolsTests
             Assert.AreEqual(task.ActionType, "CALIBRATION");
             Assert.AreEqual(task.TaskDirectory, "");
             Assert.AreEqual(task.Comment, "");
-            Assert.IsNull(task.ManualFlag);
+            Assert.IsNull(task.DateOverride);
             Assert.IsFalse(task.ChangesMade);
         }
 

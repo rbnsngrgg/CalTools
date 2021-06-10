@@ -313,11 +313,11 @@ namespace CalTools_WPF
         private void ContextMarkDue_Click(object sender, RoutedEventArgs e)
         {
             CTTask currentTask = DetailsTasksTable.SelectedItem as CTTask;
-            if (currentTask.ManualFlag != null)
+            if (currentTask.DateOverride != null)
             {
-                currentTask.ManualFlag = null;
+                currentTask.DateOverride = null;
             }
-            else { currentTask.ManualFlag = DateTime.UtcNow; }
+            else { currentTask.DateOverride = DateTime.UtcNow; }
         }
         private void ContextViewData_Click(object sender, RoutedEventArgs e)
         {
@@ -374,7 +374,7 @@ namespace CalTools_WPF
                 else { ContextMarkDue.IsEnabled = false; }
                 ContextViewData.IsEnabled = true;
                 ContextOpenLocation.IsEnabled = true;
-                if (currentTask.ManualFlag != null) { ContextMarkDue.Header = "Clear Due Flag"; }
+                if (currentTask.DateOverride != null) { ContextMarkDue.Header = "Clear Due Flag"; }
                 else { ContextMarkDue.Header = "Manually Mark Due"; }
             }
             else

@@ -194,7 +194,7 @@ namespace CalTools_WPF
             foreach (CTItem item in database.GetAllItems())
             {
                 itemLines.Add($"{item.SerialNumber}\t{item.Location}\t{item.Manufacturer}\t{item.Directory}\t\"{item.Description}\"\t{(item.InService ? 1 : 0)}\t" +
-                    $"{item.InServiceDateString}\t\"{item.Model}\"\t\"{item.Comment}\"\t{item.TimeStampString}\t\"{item.ItemGroup}\"\t{(item.StandardEquipment ? 1 : 0)}\t" +
+                    $"{item.InServiceDateString}\t\"{item.Model}\"\t\"{item.Remarks}\"\t{item.TimeStampString}\t\"{item.ItemGroup}\"\t{(item.StandardEquipment ? 1 : 0)}\t" +
                     $"{item.CertificateNumber}");
             }
             foreach (TaskData data in database.GetAllTaskData())
@@ -206,7 +206,7 @@ namespace CalTools_WPF
             foreach (CTTask task in database.GetAllTasks())
             {
                 tasksLines.Add($"{task.TaskID}\t{task.SerialNumber}\t{task.TaskTitle}\t{task.ServiceVendor}\t{(task.Mandatory ? 1 : 0)}\t{task.Interval}\t{task.CompleteDateString}\t" +
-                    $"{task.DueDateString}\t{(task.Due ? 1 : 0)}\t{task.ActionType}\t{task.TaskDirectory}\t{task.Comment}\t{task.ManualFlagString}");
+                    $"{task.DueDateString}\t{(task.Due ? 1 : 0)}\t{task.ActionType}\t{task.TaskDirectory}\t{task.Comment}\t{task.DateOverrideString}");
             }
             System.IO.File.WriteAllLines(Path.Join(targetFolder, files[0]), itemLines);
             System.IO.File.WriteAllLines(Path.Join(targetFolder, files[1]), taskDataLines);
@@ -272,7 +272,7 @@ namespace CalTools_WPF
                 { item.InServiceDate = inservice; };
                 item.InService = DetailsInOperation.IsChecked == true;
                 item.ItemGroup = DetailsItemGroup.Text;
-                item.Comment = DetailsComments.Text;
+                item.Remarks = DetailsComments.Text;
                 if ((bool)DetailsStandardBox.IsChecked)
                 {
                     item.StandardEquipment = true;
@@ -716,7 +716,7 @@ namespace CalTools_WPF
                 if (item.InServiceDate != null) { DetailsOperationDate.Text = item.InServiceDate.Value.ToString("yyyy-MM-dd"); } else { DetailsOperationDate.Clear(); }
                 DetailsInOperation.IsChecked = item.InService;
                 DetailsItemGroup.Text = item.ItemGroup;
-                DetailsComments.Text = item.Comment;
+                DetailsComments.Text = item.Remarks;
                 DetailsStandardBox.IsChecked = item.StandardEquipment;
                 DetailsCertificateNum.Text = item.CertificateNumber;
             }
@@ -842,7 +842,7 @@ namespace CalTools_WPF
             { dataEntry.MaintenanceSelection.IsSelected = true; }
             if (config.Procedures.Count > 0) { dataEntry.ProcedureBox.SelectedIndex = 0; }
             if (standardEquipment.Count > 0) { dataEntry.EquipmentBox.SelectedIndex = 0; }
-            dataEntry.findings.parameters.Add(new Param($"Parameter {dataEntry.findings.parameters.Count + 1}"));
+            dataEntry.findings.parameters.Add(new Parameter($"Parameter {dataEntry.findings.parameters.Count + 1}"));
             if (dataEntry.ShowDialog() == true)
             {
                 try
