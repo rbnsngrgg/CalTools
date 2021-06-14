@@ -44,19 +44,19 @@ namespace CalTools_WPF
             if (data.Findings != null)
             {
                 Binding paramBinding = new();
-                paramBinding.Source = data.Findings.parameters;
+                paramBinding.Source = data.Findings;
                 paramBinding.UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged;
                 FindingsDataGrid.SetBinding(DataGrid.ItemsSourceProperty, paramBinding);
             }
 
-            if (((ActionTaken)data.ActionTaken).Maintenance)
+            if (((ActionTaken)data.Actions).Maintenance)
             {
                 MaintenanceSelection.IsSelected = true;
                 CalibrationDataPanel.Visibility = Visibility.Collapsed;
                 MaintenanceDataPanel.Visibility = Visibility.Visible;
                 FillMaintenanceForm(data);
             }
-            else if (((ActionTaken)data.ActionTaken).Calibration | ((ActionTaken)data.ActionTaken).Verification)
+            else if (((ActionTaken)data.Actions).Calibration | ((ActionTaken)data.Actions).Verification)
             {
                 CalibrationSelection.IsSelected = true;
                 CalibrationDataPanel.Visibility = Visibility.Visible;
@@ -69,25 +69,24 @@ namespace CalTools_WPF
             SerialNumberBox.Text = data.SerialNumber;
             TaskBox.Text = $"({data.TaskID})";
             InToleranceBox1.IsChecked = ((State)data.StateBefore).InTolerance;
-            OutOfToleranceBox1.IsChecked = ((State)data.StateBefore).OutOfTolerance;
-            MalfunctioningBox1.IsChecked = ((State)data.StateBefore).Malfunctioning;
+            OutOfToleranceBox1.IsChecked = !((State)data.StateBefore).InTolerance;
+            MalfunctioningBox1.IsChecked = !((State)data.StateBefore).Operational;
             OperationalBox1.IsChecked = ((State)data.StateBefore).Operational;
 
             InToleranceBox2.IsChecked = ((State)data.StateAfter).InTolerance;
-            OutOfToleranceBox2.IsChecked = ((State)data.StateAfter).OutOfTolerance;
-            MalfunctioningBox2.IsChecked = ((State)data.StateAfter).Malfunctioning;
+            OutOfToleranceBox2.IsChecked = !((State)data.StateAfter).InTolerance;
+            MalfunctioningBox2.IsChecked = !((State)data.StateAfter).Operational;
             OperationalBox2.IsChecked = ((State)data.StateAfter).Operational;
 
-            CalibrationBox.IsChecked = ((ActionTaken)data.ActionTaken).Calibration;
-            VerificationBox.IsChecked = ((ActionTaken)data.ActionTaken).Verification;
-            AdjustedBox.IsChecked = ((ActionTaken)data.ActionTaken).Adjusted;
-            RepairedBox.IsChecked = ((ActionTaken)data.ActionTaken).Repaired;
+            CalibrationBox.IsChecked = ((ActionTaken)data.Actions).Calibration;
+            VerificationBox.IsChecked = ((ActionTaken)data.Actions).Verification;
+            AdjustedBox.IsChecked = ((ActionTaken)data.Actions).Adjusted;
+            RepairedBox.IsChecked = ((ActionTaken)data.Actions).Repaired;
 
             DateBox.Text = data.CompleteDate.Value.ToString("yyyy-MM-dd");
             ProcedureBox.Text = data.Procedure;
-            CTItem standardEquipment = JsonConvert.DeserializeObject<CTItem>(data.StandardEquipment);
-            if (standardEquipment != null) { EquipmentBox.Text = standardEquipment.SerialNumber; }
-            findings = data.Findings;
+            //CTItem standardEquipment = JsonConvert.DeserializeObject<CTItem>(data.StandardEquipment);
+            //if (standardEquipment != null) { EquipmentBox.Text = standardEquipment.SerialNumber; }
             RemarksBox.Text = data.Remarks;
             TechnicianBox.Text = data.Technician;
         }
@@ -95,19 +94,19 @@ namespace CalTools_WPF
         {
             MaintenanceSerialNumberBox.Text = data.SerialNumber;
             MaintenanceTaskBox.Text = $"({data.TaskID})";
-            MaintenanceMalfunctioningBox1.IsChecked = ((State)data.StateBefore).Malfunctioning;
+            MaintenanceMalfunctioningBox1.IsChecked = !((State)data.StateBefore).Operational;
             MaintenanceOperationalBox1.IsChecked = ((State)data.StateBefore).Operational;
-            MaintenanceMalfunctioningBox2.IsChecked = ((State)data.StateAfter).Malfunctioning;
+            MaintenanceMalfunctioningBox2.IsChecked = !((State)data.StateAfter).Operational;
             MaintenanceOperationalBox2.IsChecked = ((State)data.StateAfter).Operational;
 
-            MaintenanceBox.IsChecked = ((ActionTaken)data.ActionTaken).Maintenance;
-            MaintenanceRepairedBox.IsChecked = ((ActionTaken)data.ActionTaken).Repaired;
+            MaintenanceBox.IsChecked = ((ActionTaken)data.Actions).Maintenance;
+            MaintenanceRepairedBox.IsChecked = ((ActionTaken)data.Actions).Repaired;
 
             MaintenanceDateBox.Text = data.CompleteDate.Value.ToString("yyyy-MM-dd");
             MaintenanceProcedureBox.Text = data.Procedure;
 
-            CTItem standardEquipment = JsonConvert.DeserializeObject<CTItem>(data.StandardEquipment);
-            if (standardEquipment != null) { MaintenanceEquipmentBox.Text = standardEquipment.SerialNumber; }
+            //CTItem standardEquipment = JsonConvert.DeserializeObject<CTItem>(data.StandardEquipment);
+            //if (standardEquipment != null) { MaintenanceEquipmentBox.Text = standardEquipment.SerialNumber; }
 
             MaintenanceRemarksBox.Text = data.Remarks;
             MaintenanceTechnicianBox.Text = data.Technician;

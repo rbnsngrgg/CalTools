@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:CalTools_WPF"
         mc:Ignorable="d"
-        Title="Calibration Data Entry" Height="550" Width="800" MinHeight="500" MinWidth="800"
+        Title="Calibration Data Entry" Height="750" Width="900" MinHeight="500" MinWidth="800"
         Icon="C:\Users\grobinson\source\repos\CalTools\CalTools WPF\images\CalToolsIcon.ico">
     <Grid>
         <Grid.RowDefinitions>
@@ -18,142 +18,194 @@
             <ComboBoxItem x:Name="MaintenanceSelection" Content="Maintenance" Selected="MaintenanceSelection_Selected"/>
         </ComboBox>
         <!--Calibration form-->
-        <Grid Grid.Row="1" x:Name="CalibrationDataPanel" Visibility="Visible">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="10"/>
-                <RowDefinition/>
-                <RowDefinition Height="50"/>
-            </Grid.RowDefinitions>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition/>
-                <ColumnDefinition Width="10"/>
-            </Grid.ColumnDefinitions>
-            <Grid Grid.Row="1">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="30"/>
-                    <ColumnDefinition Width="150"/>
-                    <ColumnDefinition/>
-                    <ColumnDefinition/>
-                    <ColumnDefinition/>
-                    <ColumnDefinition/>
-                </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition/>
-                    <RowDefinition/>
-                    <RowDefinition/>
-                    <RowDefinition/>
-                    <RowDefinition/>
-                    <RowDefinition/>
-                    <RowDefinition/>
-                    <RowDefinition/>
-                    <RowDefinition/>
-                    <RowDefinition/>
-                    <RowDefinition/>
-                    <RowDefinition Height="75"/>
-                    <RowDefinition/>
-                </Grid.RowDefinitions>
-                <Label Content="Serial Number:" Grid.Row="0" Grid.Column="1" HorizontalAlignment="Center" FontSize="14"/>
-                    <TextBox x:Name="SerialNumberBox" Grid.Row="0" Grid.Column="2" FontSize="16" Grid.ColumnSpan="2" IsEnabled="False"/>
-                <Label Content="Task:" Grid.Row="0" Grid.Column="4" HorizontalAlignment="Center" FontSize="14"/>
-                <TextBox x:Name="TaskBox" Grid.Row="0" Grid.Column="5" FontSize="16" IsEnabled="False"/>
-                <Label Content="Before Action:" Grid.Row="1" Grid.Column="1" HorizontalAlignment="Center" FontSize="14"/>
-                <CheckBox x:Name="InToleranceBox1" Grid.Row="1" Grid.Column="2" Content="In Tolerance" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14" Checked="InToleranceBox1_Checked" Unchecked="InToleranceBox1_Checked"/>
-                <CheckBox x:Name="OutOfToleranceBox1" Grid.Row="1" Grid.Column="3" Content="Out of Tolerance" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14" Checked="OutOfToleranceBox1_Checked" Unchecked="OutOfToleranceBox1_Checked"/>
-                <CheckBox x:Name="MalfunctioningBox1" Grid.Row="1" Grid.Column="4" Content="Malfunctioning" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14" Checked="MalfunctioningBox1_Checked" Unchecked="MalfunctioningBox1_Checked"/>
-                <CheckBox x:Name="OperationalBox1" Grid.Row="1" Grid.Column="5" Content="Operational" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14" Checked="OperationalBox1_Checked" Unchecked="OperationalBox1_Checked"/>
-                <Label Content="After Action:" Grid.Row="2" Grid.Column="1" HorizontalAlignment="Center" FontSize="14"/>
-                <CheckBox x:Name="InToleranceBox2" Grid.Row="2" Grid.Column="2" Content="In Tolerance" VerticalAlignment="Center" FontSize="14" Checked="InToleranceBox2_Checked" Unchecked="InToleranceBox2_Checked"/>
-                <CheckBox x:Name="OutOfToleranceBox2" Grid.Row="2" Grid.Column="3" Content="Out of Tolerance" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14" Checked="OutOfToleranceBox2_Checked" Unchecked="OutOfToleranceBox2_Checked"/>
-                <CheckBox x:Name="MalfunctioningBox2" Grid.Row="2" Grid.Column="4" Content="Malfunctioning" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14" Checked="MalfunctioningBox2_Checked" Unchecked="MalfunctioningBox2_Checked"/>
-                <CheckBox x:Name="OperationalBox2" Grid.Row="2" Grid.Column="5" Content="Operational" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14" Checked="OperationalBox2_Checked" Unchecked="OperationalBox2_Checked"/>
-                <Label Content="Action Taken:" Grid.Row="3" Grid.Column="1" HorizontalAlignment="Center" FontSize="14"/>
-                    <CheckBox x:Name="CalibrationBox" Grid.Row="3" Grid.Column="2" Content="Calibration" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14"/>
-                    <CheckBox x:Name="VerificationBox" Grid.Row="3" Grid.Column="3" Content="Verification" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14"/>
-                    <CheckBox x:Name="AdjustedBox" Grid.Row="3" Grid.Column="4" Content="Adjusted" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14"/>
-                    <CheckBox x:Name="RepairedBox" Grid.Row="3" Grid.Column="5" Content="Repaired" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14"/>
-                <Label Content="Calibration Date:" Grid.Row="4" Grid.Column="1" HorizontalAlignment="Center" FontSize="14"/>
-                <TextBox x:Name="DateBox" Grid.Row="4" Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="16" Height="25" Width="140" PreviewKeyDown="DateBox_PreviewKeyDown" PreviewTextInput="DateBox_PreviewTextInput"/>
-                <Label Content="Procedure:" Grid.Row="5" Grid.Column="1" HorizontalAlignment="Center" FontSize="14"/>
-                <ComboBox x:Name="ProcedureBox" Grid.Row="5" Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center" Height="25" Width="140" IsEditable="True"/>
-                <Label Content="Standard Equipment:" Grid.Row="6" Grid.Column="1" HorizontalAlignment="Center" FontSize="14"/>
-                <ComboBox x:Name="EquipmentBox" Grid.Row="6" Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center" Height="25" Width="140" IsEditable="False"/>
-                <Label Content="Findings:" Grid.Row="7" Grid.Column="1" HorizontalAlignment="Center" FontSize="14"/>
-                <Button x:Name="AddParameter" Content="Add Parameter" Grid.Row="8" Grid.Column="1" Height="25" Width="130" Click="AddParameter_Click"/>
-                <Button x:Name="RemoveParameter" Content="Remove Parameter" Grid.Row="9" Grid.Column="1" Height="25" Width="130" Click="RemoveParameter_Click"/>
-                <DataGrid x:Name="FindingsDataGrid" Grid.Row="7" Grid.Column="2" Grid.RowSpan="4" CanUserAddRows="False" CanUserDeleteRows="False" AutoGenerateColumns="False" Grid.ColumnSpan="4">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn Header="Parameter" Binding="{Binding Name, Mode=TwoWay}"/>
-                        <DataGridTextColumn Header="Setting" Binding="{Binding Setting, Mode=TwoWay}"/>
-                        <DataGridTextColumn Header="Tolerance" Binding="{Binding Tolerance, Mode=TwoWay}"/>
-                        <DataGridCheckBoxColumn Header="Tolerance Is Percent?" Binding="{Binding ToleranceIsPercent, Mode=TwoWay}"/>
-                        <DataGridTextColumn Header="UoM" Binding="{Binding UnitOfMeasure, Mode=TwoWay}"/>
-                        <DataGridTextColumn Header="Measurement Before" Binding="{Binding MeasurementBefore, Mode=TwoWay}"/>
-                        <DataGridTextColumn Header="Measurement After" Binding="{Binding MeasurementAfter, Mode=TwoWay}"/>
-                    </DataGrid.Columns>
-                </DataGrid>
-                <Label Content="Remarks:" Grid.Row="11" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Top" FontSize="14"/>
-                <TextBox x:Name="RemarksBox" Grid.Row="11" Grid.Column="2" Grid.ColumnSpan="4" VerticalAlignment="Center" Height="65" TextWrapping="Wrap"/>
-                <Label Content="Technician:" Grid.Row="12" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Top" FontSize="14"/>
-                <TextBox x:Name="TechnicianBox" Grid.Row="12" Grid.Column="2" Grid.ColumnSpan="2" VerticalAlignment="Center" FontSize="14" PreviewKeyDown="TechnicianBox_PreviewKeyDown"/>
-            </Grid>
-        </Grid>
-        <!--Maintenance form-->
-        <Grid Grid.Row="1" x:Name="MaintenanceDataPanel" Visibility="Collapsed">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="10"/>
-                <RowDefinition/>
-                <RowDefinition Height="50"/>
-            </Grid.RowDefinitions>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition/>
-                <ColumnDefinition Width="10"/>
-            </Grid.ColumnDefinitions>
-            <Grid Grid.Row="1">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="30"/>
-                    <ColumnDefinition Width="150"/>
-                    <ColumnDefinition/>
-                    <ColumnDefinition/>
-                    <ColumnDefinition/>
-                    <ColumnDefinition/>
-                </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition/>
-                    <RowDefinition/>
-                    <RowDefinition/>
-                    <RowDefinition/>
-                    <RowDefinition/>
-                    <RowDefinition/>
-                    <RowDefinition/>
-                    <RowDefinition Height="75"/>
-                    <RowDefinition/>
-                    <RowDefinition/>
-                </Grid.RowDefinitions>
-                <Label Content="Serial Number:" Grid.Row="0" Grid.Column="1" HorizontalAlignment="Center" FontSize="14"/>
-                <TextBox x:Name="MaintenanceSerialNumberBox" Grid.Row="0" Grid.Column="2" FontSize="16" Grid.ColumnSpan="2" IsEnabled="False"/>
-                <Label Content="Task:" Grid.Row="0" Grid.Column="4" HorizontalAlignment="Center" FontSize="14"/>
-                <TextBox x:Name="MaintenanceTaskBox" Grid.Row="0" Grid.Column="5" FontSize="16" IsEnabled="False"/>
-                <Label Content="Before Action:" Grid.Row="1" Grid.Column="1" HorizontalAlignment="Center" FontSize="14"/>
-                <CheckBox x:Name="MaintenanceMalfunctioningBox1" Grid.Row="1" Grid.Column="2" Content="Malfunctioning" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14" Checked="MaintenanceMalfunctioningBox1_Checked" Unchecked="MaintenanceMalfunctioningBox1_Checked"/>
-                <CheckBox x:Name="MaintenanceOperationalBox1" Grid.Row="1" Grid.Column="3" Content="Operational" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14" IsChecked="True" Checked="MaintenanceOperationalBox1_Checked" Unchecked="MaintenanceOperationalBox1_Checked"/>
-                <Label Content="After Action:" Grid.Row="2" Grid.Column="1" HorizontalAlignment="Center" FontSize="14"/>
-                <CheckBox x:Name="MaintenanceMalfunctioningBox2" Grid.Row="2" Grid.Column="2" Content="Malfunctioning" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14" Checked="MaintenanceMalfunctioningBox2_Checked" Unchecked="MaintenanceMalfunctioningBox2_Checked"/>
-                <CheckBox x:Name="MaintenanceOperationalBox2" Grid.Row="2" Grid.Column="3" Content="Operational" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14" IsChecked="True" Checked="MaintenanceOperationalBox2_Checked" Unchecked="MaintenanceOperationalBox2_Checked"/>
-                <Label Content="Action Taken:" Grid.Row="3" Grid.Column="1" HorizontalAlignment="Center" FontSize="14"/>
-                <CheckBox x:Name="MaintenanceBox" Grid.Row="3" Grid.Column="2" Content="Maintenance" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14" IsChecked="True"/>
-                <CheckBox x:Name="MaintenanceRepairedBox" Grid.Row="3" Grid.Column="3" Content="Repaired" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14"/>
-                <Label Content="Date:" Grid.Row="4" Grid.Column="1" HorizontalAlignment="Center" FontSize="14"/>
-                <TextBox x:Name="MaintenanceDateBox" Grid.Row="4" Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="16" Height="25" Width="140" PreviewKeyDown="MaintenanceDateBox_PreviewKeyDown" PreviewTextInput="MaintenanceDateBox_PreviewTextInput"/>
-                <Label Content="Procedure:" Grid.Row="5" Grid.Column="1" HorizontalAlignment="Center" FontSize="14"/>
-                <ComboBox x:Name="MaintenanceProcedureBox" Grid.Row="5" Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center" Height="25" Width="140" IsEditable="True"/>
-                <Label Content="Standard Equipment:" Grid.Row="6" Grid.Column="1" HorizontalAlignment="Center" FontSize="14"/>
-                <ComboBox x:Name="MaintenanceEquipmentBox" Grid.Row="6" Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center" Height="25" Width="140" IsEditable="False"/>
-                <Label Content="Remarks:" Grid.Row="7" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Top" FontSize="14"/>
-                <TextBox x:Name="MaintenanceRemarksBox" Grid.Row="7" Grid.Column="2" Grid.ColumnSpan="4" VerticalAlignment="Center" Height="65" TextWrapping="Wrap"/>
-                <Label Content="Technician:" Grid.Row="9" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Top" FontSize="14"/>
-                <TextBox x:Name="MaintenanceTechnicianBox" Grid.Row="9" Grid.Column="2" Grid.ColumnSpan="2" VerticalAlignment="Center" FontSize="14" PreviewKeyDown="TechnicianBox_PreviewKeyDown"/>
-            </Grid>
-        </Grid>
+        <ScrollViewer Grid.Row="1">
+            <StackPanel Margin="30,0,30,0" x:Name="MainStackPanel">
+                <DockPanel x:Name="SerialTaskPanel" Margin="0,5">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="150"/>
+                            <ColumnDefinition/>
+                            <ColumnDefinition/>
+                            <ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+                        <Label Content="Serial Number:" Grid.Column="0" HorizontalAlignment="Center" FontSize="16"/>
+                        <TextBox x:Name="SerialNumberBox" Grid.Column="1" FontSize="16" Grid.ColumnSpan="1" IsEnabled="False"/>
+                        <Label Content="Task:" Grid.Column="2" HorizontalAlignment="Right" FontSize="16" Margin="0,0,20,0"/>
+                        <TextBox x:Name="TaskBox" Grid.Column="3" FontSize="16" IsEnabled="False"/>
+                    </Grid>
+                </DockPanel>
+            
+                <DockPanel x:Name="CalCheckBoxPanel" Margin="0,5">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="150"/>
+                            <ColumnDefinition/>
+                            <ColumnDefinition/>
+                            <ColumnDefinition/>
+                            <ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                        </Grid.RowDefinitions>
+                        <Label Content="Before Action:" Grid.Row="0" Grid.Column="0" HorizontalAlignment="Center" FontSize="16"/>
+                        <CheckBox x:Name="InToleranceBox1" Grid.Row="0" Grid.Column="1" Content="In Tolerance" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14" Checked="InToleranceBox1_Checked" Unchecked="InToleranceBox1_Checked"/>
+                        <CheckBox x:Name="OutOfToleranceBox1" Grid.Row="0" Grid.Column="2" Content="Out of Tolerance" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14" Checked="OutOfToleranceBox1_Checked" Unchecked="OutOfToleranceBox1_Checked"/>
+                        <CheckBox x:Name="MalfunctioningBox1" Grid.Row="0" Grid.Column="3" Content="Malfunctioning" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14" Checked="MalfunctioningBox1_Checked" Unchecked="MalfunctioningBox1_Checked"/>
+                        <CheckBox x:Name="OperationalBox1" Grid.Row="0" Grid.Column="4" Content="Operational" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14" Checked="OperationalBox1_Checked" Unchecked="OperationalBox1_Checked"/>
+                    
+                        <Label Content="After Action:" Grid.Row="1" Grid.Column="0" HorizontalAlignment="Center" FontSize="16"/>
+                        <CheckBox x:Name="InToleranceBox2" Grid.Row="1" Grid.Column="1" Content="In Tolerance" VerticalAlignment="Center" FontSize="14" Checked="InToleranceBox2_Checked" Unchecked="InToleranceBox2_Checked"/>
+                        <CheckBox x:Name="OutOfToleranceBox2" Grid.Row="1" Grid.Column="2" Content="Out of Tolerance" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14" Checked="OutOfToleranceBox2_Checked" Unchecked="OutOfToleranceBox2_Checked"/>
+                        <CheckBox x:Name="MalfunctioningBox2" Grid.Row="1" Grid.Column="3" Content="Malfunctioning" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14" Checked="MalfunctioningBox2_Checked" Unchecked="MalfunctioningBox2_Checked"/>
+                        <CheckBox x:Name="OperationalBox2" Grid.Row="1" Grid.Column="4" Content="Operational" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14" Checked="OperationalBox2_Checked" Unchecked="OperationalBox2_Checked"/>
+
+                        <Label Content="Action Taken:" Grid.Row="2" Grid.Column="0" HorizontalAlignment="Center" FontSize="16"/>
+                        <CheckBox x:Name="CalibrationBox" Grid.Row="2" Grid.Column="1" Content="Calibration" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14"/>
+                        <CheckBox x:Name="MaintenanceBox" Grid.Row="2" Grid.Column="1" Content="Maintenance" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14" Visibility="Collapsed"/>
+                        <CheckBox x:Name="VerificationBox" Grid.Row="2" Grid.Column="2" Content="Verification" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14"/>
+                        <CheckBox x:Name="AdjustedBox" Grid.Row="2" Grid.Column="3" Content="Adjusted" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14"/>
+                        <CheckBox x:Name="RepairedBox" Grid.Row="2" Grid.Column="4" Content="Repaired" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14"/>
+                    </Grid>
+                </DockPanel>
+            
+                <DockPanel x:Name="DateProcedurePanel" Margin="0,5">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="150"/>
+                            <ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                        </Grid.RowDefinitions>
+                        <Label Content="Date:" Grid.Row="0" Grid.Column="0" HorizontalAlignment="Center" FontSize="16"/>
+                        <TextBox x:Name="DateBox" Grid.Row="0" Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Center" FontSize="16" Height="25" Width="150" PreviewKeyDown="DateBox_PreviewKeyDown" PreviewTextInput="DateBox_PreviewTextInput"/>
+
+                        <Label Content="Procedure:" Grid.Row="1" Grid.Column="0" HorizontalAlignment="Center" FontSize="16"/>
+                        <ComboBox x:Name="ProcedureBox" Grid.Row="1" Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Center" Height="25" Width="150" IsEditable="True"/>
+                    </Grid>
+                </DockPanel>
+            
+                <DockPanel x:Name="StandardEquipmentPanel" MinHeight="150">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="150"/>
+                            <ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                        </Grid.RowDefinitions>
+                        <Label Content="Standard Equipment:" Grid.Row="0" Grid.Column="0" HorizontalAlignment="Center" FontSize="15"/>
+                        <DataGrid x:Name="EquipmentDataGrid" Grid.Row="0" Grid.Column="1" Grid.RowSpan="4"
+                              CanUserAddRows="False" CanUserDeleteRows="False" AutoGenerateColumns="False" Grid.ColumnSpan="4" Margin="0,0,0,10">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Serial Number" Binding="{Binding SerialNumber, Mode=OneWay}"/>
+                                <DataGridTextColumn Header="Manufacturer" Binding="{Binding Manufacturer, Mode=OneWay}"/>
+                                <DataGridTextColumn Header="Model" Binding="{Binding Model, Mode=OneWay}"/>
+                                <DataGridCheckBoxColumn Header="Description" Binding="{Binding Description, Mode=OneWay}"/>
+                                <DataGridTextColumn Header="Certificate" Binding="{Binding CertificateNumber, Mode=OneWay}"/>
+                                <DataGridTextColumn Header="Due Date" Binding="{Binding ActionDueDate, Mode=OneWay}"/>
+                                <DataGridTextColumn Header="Remarks" Binding="{Binding Remarks, Mode=OneWay}" Width="150"/>
+                                <DataGridCheckBoxColumn Header="Selected"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+                </DockPanel>
+            
+                <DockPanel x:Name="FindingsPanel" MinHeight="150">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="150"/>
+                            <ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                        </Grid.RowDefinitions>
+                        <Label Content="Findings:" Grid.Row="0" Grid.Column="0" HorizontalAlignment="Center" FontSize="16"/>
+                        <Button x:Name="AddParameter" Content="Add Parameter" Grid.Row="1" Grid.Column="0" Height="25" Width="130" Click="AddParameter_Click"/>
+                        <Button x:Name="RemoveParameter" Content="Remove Parameter" Grid.Row="2" Grid.Column="0" Height="25" Width="130" Click="RemoveParameter_Click"/>
+                        <DataGrid x:Name="FindingsDataGrid" Grid.Row="0" Grid.Column="1" Grid.RowSpan="4"
+                              CanUserAddRows="False" CanUserDeleteRows="False" AutoGenerateColumns="False" Grid.ColumnSpan="4" Margin="0,0,0,10">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Parameter" Binding="{Binding Name, Mode=TwoWay}"/>
+                                <DataGridTextColumn Header="Setting" Binding="{Binding Setting, Mode=TwoWay}"/>
+                                <DataGridTextColumn Header="Tolerance" Binding="{Binding Tolerance, Mode=TwoWay}"/>
+                                <DataGridCheckBoxColumn Header="Tolerance Is Percent?" Binding="{Binding ToleranceIsPercent, Mode=TwoWay}"/>
+                                <DataGridTextColumn Header="UoM" Binding="{Binding UnitOfMeasure, Mode=TwoWay}"/>
+                                <DataGridTextColumn Header="Measurement Before" Binding="{Binding MeasurementBefore, Mode=TwoWay}"/>
+                                <DataGridTextColumn Header="Measurement After" Binding="{Binding MeasurementAfter, Mode=TwoWay}"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+                </DockPanel>
+            
+                <DockPanel x:Name="FilesPanel" MinHeight="150">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="150"/>
+                            <ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                        </Grid.RowDefinitions>
+                        <Label Content="Files:" Grid.Row="0" Grid.Column="0" HorizontalAlignment="Center" FontSize="16"/>
+                        <Button x:Name="AddFile" Content="Add File" Grid.Row="1" Grid.Column="0" Height="25" Width="130" Click="AddFile_Click"/>
+                        <DataGrid x:Name="FilesDataGrid" Grid.Row="0" Grid.Column="1" Grid.RowSpan="4"
+                          CanUserAddRows="False" CanUserDeleteRows="False" AutoGenerateColumns="False" Grid.ColumnSpan="4">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Parameter" Binding="{Binding Name, Mode=TwoWay}"/>
+                                <DataGridTextColumn Header="Setting" Binding="{Binding Setting, Mode=TwoWay}"/>
+                                <DataGridTextColumn Header="Tolerance" Binding="{Binding Tolerance, Mode=TwoWay}"/>
+                                <DataGridCheckBoxColumn Header="Tolerance Is Percent?" Binding="{Binding ToleranceIsPercent, Mode=TwoWay}"/>
+                                <DataGridTextColumn Header="UoM" Binding="{Binding UnitOfMeasure, Mode=TwoWay}"/>
+                                <DataGridTextColumn Header="Measurement Before" Binding="{Binding MeasurementBefore, Mode=TwoWay}"/>
+                                <DataGridTextColumn Header="Measurement After" Binding="{Binding MeasurementAfter, Mode=TwoWay}"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+                </DockPanel>
+            
+                <DockPanel x:Name="RemarksPanel" MinHeight="100">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="150"/>
+                            <ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition/>
+                        </Grid.RowDefinitions>
+                        <Label Content="Remarks:" Grid.Row="0" Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Top" FontSize="16"/>
+                        <TextBox x:Name="RemarksBox" Grid.Row="0" Grid.Column="1" VerticalAlignment="Center" MinHeight="100" TextWrapping="Wrap"/>
+                    </Grid>
+                </DockPanel>
+            
+                <DockPanel x:Name="TechnicianPanel">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="150"/>
+                            <ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition/>
+                        </Grid.RowDefinitions>
+                        <Label Content="Technician:" Grid.Row="0" Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Top" FontSize="16"/>
+                        <TextBox x:Name="TechnicianBox" Grid.Row="0" Grid.Column="1" VerticalAlignment="Center" FontSize="14" PreviewKeyDown="TechnicianBox_PreviewKeyDown"/>
+                    </Grid>
+                </DockPanel>
+
+            </StackPanel>
+        </ScrollViewer>
         <DockPanel Grid.Row="2" HorizontalAlignment="Center" Grid.ColumnSpan="2">
             <Button x:Name="SaveButton" Content="Save" FontSize="16" Grid.Row="2" Width="150" Height="30" Click="SaveButton_Click"/>
             <Separator Width="50"/>

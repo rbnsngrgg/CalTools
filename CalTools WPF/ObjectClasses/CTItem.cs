@@ -76,6 +76,19 @@ namespace CalTools_WPF
         {
             return JsonConvert.SerializeObject(this);
         }
+        public CTStandardEquipment ToStandardEquipment(DateTime dueDate)
+        {
+            return new CTStandardEquipment(SerialNumber)
+            {
+                Manufacturer = Manufacturer,
+                Description = Description,
+                Model = Model,
+                Remarks = Remarks,
+                ActionDueDate = dueDate,
+                ItemGroup = ItemGroup,
+                CertificateNumber = CertificateNumber
+            };
+        }
     }
     public class CTStandardEquipment
     {
@@ -87,6 +100,7 @@ namespace CalTools_WPF
         private string model = "";
         private string remarks = "";
         private DateTime? timestamp = null;
+        private DateTime actionDueDate = new();
         private string itemGroup = "";
         private string certificateNumber = "";
         #endregion
@@ -96,7 +110,7 @@ namespace CalTools_WPF
         public string SerialNumber { get => serialNumber; set { serialNumber = value; ChangesMade = true; } }
         public string Manufacturer { get => manufacturer; set { manufacturer = value; ChangesMade = true; } }
         public string Description { get => description; set { description = value; ChangesMade = true; } }
-        public string InServiceDateString { get; private set; } = "";
+        public string InServiceDateString { get; private set; } = "";//TODO: Delete InServiceDateString
         public string Model { get => model; set { model = value; ChangesMade = true; } }
         public string Remarks { get => remarks; set { remarks = value; ChangesMade = true; } }
         public DateTime? TimeStamp //{ get => timeStamp; set { timeStamp = value; ChangesMade = true; } }
@@ -112,18 +126,18 @@ namespace CalTools_WPF
                 ChangesMade = true;
             }
         }
+        public DateTime ActionDueDate { get => actionDueDate; set { actionDueDate = value; ChangesMade = true; } }
         public string TimeStampString { get; private set; } = "";
         public string ItemGroup { get => itemGroup; set { itemGroup = value; ChangesMade = true; } }
         public string CertificateNumber { get => certificateNumber; set { certificateNumber = value; ChangesMade = true; } }
-        public bool ReplacementAvailable { get; set; } = false;
         public bool ChangesMade { get; set; } = false;
         #endregion
 
         public CTStandardEquipment(string sn, int id = -1)
         {
-            this.SerialNumber = sn;
+            SerialNumber = sn;
             this.id = id;
-            this.ChangesMade = false;
+            ChangesMade = false;
         }
     }
 }

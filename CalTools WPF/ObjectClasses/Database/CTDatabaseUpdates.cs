@@ -42,14 +42,14 @@ namespace CalTools_WPF
             data.SerialNumber = reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColSerialNumber);
             data.StateBefore = JsonConvert.DeserializeObject<State>(reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColStateBeforeAction));
             data.StateAfter = JsonConvert.DeserializeObject<State>(reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColStateAfterAction));
-            data.ActionTaken = JsonConvert.DeserializeObject<ActionTaken>(reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColActionTaken));
+            data.ActionTaken = JsonConvert.DeserializeObject<ActionTakenV5>(reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColActionTaken));
             if (reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColCalibrationDate).Length > 0)
             { data.CalibrationDate = DateTime.ParseExact(reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColCalibrationDate), dateFormat, CultureInfo.InvariantCulture); }
             if (reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColDueDate).Length > 0)
             { data.DueDate = DateTime.ParseExact(reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColDueDate), dateFormat, CultureInfo.InvariantCulture); }
             data.Procedure = reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColProcedure);
             data.StandardEquipment = reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColStandardEquipment);
-            data.findings = JsonConvert.DeserializeObject<Findings>(reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColFindings));
+            data.findings = JsonConvert.DeserializeObject<FindingsV5>(reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColFindings));
             data.Remarks = reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColRemarks);
             data.Technician = reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColTechnician);
             data.Timestamp = reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColEntryTimestamp);
@@ -63,8 +63,6 @@ namespace CalTools_WPF
             item.Directory = reader.GetString((int)ItemsColumnsV5.Directory);
             item.Description = reader.GetString((int)ItemsColumnsV5.Description);
             item.InService = reader.GetString((int)ItemsColumnsV5.InService) == "1";
-            if (reader.GetString((int)ItemsColumnsV5.InServiceDate).Length > 0)
-            { item.InServiceDate = DateTime.ParseExact(reader.GetString((int)ItemsColumnsV5.InServiceDate), dateFormat, CultureInfo.InvariantCulture); }
             item.Model = reader.GetString((int)ItemsColumnsV5.Model);
             item.Remarks = reader.GetString((int)ItemsColumnsV5.Comments);
             if (reader.GetString((int)ItemsColumnsV5.Timestamp).Length > 0)
@@ -74,19 +72,20 @@ namespace CalTools_WPF
             item.CertificateNumber = reader.GetString((int)ItemsColumnsV5.CertificateNumber);
             item.ChangesMade = false;
         }
-        private void AssignDataValuesV5(ref TaskData data)
+        private void AssignDataValuesV5(ref TaskDataV5 data)
         {
             data.DataID = reader.GetInt32((int)TaskDataColumnsV5.ColDataID);
             data.TaskID = reader.GetInt32((int)TaskDataColumnsV5.ColTaskID);
             data.SerialNumber = reader.GetString((int)TaskDataColumnsV5.ColSerialNumber);
             data.StateBefore = JsonConvert.DeserializeObject<State>(reader.GetString((int)TaskDataColumnsV5.ColStateBeforeAction));
             data.StateAfter = JsonConvert.DeserializeObject<State>(reader.GetString((int)TaskDataColumnsV5.ColStateAfterAction));
-            data.ActionTaken = JsonConvert.DeserializeObject<ActionTaken>(reader.GetString((int)TaskDataColumnsV5.ColActionTaken));
+            data.ActionTaken = JsonConvert.DeserializeObject<ActionTakenV5>(reader.GetString((int)TaskDataColumnsV5.ColActionTaken));
             if (reader.GetString((int)TaskDataColumnsV5.ColCompleteDate).Length > 0)
             { data.CompleteDate = DateTime.ParseExact(reader.GetString((int)TaskDataColumnsV5.ColCompleteDate), dateFormat, CultureInfo.InvariantCulture); }
             data.Procedure = reader.GetString((int)TaskDataColumnsV5.ColProcedure);
             data.StandardEquipment = reader.GetString((int)TaskDataColumnsV5.ColStandardEquipment);
-            data.Findings = JsonConvert.DeserializeObject<Findings>(reader.GetString((int)TaskDataColumnsV5.ColFindings));
+            data.Findings = JsonConvert.DeserializeObject<FindingsV5>(reader.GetString((int)TaskDataColumnsV5.ColFindings));
+            if(data.Findings == null) { data.Findings = new(); }
             data.Remarks = reader.GetString((int)TaskDataColumnsV5.ColRemarks);
             data.Technician = reader.GetString((int)TaskDataColumnsV5.ColTechnician);
             data.Timestamp = reader.GetString((int)TaskDataColumnsV5.ColEntryTimestamp);
@@ -117,7 +116,7 @@ namespace CalTools_WPF
         {
             List<CTItem> allItems = new();
             if (!Connect()) { return allItems; }
-            Execute("SELECT * FROM items");
+            Execute("SELECT * FROM old_items");
             while (reader.Read())
             {
                 CTItem item = new(reader.GetString(0));
@@ -131,7 +130,7 @@ namespace CalTools_WPF
         {
             List<CTTask> allTasks = new();
             if (!Connect()) { return allTasks; }
-            Execute("SELECT * FROM Tasks");
+            Execute("SELECT * FROM old_tasks");
             while (reader.Read())
             {
                 CTTask task = new();
@@ -141,15 +140,15 @@ namespace CalTools_WPF
             Disconnect();
             return allTasks;
         }
-        public List<TaskData> GetAllTaskDataV5()
+        public List<TaskDataV5> GetAllTaskDataV5()
         {
-            List<TaskData> calData = new();
+            List<TaskDataV5> calData = new();
             if (Connect())
             {
-                Execute($"SELECT * FROM TaskData");
+                Execute($"SELECT * FROM old_data");
                 while (reader.Read())
                 {
-                    TaskData data = new();
+                    TaskDataV5 data = new();
                     AssignDataValuesV5(ref data);
                     calData.Add(data);
                 }
@@ -157,21 +156,58 @@ namespace CalTools_WPF
             }
             return calData;
         }
-        public List<TaskData> GetTaskDataV5(string taskID)
+        public List<TaskDataV5> GetTaskDataV5(string taskID)
         {
-            List<TaskData> calData = new();
+            List<TaskDataV5> calData = new();
             if (Connect())
             {
-                Execute($"SELECT * FROM TaskData WHERE TaskID='{taskID}'");
+                Execute($"SELECT * FROM old_data WHERE TaskID='{taskID}'");
                 while (reader.Read())
                 {
-                    TaskData data = new();
+                    TaskDataV5 data = new();
                     AssignDataValuesV5(ref data);
                     calData.Add(data);
                 }
                 Disconnect();
             }
             return calData;
+        }
+        public bool SaveTaskDataV5(TaskDataV5 data, bool timestampOverride = false, bool disconnect = false)
+        {
+            if (data.TaskID == null)
+            {
+                MessageBox.Show($"Task data TaskID is null.", "Null TaskID", MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
+            }
+            try
+            {
+                if (Connect())
+                {
+                    string command = $"INSERT INTO TaskData (TaskID,SerialNumber,StateBeforeAction,StateAfterAction,ActionTaken,CompleteDate,Procedure,StandardEquipment," +
+                        $"Findings,Remarks,Technician,EntryTimeStamp) " +
+                        $"VALUES ('{data.TaskID}'," +
+                        $"'{data.SerialNumber.Replace("'", "''")}'," +
+                        $"'{JsonConvert.SerializeObject(data.StateBefore)}'," +
+                        $"'{JsonConvert.SerializeObject(data.StateAfter)}'," +
+                        $"'{JsonConvert.SerializeObject(data.ActionTaken)}'," +
+                        $"'{data.CompleteDate.Value.ToString(dateFormat)}'," +
+                        $"'{data.Procedure.Replace("'", "''")}'," +
+                        $"'{data.StandardEquipment.Replace("'", "''")}'," +
+                        $"'{JsonConvert.SerializeObject(data.Findings).Replace("'", "''")}'," +
+                        $"'{data.Remarks.Replace("'", "''")}'," +
+                        $"'{data.Technician.Replace("'", "''")}'," +
+                        $"'{(timestampOverride ? data.Timestamp : DateTime.UtcNow.ToString(timestampFormat, CultureInfo.InvariantCulture))}')";
+                    Execute(command);
+                    if (disconnect) { Disconnect(); }
+                    return true;
+                }
+                else { return false; }
+            }
+            catch (System.Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Database Write Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
+            }
         }
         #endregion
         private void ConvertFileStructure() //Converts the file structure from V4 to V5, adding folders for each task
@@ -221,7 +257,7 @@ namespace CalTools_WPF
         }
         private void CreateV6Tables()
         {
-            //Assumes open connection, create the current structure if it isn't present.
+            if (!Connect()) { return; }
             string command = "CREATE TABLE IF NOT EXISTS items (" +
                     "serial_number TEXT PRIMARY KEY," +
                     "location TEXT DEFAULT ''," +
@@ -230,7 +266,7 @@ namespace CalTools_WPF
                     "description TEXT DEFAULT ''," +
                     "in_service INTEGER DEFAULT 1," +
                     "model TEXT DEFAULT ''," +
-                    "item_group TEXT DEFAULT," +
+                    "item_group TEXT DEFAULT ''," +
                     "remarks TEXT DEFAULT ''," +
                     "is_standard_equipment INTEGER DEFAULT 0," +
                     "certificate_number TEXT DEFAULT ''," +
@@ -278,10 +314,10 @@ namespace CalTools_WPF
                     "repaired INTEGER," +
                     "maintenance INTEGER," +
                     "complete_date DATE DEFAULT ''," +
-                    "procedure TEXT DEFAULT," +
+                    "procedure TEXT DEFAULT ''," +
                     "remarks TEXT DEFAULT ''," +
                     "technician TEXT," +
-                    "timestamp DATE DEFAULT," +
+                    "timestamp DATE DEFAULT ''," +
                     "FOREIGN KEY(task_id) REFERENCES tasks(id) ON DELETE CASCADE," +
                     "FOREIGN KEY(serial_number) REFERENCES items(serial_number) ON DELETE CASCADE)";
             Execute(command);
@@ -306,7 +342,8 @@ namespace CalTools_WPF
             command = "CREATE TABLE IF NOT EXISTS task_data_files(" +
                 "id INTEGER PRIMARY KEY AUTOINCREMENT," +
                 "task_data_id INTEGER," +
-                "location TEXT," +
+                "description TEXT," +
+                "location TEXT NOT NULL," +
                 "FOREIGN KEY(task_data_id) REFERENCES task_data(id) ON DELETE CASCADE)";
             Execute(command);
         }
@@ -398,7 +435,7 @@ namespace CalTools_WPF
             //Convert old CalibrationData to TaskData
             foreach (CalibrationDataV4 calData in GetAllCalDataLegacy())
             {
-                TaskData taskData = new();
+                TaskDataV5 taskData = new();
                 taskData.TaskID = GetTasks("SerialNumber", calData.SerialNumber, false)[0].TaskID;
                 taskData.SerialNumber = calData.SerialNumber;
                 taskData.StateBefore = calData.StateBefore;
@@ -412,7 +449,7 @@ namespace CalTools_WPF
                 taskData.Technician = calData.Technician;
                 taskData.Timestamp = calData.Timestamp;
 
-                SaveTaskData(taskData, true);
+                SaveTaskDataV5(taskData, true);
             }
             ResetConnection();
             string command = "DROP TABLE IF EXISTS calibration_items";
@@ -427,10 +464,106 @@ namespace CalTools_WPF
         }
         private void FromVersion5()
         {
+            string command = "ALTER TABLE Items RENAME TO old_items";
+            Execute(command);
+            command = "ALTER TABLE Tasks RENAME TO old_tasks";
+            Execute(command);
+            command = "ALTER TABLE TaskData RENAME TO old_data";
+            Execute(command);
+            ResetConnection();
+            CreateV6Tables();
             List<CTItem> v5Items = GetAllItemsV5();
             List<CTTask> v5Tasks = GetAllTasksV5();
-            List<TaskData> v5TaskData = GetAllTaskDataV5();
+            List<TaskDataV5> v5TaskData = GetAllTaskDataV5();
             if (!IsConnected()) { conn.Open(); }
+            foreach(CTItem item in v5Items)
+            {
+                SaveItem(item);
+            }
+            foreach (CTTask task in v5Tasks)
+            {
+                SaveTask(task, true, true);
+            }
+            foreach(TaskDataV5 data in v5TaskData)
+            {
+                SaveTaskData(TaskDataV5toV6(data), true, true, true);
+            }
+            
+            ResetConnection();
+            command = "DROP TABLE IF EXISTS old_items";
+            Execute(command);
+            ResetConnection();
+            command = "DROP TABLE IF EXISTS old_tasks";
+            Execute(command);
+            ResetConnection();
+            command = "DROP TABLE IF EXISTS old_data";
+            Execute(command);
+            command = "PRAGMA user_version = 7";
+            Execute(command);
+            ResetConnection();
+        }
+        public TaskData TaskDataV5toV6(TaskDataV5 v5)
+        {
+            List<Parameter> parameters = new();
+            if(v5.Findings != null)
+            {
+                foreach (Param param in v5.Findings.parameters)
+                {
+                    parameters.Add(new Parameter()
+                    {
+                        DataId = (int)v5.DataID,
+                        Name = param.Name,
+                        Tolerance = param.Tolerance,
+                        ToleranceIsPercent = param.ToleranceIsPercent,
+                        UnitOfMeasure = param.UnitOfMeasure,
+                        MeasurementBefore = param.MeasurementBefore,
+                        MeasurementAfter = param.MeasurementAfter,
+                        Setting = param.Setting
+                    });
+                }
+            }
+            List<CTStandardEquipment> standardEquipment = new();
+            if(v5.StandardEquipment != null && v5.StandardEquipment != "null")
+            {
+                standardEquipment.Add(JsonConvert.DeserializeObject<CTItem>(v5.StandardEquipment).ToStandardEquipment(DateTime.MaxValue));
+            }
+            List<Tuple<string, string>> dataFiles = new();
+            foreach(string file in v5.Findings.files)
+            {
+                dataFiles.Add(new Tuple<string, string>("", file));
+            }
+            return new TaskData()
+            {
+                DataID = (int)v5.DataID,
+                TaskID = v5.TaskID,
+                SerialNumber = v5.SerialNumber,
+                StateBefore = new State
+                {
+                    InTolerance = v5.StateBefore.Value.InTolerance,
+                    Operational = v5.StateBefore.Value.Operational
+                },
+                StateAfter = new State
+                {
+                    InTolerance = v5.StateAfter.Value.InTolerance,
+                    Operational = v5.StateAfter.Value.Operational
+                },
+                Actions = new ActionTaken
+                {
+                    Calibration = v5.ActionTaken.Value.Calibration,
+                    Verification = v5.ActionTaken.Value.Verification,
+                    Adjusted = v5.ActionTaken.Value.Adjusted,
+                    Repaired = v5.ActionTaken.Value.Repaired,
+                    Maintenance = v5.ActionTaken.Value.Maintenance
+                },
+                CompleteDate = v5.CompleteDate,
+                Procedure = v5.Procedure,
+                Findings = parameters,
+                StandardEquipment = standardEquipment,
+                Remarks = v5.Remarks,
+                Technician = v5.Technician,
+                Timestamp = v5.Timestamp,
+                DataFiles = dataFiles,
+            };
         }
         public List<CalibrationDataV4> GetAllCalDataLegacy()
         {
@@ -503,6 +636,7 @@ namespace CalTools_WPF
                         Execute("ALTER TABLE Tasks ADD COLUMN ManualFlag TEXT DEFAULT ''");
                         Execute("PRAGMA user_version = 6");
                     }
+                    else if(dbVersion == 6) { FromVersion5(); ResetConnection(); }
                     dbVersion = GetDatabaseVersion();
                 }
                 if (dbVersion > currentVersion)

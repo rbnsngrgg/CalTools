@@ -30,6 +30,15 @@ namespace CalTools_WPF
                         "ItemScansDir = \"\\\\artemis\\Hardware Development Projects\\Manufacturing Engineering\\Test Equipment\\Item Scans\"/>",
                         "\t<DueItems MarkDueDays = \"30\"/>",
                     "</CalTools_Config>" };
+#if DEBUG
+                lines = new string[]{ "<CalTools_Config Folders = \"PRODUCTION EQUIPMENT,ENGINEERING EQUIPMENT,QUALITY EQUIPMENT,Ref Only,Removed from Service,Debug Items\"" +
+                        " Procedures = \"019-0065\">",
+                        "\t<Database DbName = \"debug_Test Equipment Calibration List.db\"/>",
+                        "\t<Directories ListDir = \"\\\\artemis\\Hardware Development Projects\\Manufacturing Engineering\\Test Equipment\" " +
+                        "ItemScansDir = \"\\\\artemis\\Hardware Development Projects\\Manufacturing Engineering\\Test Equipment\\Item Scans\"/>",
+                        "\t<DueItems MarkDueDays = \"30\"/>",
+                    "</CalTools_Config>" };
+#endif
                 File.WriteAllLines(configPath, lines);
                 return true;
             }

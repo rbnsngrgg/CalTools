@@ -93,6 +93,13 @@ namespace CalTools_WPF
             measurement_after,
             setting
         }
+        public enum TaskDataFiles
+        {
+            id,
+            task_data_id,
+            description,
+            location
+        }
 
         public enum ItemsColumnsV5
         {

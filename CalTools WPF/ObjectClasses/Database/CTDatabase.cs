@@ -273,7 +273,7 @@ namespace CalTools_WPF
             {
                 if (Connect())
                 {
-                    string command = $"INSERT OR IGNORE INTO Items (serial_number) VALUES ('{item.SerialNumber.Replace("'", "''")}')";
+                    string command = $"INSERT OR IGNORE INTO items (serial_number) VALUES ('{item.SerialNumber.Replace("'", "''")}')";
                     Execute(command);
                     command = $"UPDATE Items SET serial_number='{item.SerialNumber.Replace("'", "''")}'," +
                         $"model='{item.Model.Replace("'", "''")}'," +
@@ -303,7 +303,49 @@ namespace CalTools_WPF
                 return false;
             }
         }
-        public bool SaveTask(CTTask task, bool disconnect = false)
+        public bool SaveDataStandardEquipment(int dataId, int equipmentId)
+        {
+            Execute($"SELECT * FROM data_standard_equipment WHERE " +
+                $"data_id='{dataId}' AND " +
+                $"standard_equipment_id='{equipmentId}'");
+            if (reader.Read()) { return false; }
+            Execute("INSERT INTO data_standard_equipment (data_id, standard_equipment_id) " +
+                $"VALUES ({dataId},{equipmentId})");
+            return true;
+        }
+        public bool SaveStandardEquipment(CTStandardEquipment item, bool disconnect = false)
+        {
+            try
+            {
+                if (Connect())
+                {
+                    string command = $"INSERT INTO standard_equipment (serial_number,model,description," +
+                        $"manufacturer,remarks,timestamp,item_group,certificate_number,action_due_date) " +
+                        $"VALUES ('{item.SerialNumber.Replace("'", "''")}'," +
+                        $"'{item.Model.Replace("'", "''")}'," +
+                        $"'{item.Description.Replace("'", "''")}'," +
+                        $"'{item.Manufacturer.Replace("'", "''")}'," +
+                        $"'{item.Remarks.Replace("'", "''")}'," +
+                        $"'{DateTime.UtcNow.ToString(timestampFormat, CultureInfo.InvariantCulture)}'," +
+                        $"'{item.ItemGroup.Replace("'", "''")}'," +
+                        $"'{item.CertificateNumber.Replace("'", "''")}'," +
+                        $"'{item.ActionDueDate.ToString(dateFormat)}')";
+                    Execute(command);
+                    if (disconnect) { Disconnect(); }
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            catch (System.Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Database Write Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
+            }
+        }
+        public bool SaveTask(CTTask task, bool disconnect = true, bool overrideId = false)
         {
             string command;
             try
@@ -311,23 +353,42 @@ namespace CalTools_WPF
                 if (Connect())
                 {
                     //New task that hasn't yet been inserted into the database
-                    if (task.TaskID == -1)
+                    if (overrideId && task.TaskID != -1)
+                    {
+                        command = $"INSERT OR IGNORE INTO tasks " +
+                            $"(id,serial_number,task_title,service_vendor,is_mandatory," +
+                            $"interval,complete_date,due_date,is_due,action_type,directory,remarks,date_override) " +
+                            $"VALUES ('{task.TaskID}'," +
+                            $"'{task.SerialNumber}'," +
+                            $"'{task.TaskTitle}'," +
+                            $"'{task.ServiceVendor}'," +
+                            $"'{(task.Mandatory ? 1 : 0)}'," +
+                            $"'{task.Interval}'," +
+                            $"'{task.CompleteDateString}'," +
+                            $"'{task.DueDateString}'," +
+                            $"'{(task.Due ? 1 : 0)}'," +
+                            $"'{task.ActionType}'," +
+                            $"'{task.TaskDirectory}'," +
+                            $"'{task.Comment}'," +
+                            $"'{task.DateOverrideString}')";
+                    }
+                    else if (task.TaskID == -1 )
                     {
                         command = $"INSERT OR IGNORE INTO tasks " +
                             $"(serial_number,task_title,service_vendor,is_mandatory," +
                             $"interval,complete_date,due_date,is_due,action_type,directory,remarks,date_override) " +
-                          $"VALUES ('{task.SerialNumber}'," +
-                          $"'{task.TaskTitle}'," +
-                          $"'{task.ServiceVendor}'," +
-                          $"'{(task.Mandatory == true ? 1 : 0)}'," +
-                          $"'{task.Interval}'," +
-                          $"'{task.CompleteDateString}'," +
-                          $"'{task.DueDateString}'," +
-                          $"'{(task.Due == true ? 1 : 0)}'," +
-                          $"'{task.ActionType}'," +
-                          $"'{task.TaskDirectory}'," +
-                          $"'{task.Comment}'," +
-                          $"'{task.DateOverrideString}')";
+                            $"VALUES ('{task.SerialNumber}'," +
+                            $"'{task.TaskTitle}'," +
+                            $"'{task.ServiceVendor}'," +
+                            $"'{(task.Mandatory ? 1 : 0)}'," +
+                            $"'{task.Interval}'," +
+                            $"'{task.CompleteDateString}'," +
+                            $"'{task.DueDateString}'," +
+                            $"'{(task.Due ? 1 : 0)}'," +
+                            $"'{task.ActionType}'," +
+                            $"'{task.TaskDirectory}'," +
+                            $"'{task.Comment}'," +
+                            $"'{task.DateOverrideString}')";
                     }
                     //Existing task
                     else
@@ -336,11 +397,11 @@ namespace CalTools_WPF
                             $"serial_number='{task.SerialNumber}'," +
                             $"task_title='{task.TaskTitle}'," +
                             $"service_vendor='{task.ServiceVendor}'," +
-                            $"is_mandatory='{(task.Mandatory == true ? 1 : 0)}'," +
+                            $"is_mandatory='{(task.Mandatory ? 1 : 0)}'," +
                             $"interval='{task.Interval}'," +
                             $"complete_date='{task.CompleteDateString}'," +
                             $"due_date='{task.DueDateString}'," +
-                            $"is_due='{(task.Due == true ? 1 : 0)}'," +
+                            $"is_due='{(task.Due ? 1 : 0)}'," +
                             $"action_type='{task.ActionType}'," +
                             $"directory='{task.TaskDirectory}'," +
                             $"remarks='{task.Comment}'," +
@@ -353,13 +414,13 @@ namespace CalTools_WPF
                 }
                 else { return false; }
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 MessageBox.Show(ex.Message, "Database Write Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
             }
         }
-        public bool SaveTaskData(TaskData data, bool timestampOverride = false, bool disconnect = false)
+        public bool SaveTaskData(TaskData data, bool timestampOverride = false, bool disconnect = false, bool overrideId = false)
         {
             if (data.TaskID == null)
             {
@@ -372,31 +433,108 @@ namespace CalTools_WPF
                 {
                     string command = $"INSERT INTO task_data (task_id,serial_number,in_tolerance_before,operational_before," +
                         $"in_tolerance_after,operational_after,calibrated,verified,adjusted,repaired," +
-                        $"maintenance,complete_date,procedure,remarks,technician,timestamp) "+
+                        $"maintenance,complete_date,procedure,remarks,technician,timestamp) " +
                         $"VALUES ('{data.TaskID}'," +
                         $"'{data.SerialNumber.Replace("'", "''")}'," +
                         $"'{(data.StateBefore.Value.InTolerance ? 1 : 0)}'," +
                         $"'{(data.StateBefore.Value.Operational ? 1 : 0)}'," +
                         $"'{(data.StateAfter.Value.InTolerance ? 1 : 0)}'," +
                         $"'{(data.StateAfter.Value.Operational ? 1 : 0)}'," +
-                        $"'{(data.ActionTaken.Value.Calibration ? 1: 0)}'," +
-                        $"'{(data.ActionTaken.Value.Verification ? 1 : 0)}'," +
-                        $"'{(data.ActionTaken.Value.Adjusted ? 1 : 0)}'," +
-                        $"'{(data.ActionTaken.Value.Repaired ? 1 : 0)}'," +
-                        $"'{(data.ActionTaken.Value.Maintenance ? 1 : 0)}'," +
+                        $"'{(data.Actions.Value.Calibration ? 1 : 0)}'," +
+                        $"'{(data.Actions.Value.Verification ? 1 : 0)}'," +
+                        $"'{(data.Actions.Value.Adjusted ? 1 : 0)}'," +
+                        $"'{(data.Actions.Value.Repaired ? 1 : 0)}'," +
+                        $"'{(data.Actions.Value.Maintenance ? 1 : 0)}'," +
                         $"'{((DateTime)data.CompleteDate).ToString(dateFormat)}'," +
                         $"'{data.Procedure.Replace("'", "''")}'," +
                         $"'{data.Remarks.Replace("'", "''")}'," +
                         $"'{data.Technician.Replace("'", "''")}'," +
                         $"'{(timestampOverride ? data.Timestamp : DateTime.UtcNow.ToString(timestampFormat, CultureInfo.InvariantCulture))}')";
-                    //TODO: check/insert standard equipment, insert findings
+                    if (overrideId && data.DataID != -1)
+                    {
+                        command = $"INSERT INTO task_data (id,task_id,serial_number,in_tolerance_before,operational_before," +
+                            $"in_tolerance_after,operational_after,calibrated,verified,adjusted,repaired," +
+                            $"maintenance,complete_date,procedure,remarks,technician,timestamp) " +
+                            $"VALUES ('{data.DataID}'," +
+                            $"'{data.TaskID}'," +
+                            $"'{data.SerialNumber.Replace("'", "''")}'," +
+                            $"'{(data.StateBefore.Value.InTolerance ? 1 : 0)}'," +
+                            $"'{(data.StateBefore.Value.Operational ? 1 : 0)}'," +
+                            $"'{(data.StateAfter.Value.InTolerance ? 1 : 0)}'," +
+                            $"'{(data.StateAfter.Value.Operational ? 1 : 0)}'," +
+                            $"'{(data.Actions.Value.Calibration ? 1 : 0)}'," +
+                            $"'{(data.Actions.Value.Verification ? 1 : 0)}'," +
+                            $"'{(data.Actions.Value.Adjusted ? 1 : 0)}'," +
+                            $"'{(data.Actions.Value.Repaired ? 1 : 0)}'," +
+                            $"'{(data.Actions.Value.Maintenance ? 1 : 0)}'," +
+                            $"'{((DateTime)data.CompleteDate).ToString(dateFormat)}'," +
+                            $"'{data.Procedure.Replace("'", "''")}'," +
+                            $"'{data.Remarks.Replace("'", "''")}'," +
+                            $"'{data.Technician.Replace("'", "''")}'," +
+                            $"'{(timestampOverride ? data.Timestamp : DateTime.UtcNow.ToString(timestampFormat, CultureInfo.InvariantCulture))}')";
+                    }
                     Execute(command);
+                    Execute("SELECT last_insert_rowid()");
+                    reader.Read();
+                    int dataId = reader.GetInt32(0);
+                    foreach(Parameter p in data.Findings)
+                    {
+                        p.DataId = dataId;
+                        SaveParameter(p, false);
+                    }
+                    foreach(CTStandardEquipment e in data.StandardEquipment)
+                    {
+                        int equipmentId = CheckStandardEquipment(e);
+                        SaveDataStandardEquipment(dataId, equipmentId);
+                    }
+                    SaveTaskDataFiles(data);
                     if (disconnect) { Disconnect(); }
                     return true;
                 }
                 else { return false; }
             }
             catch (System.Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Database Write Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
+            }
+        }
+        public void SaveTaskDataFiles(TaskData data, bool disconnect = false)
+        {
+            foreach(Tuple<string, string> file in data.DataFiles)
+            {
+                Execute($"SELECT * FROM task_data_files WHERE " +
+                    $"task_data_id='{data.DataID}' AND " +
+                    $"description='{file.Item1}' AND " +
+                    $"location='{file.Item2}'");
+                if (reader.Read()) { continue; }
+                Execute($"INSERT INTO task_data_files (task_data_id,description,location) " +
+                    $"VALUES ({data.DataID},{file.Item1},{file.Item2})");
+            }
+        }
+        private bool SaveParameter(Parameter p, bool disconnect = true)
+        {
+            try
+            {
+                if (Connect())
+                {
+                    string command = $"INSERT INTO findings (data_id,name,tolerance,tolerance_is_percent," +
+                        $"unit_of_measure,measurement_before,measurement_after,setting) " +
+                        $"VALUES ('{p.DataId}'," +
+                        $"'{p.Name.Replace("'", "''")}'," +
+                        $"'{p.Tolerance}'," +
+                        $"'{(p.ToleranceIsPercent ? 1 : 0)}'," +
+                        $"'{p.UnitOfMeasure}'," +
+                        $"'{p.MeasurementBefore}'," +
+                        $"'{p.MeasurementAfter}'," +
+                        $"'{p.Setting}')";
+                    Execute(command);
+                    if (disconnect) { Disconnect(); }
+                    return true;
+                }
+                else { return false; }
+            }
+            catch(Exception ex)
             {
                 MessageBox.Show(ex.Message, "Database Write Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
@@ -461,6 +599,19 @@ namespace CalTools_WPF
         }
 
         //Misc members-------------------------------------------------------------------------------------------------------------
+        public int CheckStandardEquipment(CTStandardEquipment e)
+        {
+            Execute($"SELECT * FROM standard_equipment WHERE " +
+                $"serial_number='{e.SerialNumber}' AND " +
+                $"action_due_date='{e.ActionDueDate.ToString(dateFormat)}' AND " +
+                $"certificate_number='{e.CertificateNumber}'");
+            if (reader.Read()) { return reader.GetInt32(0); }
+            SaveStandardEquipment(e);
+            Execute("SELECT last_insert_rowid()");
+            reader.Read();
+            int equipmentId = reader.GetInt32(0);
+            return equipmentId;
+        }
         public void CleanUp()
         {
             if (IsConnected()) { Disconnect(); }
@@ -519,6 +670,7 @@ namespace CalTools_WPF
             { item.TimeStamp = DateTime.ParseExact(reader.GetString((int)StandardEquipmentColumns.timestamp), timestampFormat, CultureInfo.InvariantCulture); }
             item.ItemGroup = reader.GetString((int)StandardEquipmentColumns.item_group);
             item.CertificateNumber = reader.GetString((int)StandardEquipmentColumns.certificate_number);
+            item.ActionDueDate = DateTime.ParseExact(reader.GetString((int)StandardEquipmentColumns.action_due_date), dateFormat, CultureInfo.InvariantCulture);
             item.ChangesMade = false;
         }
         private void AssignDataValues(ref TaskData data)
@@ -544,7 +696,7 @@ namespace CalTools_WPF
                 InTolerance = reader.GetBoolean((int)TaskDataColumns.in_tolerance_after),
                 Operational = reader.GetBoolean((int)TaskDataColumns.operational_after)
             };
-            data.ActionTaken = new()
+            data.Actions = new()
             {
                 Calibration = reader.GetBoolean((int)TaskDataColumns.calibrated),
                 Verification = reader.GetBoolean((int)TaskDataColumns.verified),
@@ -553,7 +705,7 @@ namespace CalTools_WPF
                 Maintenance = reader.GetBoolean((int)TaskDataColumns.maintenance)
             };
             data.Findings = GetFindingsFromTaskData((int)data.DataID, false);
-            //TODO: add query for list of standard equipment
+            data.StandardEquipment = GetDataStandardEquipment(data.DataID);
             data.ChangesMade = false;
         }
         private void AssignFindingsValues(ref Parameter param)

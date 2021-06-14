@@ -36,24 +36,6 @@ namespace CalToolsTests
         }
 
         [TestMethod]
-        public void TestDatabaseColumns()
-        {
-            Assert.AreEqual((int)CTTask.DatabaseColumns.TaskID, 0);
-            Assert.AreEqual((int)CTTask.DatabaseColumns.SerialNumber, 1);
-            Assert.AreEqual((int)CTTask.DatabaseColumns.TaskTitle, 2);
-            Assert.AreEqual((int)CTTask.DatabaseColumns.ServiceVendor, 3);
-            Assert.AreEqual((int)CTTask.DatabaseColumns.Mandatory, 4);
-            Assert.AreEqual((int)CTTask.DatabaseColumns.Interval, 5);
-            Assert.AreEqual((int)CTTask.DatabaseColumns.CompleteDate, 6);
-            Assert.AreEqual((int)CTTask.DatabaseColumns.DueDate, 7);
-            Assert.AreEqual((int)CTTask.DatabaseColumns.Due, 8);
-            Assert.AreEqual((int)CTTask.DatabaseColumns.ActionType, 9);
-            Assert.AreEqual((int)CTTask.DatabaseColumns.Directory, 10);
-            Assert.AreEqual((int)CTTask.DatabaseColumns.Comments, 11);
-            Assert.AreEqual((int)CTTask.DatabaseColumns.ManualFlag, 12);
-        }
-
-        [TestMethod]
         public void TestIsTaskDue()
         {
             DateTime checkDate = DateTime.UtcNow.AddDays(30);

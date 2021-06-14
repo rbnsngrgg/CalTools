@@ -9,13 +9,13 @@ namespace CalTools_WPF.ObjectClasses
         public string SerialNumber { get; set; } = "";
         public State? StateBefore { get; set; } = null;
         public State? StateAfter { get; set; } = null;
-        public ActionTaken? ActionTaken { get; set; } = null;
+        public ActionTakenV5? ActionTaken { get; set; } = null;
         public DateTime? CalibrationDate { get; set; } = null;
         public DateTime? DueDate { get; set; } = null;
         public string Procedure { get; set; } = "";
         //StandardEquipment should be JSON serialization of CalibrationItem class. Certificate number is required.
         public string StandardEquipment { get; set; } = "";
-        public Findings? findings = new();
+        public FindingsV5? findings = new();
         public string Remarks { get; set; } = "";
         public string Technician { get; set; } = "";
         public string Timestamp { get; set; } = "";

@@ -200,7 +200,7 @@ namespace CalTools_WPF
             foreach (TaskData data in database.GetAllTaskData())
             {
                 taskDataLines.Add($"{data.DataID}\t{data.TaskID}\t{data.SerialNumber}\t{JsonConvert.SerializeObject(data.StateBefore)}\t{JsonConvert.SerializeObject(data.StateAfter)}\t" +
-                    $"{JsonConvert.SerializeObject(data.ActionTaken)}\t{data.CompleteDateString}\t{data.Procedure}\t{data.StandardEquipment}\t" +
+                    $"{JsonConvert.SerializeObject(data.Actions)}\t{data.CompleteDateString}\t{data.Procedure}\t{data.StandardEquipment}\t" +
                     $"{JsonConvert.SerializeObject(data.Findings)}\t{data.Remarks}\t{data.Technician}\t{data.Timestamp}");
             }
             foreach (CTTask task in database.GetAllTasks())
@@ -438,6 +438,35 @@ namespace CalTools_WPF
                     }
                 }
             }
+        }
+        private List<CTStandardEquipment> GetCurrentStandardEquipment()
+        {
+            List<CTItem> items = database.GetAllItems();
+            List<CTStandardEquipment> standardEquipment = new();
+            items.RemoveAll(item => item.StandardEquipment);
+            foreach(CTItem item in items)
+            {
+                standardEquipment.Add(item.ToStandardEquipment(GetMandatoryDueDate(item.SerialNumber)));
+            }
+            //Standard equipment that has a mandatory task due will not be included in the list.
+            standardEquipment.RemoveAll(item => item.ActionDueDate < DateTime.Today);
+            return standardEquipment;
+        }
+        private DateTime GetMandatoryDueDate(string sn)
+        {
+            List<CTTask> tasks = database.GetTasks("serial_number", sn);
+            DateTime earliest = DateTime.MaxValue;
+            bool hasMandatoryTasks = false;
+            foreach(CTTask task in tasks)
+            {
+                if (task.Mandatory) { hasMandatoryTasks = true; }
+                if (task.DueDate < earliest) { earliest = (DateTime)task.DueDate; }
+            }
+            if (earliest == DateTime.MaxValue)
+            {
+                return hasMandatoryTasks ? DateTime.MinValue : earliest;
+            }
+            else { return earliest; }
         }
         private bool IsItemAvailable(CTItem item = null)
         {
@@ -828,29 +857,17 @@ namespace CalTools_WPF
                 dataEntry.ItemIsStandard = true;
             }
             dataEntry.SerialNumberBox.Text = task.SerialNumber;
-            dataEntry.MaintenanceSerialNumberBox.Text = task.SerialNumber;
             dataEntry.DateBox.Text = DateTime.UtcNow.ToString(database.dateFormat);
-            dataEntry.MaintenanceDateBox.Text = DateTime.UtcNow.ToString(database.dateFormat);
             dataEntry.ProcedureBox.ItemsSource = config.Procedures;
-            dataEntry.MaintenanceProcedureBox.ItemsSource = config.Procedures;
-            dataEntry.EquipmentBox.ItemsSource = standardEquipment;
-            dataEntry.MaintenanceEquipmentBox.ItemsSource = standardEquipment;
+            dataEntry.EquipmentDataGrid.ItemsSource = standardEquipment;
             dataEntry.TaskBox.Text = $"({task.TaskID}) {task.TaskTitle}";
-            dataEntry.MaintenanceTaskBox.Text = dataEntry.TaskBox.Text;
             dataEntry.data.TaskID = task.TaskID;
             if (task.ActionType == "MAINTENANCE")
             { dataEntry.MaintenanceSelection.IsSelected = true; }
             if (config.Procedures.Count > 0) { dataEntry.ProcedureBox.SelectedIndex = 0; }
-            if (standardEquipment.Count > 0) { dataEntry.EquipmentBox.SelectedIndex = 0; }
-            dataEntry.findings.parameters.Add(new Parameter($"Parameter {dataEntry.findings.parameters.Count + 1}"));
+            dataEntry.parameters.Add(new Parameter($"Parameter {dataEntry.parameters.Count + 1}"));
             if (dataEntry.ShowDialog() == true)
             {
-                try
-                {
-                    dataEntry.data.StandardEquipment = JsonConvert.SerializeObject(database.GetItem("SerialNumber", dataEntry.EquipmentBox.Text));
-                }
-                catch
-                { MessageBox.Show($"Invalid \"Standard Equipment\" entry.", "Invalid Entry", MessageBoxButton.OK, MessageBoxImage.Error); return; }
                 database.SaveTaskData(dataEntry.data);
             }
             SaveTasksTable();
