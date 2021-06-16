@@ -16,7 +16,6 @@ namespace CalTools_WPF
     {
         readonly List<TaskData> taskDataList;
         private readonly CTTask currentTask;
-        public Findings findings = new();
         public CalDataViewer(ref List<TaskData> inputData, CTTask task)
         {
             InitializeComponent();
@@ -26,7 +25,7 @@ namespace CalTools_WPF
             foreach (TaskData data in taskDataList)
             {
                 TreeViewItem newItem = new();
-                newItem.Header = data.CompleteDateString;
+                newItem.Header = $"({data.DataID}) {data.CompleteDateString}";
                 TaskDataTree.Items.Add(newItem);
             }
             TaskDataTree.Items.Refresh();
@@ -47,24 +46,29 @@ namespace CalTools_WPF
                 paramBinding.Source = data.Findings;
                 paramBinding.UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged;
                 FindingsDataGrid.SetBinding(DataGrid.ItemsSourceProperty, paramBinding);
+
+                Binding filesParamBinding = new();
+                filesParamBinding.Source = data.DataFiles;
+                filesParamBinding.UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged;
+                FilesDataGrid.SetBinding(DataGrid.ItemsSourceProperty, filesParamBinding);
+
+                Binding equipmentParamBinding = new();
+                equipmentParamBinding.Source = data.StandardEquipment;
+                equipmentParamBinding.UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged;
+                EquipmentDataGrid.SetBinding(DataGrid.ItemsSourceProperty, equipmentParamBinding);
             }
 
             if (((ActionTaken)data.Actions).Maintenance)
             {
                 MaintenanceSelection.IsSelected = true;
-                CalibrationDataPanel.Visibility = Visibility.Collapsed;
-                MaintenanceDataPanel.Visibility = Visibility.Visible;
-                FillMaintenanceForm(data);
             }
             else if (((ActionTaken)data.Actions).Calibration | ((ActionTaken)data.Actions).Verification)
             {
                 CalibrationSelection.IsSelected = true;
-                CalibrationDataPanel.Visibility = Visibility.Visible;
-                MaintenanceDataPanel.Visibility = Visibility.Collapsed;
-                FillCalForm(data);
             }
+            FillForm(data);
         }
-        private void FillCalForm(TaskData data)
+        private void FillForm(TaskData data)
         {
             SerialNumberBox.Text = data.SerialNumber;
             TaskBox.Text = $"({data.TaskID})";
@@ -82,6 +86,7 @@ namespace CalTools_WPF
             VerificationBox.IsChecked = ((ActionTaken)data.Actions).Verification;
             AdjustedBox.IsChecked = ((ActionTaken)data.Actions).Adjusted;
             RepairedBox.IsChecked = ((ActionTaken)data.Actions).Repaired;
+            MaintenanceBox.IsChecked = ((ActionTaken)data.Actions).Maintenance;
 
             DateBox.Text = data.CompleteDate.Value.ToString("yyyy-MM-dd");
             ProcedureBox.Text = data.Procedure;
@@ -89,27 +94,6 @@ namespace CalTools_WPF
             //if (standardEquipment != null) { EquipmentBox.Text = standardEquipment.SerialNumber; }
             RemarksBox.Text = data.Remarks;
             TechnicianBox.Text = data.Technician;
-        }
-        private void FillMaintenanceForm(TaskData data)
-        {
-            MaintenanceSerialNumberBox.Text = data.SerialNumber;
-            MaintenanceTaskBox.Text = $"({data.TaskID})";
-            MaintenanceMalfunctioningBox1.IsChecked = !((State)data.StateBefore).Operational;
-            MaintenanceOperationalBox1.IsChecked = ((State)data.StateBefore).Operational;
-            MaintenanceMalfunctioningBox2.IsChecked = !((State)data.StateAfter).Operational;
-            MaintenanceOperationalBox2.IsChecked = ((State)data.StateAfter).Operational;
-
-            MaintenanceBox.IsChecked = ((ActionTaken)data.Actions).Maintenance;
-            MaintenanceRepairedBox.IsChecked = ((ActionTaken)data.Actions).Repaired;
-
-            MaintenanceDateBox.Text = data.CompleteDate.Value.ToString("yyyy-MM-dd");
-            MaintenanceProcedureBox.Text = data.Procedure;
-
-            //CTItem standardEquipment = JsonConvert.DeserializeObject<CTItem>(data.StandardEquipment);
-            //if (standardEquipment != null) { MaintenanceEquipmentBox.Text = standardEquipment.SerialNumber; }
-
-            MaintenanceRemarksBox.Text = data.Remarks;
-            MaintenanceTechnicianBox.Text = data.Technician;
         }
 
         private void CancelButton_Click(object sender, RoutedEventArgs e)
@@ -128,8 +112,8 @@ namespace CalTools_WPF
                 foreach (TaskData data in taskDataList)
                 {
                     {
-                        string currentItemCompleteDate = ((TreeViewItem)((TreeView)sender).SelectedItem).Header.ToString();
-                        if (data.CompleteDateString == currentItemCompleteDate)
+                        string currentItemHeader = ((TreeViewItem)((TreeView)sender).SelectedItem).Header.ToString();
+                        if ($"({data.DataID}) {data.CompleteDateString}" == currentItemHeader)
                         { OpenForm(data); break; }
                     }
                 }
@@ -153,8 +137,8 @@ namespace CalTools_WPF
                 foreach (TaskData data in taskDataList)
                 {
                     {
-                        string currentItemCompleteDate = ((TreeViewItem)TaskDataTree.SelectedItem).Header.ToString();
-                        if (data.CompleteDateString == currentItemCompleteDate)
+                        string currentItemHeader = ((TreeViewItem)TaskDataTree.SelectedItem).Header.ToString();
+                        if ($"({data.DataID}) {data.CompleteDateString}" == currentItemHeader)
                         {
                             taskDataList.Remove(data);
                             TaskDataTree.Items.Remove(TaskDataTree.SelectedItem);
@@ -173,7 +157,7 @@ namespace CalTools_WPF
             {
                 foreach (string file in Directory.GetFiles(currentTask.TaskDirectory))
                 {
-                    if (file.Contains(((TreeViewItem)TaskFilesTree.SelectedItem).Header.ToString()))
+                    if (Path.GetFileName(file) == ((TreeViewItem)TaskFilesTree.SelectedItem).Header.ToString())
                     {
                         TaskFilesTree.Items.Remove(TaskFilesTree.SelectedItem);
                         TaskFilesTree.Items.Refresh();
@@ -181,6 +165,30 @@ namespace CalTools_WPF
                         break;
                     }
                 }
+            }
+        }
+
+        private void CalibrationSelection_Selected(object sender, RoutedEventArgs e)
+        {
+            ToggleVisibility(Visibility.Visible, Visibility.Collapsed);
+        }
+        private void MaintenanceSelection_Selected(object sender, RoutedEventArgs e)
+        {
+            ToggleVisibility(Visibility.Collapsed, Visibility.Visible);
+        }
+        private void ToggleVisibility(Visibility v1, Visibility v2)
+        {
+            if (MainStackPanel != null)
+            {
+                InToleranceBox1.Visibility = v1;
+                OutOfToleranceBox1.Visibility = v1;
+                InToleranceBox2.Visibility = v1;
+                OutOfToleranceBox2.Visibility = v1;
+                CalibrationBox.Visibility = v1;
+                VerificationBox.Visibility = v1;
+                AdjustedBox.Visibility = v1;
+                MaintenanceBox.Visibility = v2;
+                FindingsPanel.Visibility = v1;
             }
         }
     }

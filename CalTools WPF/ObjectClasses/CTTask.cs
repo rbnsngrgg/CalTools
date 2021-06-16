@@ -22,7 +22,7 @@ namespace CalTools_WPF
         private string actionType = "CALIBRATION";
         private string taskDirectory = "";
         private string comment = "";
-        private DateTime? manualFlag = null;
+        private DateTime? dateOverride = null;
         #endregion
 
         #region Getters and Setters
@@ -69,23 +69,18 @@ namespace CalTools_WPF
         public string Comment { get => comment; set { comment = value; ChangesMade = true; } }
         public DateTime? DateOverride
         { 
-            get => manualFlag;
+            get => dateOverride;
             set
             {
-                manualFlag = value;
-                if (value != null) 
-                {
-                    DateOverrideString = manualFlag.Value.ToString("yyyy-MM-dd");
-                }
-                else 
+                dateOverride = value;
+                if(value == null) 
                 { 
-                    DateOverrideString = "";
                     DueDate = completeDate.Value.AddMonths(Interval);
                 }
                 ChangesMade = true; 
             } 
         }
-        public string DateOverrideString { get; private set; } = "";
+        public string DateOverrideString { get => DateOverride == null ? "" : DateOverride.Value.ToString("yyyy-MM-dd"); }
         public bool ChangesMade { get; set; } = false;
         public bool CompleteDateChanged { get; set; } = false;
         #endregion

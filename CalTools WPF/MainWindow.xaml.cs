@@ -71,7 +71,7 @@ namespace CalTools_WPF
                     DropFileInfo info = new();
                     if (IsItemSelected()) { info.SerialNumberBox.Text = SelectedSN(); }
                     info.DateBox.Text = DateTime.UtcNow.ToString(database.dateFormat);
-                    info.TaskBox.ItemsSource = database.GetTasks("SerialNumber", SelectedSN());
+                    info.TaskBox.ItemsSource = database.GetTasks("serial_number", SelectedSN());
                     if (info.ShowDialog() == false) { if (File.Exists(filePath)) { File.Delete(filePath); } return; }
                     else
                     {
@@ -113,7 +113,7 @@ namespace CalTools_WPF
                     }
                     DropFileInfo info = new();
                     if (IsItemSelected()) { info.SerialNumberBox.Text = SelectedSN(); }
-                    info.TaskBox.ItemsSource = database.GetTasks("SerialNumber", SelectedSN());
+                    info.TaskBox.ItemsSource = database.GetTasks("serial_number", SelectedSN());
                     info.DateBox.Text = DateTime.UtcNow.ToString(database.dateFormat);
                     if (info.ShowDialog() == false) { return; }
                     else
@@ -194,7 +194,7 @@ namespace CalTools_WPF
         {
             if (IsItemSelected())
             {
-                string directory = database.GetItem("SerialNumber", SelectedSN()).Directory;
+                string directory = database.GetItem("serial_number", SelectedSN()).Directory;
                 Process.Start("explorer", directory);
             }
         }
@@ -225,7 +225,7 @@ namespace CalTools_WPF
         {
             if (IsItemSelected())
             {
-                CTItem selectedItem = database.GetItem("SerialNumber", SelectedSN());
+                CTItem selectedItem = database.GetItem("serial_number", SelectedSN());
                 NewItemFolderSelect selection = new();
                 selection.FolderSelectComboBox.ItemsSource = config.Folders;
                 selection.FolderSelectSerialNumber.Text = selectedItem.SerialNumber;
@@ -254,7 +254,7 @@ namespace CalTools_WPF
                 DetailsEditToggle();
                 EditItemButton.Visibility = Visibility.Visible;
             }
-            UpdateDetails(database.GetItem("SerialNumber", SelectedSN()));
+            UpdateDetails(database.GetItem("serial_number", SelectedSN()));
             UpdateTasksTable();
         }
         //TreeView Context Menu
@@ -290,7 +290,7 @@ namespace CalTools_WPF
             if ((bool)DetailsStandardBox.IsChecked)
             {
                 //Make all tasks mandatory for standard equipment
-                foreach (CTTask task in database.GetTasks("SerialNumber", SelectedSN()))
+                foreach (CTTask task in database.GetTasks("serial_number", SelectedSN()))
                 {
                     if (!task.Mandatory)
                     {
@@ -356,7 +356,7 @@ namespace CalTools_WPF
             if (DetailsTasksTable.SelectedItem != null)
             {
                 CTTask task = (CTTask)DetailsTasksTable.SelectedItem;
-                CTItem item = database.GetItem("SerialNumber", task.SerialNumber);
+                CTItem item = database.GetItem("serial_number", task.SerialNumber);
                 if (Directory.Exists(task.TaskDirectory))
                 { Process.Start("explorer", task.TaskDirectory); }
                 else if (Directory.Exists(item.Directory))
@@ -386,13 +386,13 @@ namespace CalTools_WPF
         }
         private void AddTaskButton_Click(object sender, RoutedEventArgs e)
         {
-            CTItem currentItem = database.GetItem("SerialNumber", SelectedSN());
+            CTItem currentItem = database.GetItem("serial_number", SelectedSN());
             if (Directory.Exists(currentItem.Directory))
             {
                 database.SaveTask(new CTTask { SerialNumber = SelectedSN() }, true);
                 int taskID = database.GetLastTaskID();
                 if (taskID == -1) { return; }
-                CTTask task = database.GetTasks("TaskID", taskID.ToString())[0];
+                CTTask task = database.GetTasks("id", taskID.ToString())[0];
                 string newPath = Path.Combine(currentItem.Directory, $"{taskID}_{task.TaskTitle}");
                 Directory.CreateDirectory(newPath);
                 if (Directory.Exists(newPath)) { task.TaskDirectory = newPath; }
@@ -454,7 +454,7 @@ namespace CalTools_WPF
         {
             if (todoTable.SelectedItem != null)
             {
-                CTTask task = database.GetTasks("TaskID", ((Dictionary<string, string>)todoTable.SelectedItem)["TaskID"])[0];
+                CTTask task = database.GetTasks("id", ((Dictionary<string, string>)todoTable.SelectedItem)["TaskID"])[0];
                 NewReport(task);
                 UpdateItemsTable();
             }

@@ -53,12 +53,12 @@ namespace CalTools_WPF
         public bool DatabaseReady() //Check for successful connect and disconnect
         {
             if (Connect())
-            { 
-                if (Disconnect()) 
-                { return true; } 
-                else 
+            {
+                if (Disconnect())
+                { return true; }
+                else
                 { return false; } }
-            else 
+            else
             { return false; }
         }
         private bool Disconnect() //True if disconnected successfully, false if error
@@ -131,6 +131,12 @@ namespace CalTools_WPF
                     calData.Add(data);
                 }
                 Disconnect();
+                foreach (TaskData data in calData)
+                {
+                    data.Findings = GetFindingsFromTaskData(data.DataID);
+                    data.StandardEquipment = GetDataStandardEquipment(data.DataID, true);
+                    data.DataFiles = GetDataFiles(data.DataID);
+                }
             }
             return calData;
         }
@@ -139,7 +145,7 @@ namespace CalTools_WPF
             List<TaskData> calData = new();
             if (Connect())
             {
-                Execute($"SELECT * FROM task_data WHERE TaskID='{taskID}'");
+                Execute($"SELECT * FROM task_data WHERE task_id='{taskID}'");
                 while (reader.Read())
                 {
                     TaskData data = new();
@@ -147,6 +153,12 @@ namespace CalTools_WPF
                     calData.Add(data);
                 }
                 Disconnect();
+                foreach (TaskData data in calData)
+                {
+                    data.Findings = GetFindingsFromTaskData(data.DataID);
+                    data.StandardEquipment = GetDataStandardEquipment(data.DataID, true);
+                    data.DataFiles = GetDataFiles(data.DataID);
+                }
             }
             return calData;
         }
@@ -168,25 +180,11 @@ namespace CalTools_WPF
         public CTItem? GetItemFromTask(CTTask task)
         {
             if (!Connect()) return null;
-            Execute($"SELECT * FROM items WHERE SerialNumber='{task.SerialNumber}'");
+            Execute($"SELECT * FROM items WHERE serial_number='{task.SerialNumber}'");
             if (reader.Read())
             {
                 CTItem returnItem = new(reader.GetString(0));
                 AssignItemValues(ref returnItem);
-                Disconnect();
-                return returnItem;
-            }
-            Disconnect();
-            return null;
-        }
-        public TaskData? GetData(string col, string item)
-        {
-            if (!Connect()) return null;
-            Execute($" SELECT * FROM task_data WHERE {col}='{item}'");
-            if (reader.Read())
-            {
-                TaskData returnItem = new();
-                AssignDataValues(ref returnItem);
                 Disconnect();
                 return returnItem;
             }
@@ -210,7 +208,7 @@ namespace CalTools_WPF
         public List<Parameter> GetFindingsFromTaskData(int taskDataId, bool disconnect = true)
         {
             List<Parameter> parameters = new();
-            if(Connect())
+            if (Connect())
             {
                 Execute($"SELECT * FROM findings WHERE data_id='{taskDataId}'");
                 while (reader.Read())
@@ -240,6 +238,44 @@ namespace CalTools_WPF
                     equipment.Add(item);
                 }
                 if (disconnect) { Disconnect(); }
+            }
+            return equipment;
+        }
+        public List<TaskDataFile> GetDataFiles(int taskDataId, bool disconnect = true)
+        {
+            List<TaskDataFile> files = new();
+            if (Connect())
+            {
+                Execute($"SELECT * FROM task_data_files " +
+                    $"WHERE task_data_id = {taskDataId}");
+                while (reader.Read())
+                {
+                    files.Add(new TaskDataFile()
+                    {
+                        Description = reader.GetString((int)TaskDataFiles.description),
+                        Path = reader.GetString((int)TaskDataFiles.location)
+                    });
+                }
+                if (disconnect) { Disconnect(); }
+            }
+            return files;
+        }
+        public List<CTStandardEquipment> GetAllStandardEquipment()
+        {
+            List<CTStandardEquipment> equipment = new();
+            if (Connect())
+            {
+                Execute("SELECT * FROM (SELECT * FROM standard_equipment ORDER BY id DESC) " +
+                    "WHERE action_due_date > date('now') GROUP BY serial_number");
+                while (reader.Read())
+                {
+                    CTStandardEquipment item = new(
+                        reader.GetString((int)StandardEquipmentColumns.serial_number),
+                        reader.GetInt32((int)StandardEquipmentColumns.id));
+                    AssignStandardEquipmentValues(ref item);
+                    equipment.Add(item);
+                }
+                Disconnect();
             }
             return equipment;
         }
@@ -406,7 +442,7 @@ namespace CalTools_WPF
                             $"directory='{task.TaskDirectory}'," +
                             $"remarks='{task.Comment}'," +
                             $"date_override='{task.DateOverrideString}' " +
-                            $"WHERE TaskID='{task.TaskID}'";
+                            $"WHERE id='{task.TaskID}'";
                     }
                     Execute(command);
                     if (disconnect) { Disconnect(); }
@@ -477,6 +513,7 @@ namespace CalTools_WPF
                     Execute("SELECT last_insert_rowid()");
                     reader.Read();
                     int dataId = reader.GetInt32(0);
+                    data.DataID = dataId;
                     foreach(Parameter p in data.Findings)
                     {
                         p.DataId = dataId;
@@ -501,15 +538,15 @@ namespace CalTools_WPF
         }
         public void SaveTaskDataFiles(TaskData data, bool disconnect = false)
         {
-            foreach(Tuple<string, string> file in data.DataFiles)
+            foreach(TaskDataFile file in data.DataFiles)
             {
                 Execute($"SELECT * FROM task_data_files WHERE " +
                     $"task_data_id='{data.DataID}' AND " +
-                    $"description='{file.Item1}' AND " +
-                    $"location='{file.Item2}'");
+                    $"description='{file.Description.Replace("'", "''")}' AND " +
+                    $"location='{file.Path.Replace("'", "''")}'");
                 if (reader.Read()) { continue; }
                 Execute($"INSERT INTO task_data_files (task_data_id,description,location) " +
-                    $"VALUES ({data.DataID},{file.Item1},{file.Item2})");
+                    $"VALUES ({data.DataID},'{file.Description.Replace("'", "''")}','{file.Path.Replace("'","''")}')");
             }
         }
         private bool SaveParameter(Parameter p, bool disconnect = true)
@@ -629,7 +666,7 @@ namespace CalTools_WPF
         {
             if (Connect())
             {
-                Execute("SELECT * FROM Tasks ORDER BY TaskID DESC LIMIT 1");
+                Execute("SELECT * FROM tasks ORDER BY id DESC LIMIT 1");
                 reader.Read();
                 int taskID = reader.GetInt32(0);
                 Disconnect();
@@ -704,8 +741,6 @@ namespace CalTools_WPF
                 Repaired = reader.GetBoolean((int)TaskDataColumns.repaired),
                 Maintenance = reader.GetBoolean((int)TaskDataColumns.maintenance)
             };
-            data.Findings = GetFindingsFromTaskData((int)data.DataID, false);
-            data.StandardEquipment = GetDataStandardEquipment(data.DataID);
             data.ChangesMade = false;
         }
         private void AssignFindingsValues(ref Parameter param)

@@ -110,7 +110,6 @@ namespace CalTools_WPF
         public string SerialNumber { get => serialNumber; set { serialNumber = value; ChangesMade = true; } }
         public string Manufacturer { get => manufacturer; set { manufacturer = value; ChangesMade = true; } }
         public string Description { get => description; set { description = value; ChangesMade = true; } }
-        public string InServiceDateString { get; private set; } = "";//TODO: Delete InServiceDateString
         public string Model { get => model; set { model = value; ChangesMade = true; } }
         public string Remarks { get => remarks; set { remarks = value; ChangesMade = true; } }
         public DateTime? TimeStamp //{ get => timeStamp; set { timeStamp = value; ChangesMade = true; } }
@@ -119,15 +118,10 @@ namespace CalTools_WPF
             set
             {
                 timestamp = value;
-
-                if (value != null)
-                { TimeStampString = timestamp.Value.ToString("yyyy-MM-dd-HH-mm-ss-ffffff"); }
-                else { TimeStampString = ""; }
                 ChangesMade = true;
             }
         }
         public DateTime ActionDueDate { get => actionDueDate; set { actionDueDate = value; ChangesMade = true; } }
-        public string TimeStampString { get; private set; } = "";
         public string ItemGroup { get => itemGroup; set { itemGroup = value; ChangesMade = true; } }
         public string CertificateNumber { get => certificateNumber; set { certificateNumber = value; ChangesMade = true; } }
         public bool ChangesMade { get; set; } = false;

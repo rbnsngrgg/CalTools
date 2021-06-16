@@ -151,7 +151,7 @@
                                 <DataGridTextColumn Header="Date" MinWidth="50" Binding="{Binding CompleteDateString, Mode=OneWay}" IsReadOnly="True"/>
                                 <DataGridTextColumn Header="Due Date" MinWidth="50" Binding="{Binding DueDateString, Mode=OneWay}" IsReadOnly="True"/>
                                 <DataGridCheckBoxColumn Header="Due" MinWidth="20" Binding="{Binding Due, Mode=OneWay}" IsReadOnly="True"/>
-                                <DataGridTextColumn Header="Manual Due Date" MinWidth="50" Binding="{Binding ManualFlagString}" IsReadOnly="True"/>
+                                <DataGridTextColumn Header="Manual Due Date" MinWidth="50" Binding="{Binding DateOverrideString}" IsReadOnly="True"/>
                                 <DataGridComboBoxColumn Header="Action" SelectedItemBinding="{Binding ActionType, Mode=TwoWay}">
                                     <DataGridComboBoxColumn.ElementStyle>
                                         <Style TargetType="ComboBox">

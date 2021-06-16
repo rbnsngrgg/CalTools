@@ -36,6 +36,11 @@ namespace CalTools_WPF
             paramBinding.UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged;
             FindingsDataGrid.SetBinding(DataGrid.ItemsSourceProperty, paramBinding);
 
+            Binding filesParamBinding = new();
+            filesParamBinding.Source = data.DataFiles;
+            filesParamBinding.UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged;
+            FilesDataGrid.SetBinding(DataGrid.ItemsSourceProperty, filesParamBinding);
+
             OperationalBox1.IsChecked = true;
             InToleranceBox1.IsChecked = true;
             OperationalBox2.IsChecked = true;
@@ -74,17 +79,13 @@ namespace CalTools_WPF
             if (ProcedureBox.Text.Length == 0) { MessageBox.Show("\"Procedure\" is required.", "Required Field", MessageBoxButton.OK, MessageBoxImage.Exclamation); return false; }
             else { data.Procedure = ProcedureBox.Text; }
 
-            foreach(var equipment in EquipmentDataGrid.Items)
-            {
-                Debug.WriteLine((CTStandardEquipment)equipment);
-            }
+            if (!IsStandardEquipmentSelected())
+            { if (MessageBox.Show("No Standard Equipment is selected. Continue?", "Blank Field", MessageBoxButton.YesNo, MessageBoxImage.Exclamation) == MessageBoxResult.No) { return false; } }
+            AssignStandardEquipment();
 
-            //if (EquipmentBox.Text.Length == 0)
-            //{ if (MessageBox.Show("\"Standard Equipment\" is blank. Continue?", "Blank Field", MessageBoxButton.YesNo, MessageBoxImage.Exclamation) == MessageBoxResult.No) { return false; } }
-            //else { data.StandardEquipment = EquipmentBox.Text; }
-            //data.Findings.AddRange(parameters);
-            
-            //TODO: Implement task data files
+            data.Findings.Clear();
+            data.Findings.AddRange(parameters);
+
             if (RemarksBox.Text.Length == 0 & parameters.Count == 0)
             { MessageBox.Show("Remarks are required if there are no findings parameters.", "Remarks", MessageBoxButton.OK, MessageBoxImage.Exclamation); return false; }
             data.Remarks = RemarksBox.Text;
@@ -106,6 +107,8 @@ namespace CalTools_WPF
                 InTolerance = (bool)OperationalBox2.IsChecked,
                 Operational = (bool)OperationalBox2.IsChecked
             };
+            if((bool)RepairedBox.IsChecked == false && (bool)MaintenanceBox.IsChecked == false)
+            { MessageBox.Show("An \"Action Taken\" selection is required", "Action Taken", MessageBoxButton.OK, MessageBoxImage.Exclamation); return false; }
             data.Actions = new ActionTaken
             {
                 Calibration = false,
@@ -124,8 +127,11 @@ namespace CalTools_WPF
             if (ProcedureBox.Text.Length == 0) { MessageBox.Show("\"Procedure\" is required.", "Required Field", MessageBoxButton.OK, MessageBoxImage.Exclamation); return false; }
             else { data.Procedure = ProcedureBox.Text; }
 
-            //data.StandardEquipment = MaintenanceEquipmentBox.Text;
-            data.Findings = null;
+            AssignStandardEquipment();
+
+            data.Findings.Clear();
+            data.Findings.AddRange(parameters);
+
             if (RemarksBox.Text.Length == 0)
             { MessageBox.Show("Remarks are required for maintenance actions.", "Remarks", MessageBoxButton.OK, MessageBoxImage.Exclamation); return false; }
             data.Remarks = RemarksBox.Text;
@@ -156,6 +162,23 @@ namespace CalTools_WPF
             Parameter selectedItem = (Parameter)FindingsDataGrid.SelectedItem;
             if (selectedItem != null) { parameters.Remove(selectedItem); }
             FindingsDataGrid.Items.Refresh();
+        }
+        private void AddFile_Click(object sender, RoutedEventArgs e)
+        {
+            Microsoft.Win32.OpenFileDialog dlg = new();
+            if(dlg.ShowDialog().Value)
+            {
+                string fileName = dlg.FileName;
+                data.DataFiles.Add(new TaskDataFile() { Path = fileName });
+                FilesDataGrid.Items.Refresh();
+            }
+            
+        }
+        private void RemoveFile_Click(object sender, RoutedEventArgs e)
+        {
+            TaskDataFile selectedItem = (TaskDataFile)FilesDataGrid.SelectedItem;
+            if (selectedItem != null) { data.DataFiles.Remove(selectedItem); }
+            FilesDataGrid.Items.Refresh();
         }
 
         //Only numbers in the date box, auto format date
@@ -245,13 +268,54 @@ namespace CalTools_WPF
                 OutOfToleranceBox1.Visibility = v1;
                 InToleranceBox2.Visibility = v1;
                 OutOfToleranceBox2.Visibility = v1;
+                CalibrationBox.Visibility = v1;
+                VerificationBox.Visibility = v1;
+                AdjustedBox.Visibility = v1;
                 MaintenanceBox.Visibility = v2;
                 FindingsPanel.Visibility = v1;
             }
         }
-        private void AddFile_Click(object sender, RoutedEventArgs e)
-        {
 
+        //Misc
+        private bool IsStandardEquipmentSelected()
+        {
+            for (int i = 0; i < EquipmentDataGrid.Items.Count; i++)
+            {
+                CTStandardEquipment item = (CTStandardEquipment)EquipmentDataGrid.Items[i];
+                CheckBox checkBox = EquipmentDataGrid.Columns[0].GetCellContent(item) as CheckBox;
+                if ((bool)checkBox.IsChecked)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
+        private void AssignStandardEquipment()
+        {
+            data.StandardEquipment.Clear();
+            for (int i = 0; i < EquipmentDataGrid.Items.Count; i++)
+            {
+                CTStandardEquipment item = (CTStandardEquipment)EquipmentDataGrid.Items[i];
+                CheckBox checkBox = EquipmentDataGrid.Columns[0].GetCellContent(item) as CheckBox;
+                if ((bool)checkBox.IsChecked)
+                {
+                    data.StandardEquipment.Add(item);
+                }
+            }
+        }
+        private void RemarksBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            //Testing recognizing which standard equipment items are selected.
+            for(int i = 0; i < EquipmentDataGrid.Items.Count; i++)
+            {
+                CTStandardEquipment item = (CTStandardEquipment)EquipmentDataGrid.Items[i];
+                CheckBox checkBox = EquipmentDataGrid.Columns[0].GetCellContent(item) as CheckBox;
+                if((bool) checkBox.IsChecked)
+                {
+                    Debug.WriteLine(item.SerialNumber);
+                }
+            }
+        }
+
     }
 }

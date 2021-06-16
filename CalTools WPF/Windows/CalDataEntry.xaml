@@ -13,7 +13,7 @@
             <RowDefinition/>
             <RowDefinition Height="40"/>
         </Grid.RowDefinitions>
-        <ComboBox x:Name="PanelSelectBox" Width="150" Height="23" IsEditable="False" Grid.Row="0" HorizontalAlignment="Left" Margin="30,0,0,0">
+        <ComboBox x:Name="PanelSelectBox" Width="150" Height="23" IsEditable="False" Grid.Row="0" HorizontalAlignment="Left" Margin="30,0,0,0" IsEnabled="False">
             <ComboBoxItem x:Name="CalibrationSelection" Content="Calibration/Verification" IsSelected="True" Selected="CalibrationSelection_Selected"/>
             <ComboBoxItem x:Name="MaintenanceSelection" Content="Maintenance" Selected="MaintenanceSelection_Selected"/>
         </ComboBox>
@@ -104,6 +104,7 @@
                         <DataGrid x:Name="EquipmentDataGrid" Grid.Row="0" Grid.Column="1" Grid.RowSpan="4"
                               CanUserAddRows="False" CanUserDeleteRows="False" AutoGenerateColumns="False" Grid.ColumnSpan="4" Margin="0,0,0,10">
                             <DataGrid.Columns>
+                                <DataGridCheckBoxColumn Header="Selected"/>
                                 <DataGridTextColumn Header="Serial Number" Binding="{Binding SerialNumber, Mode=OneWay}"/>
                                 <DataGridTextColumn Header="Manufacturer" Binding="{Binding Manufacturer, Mode=OneWay}"/>
                                 <DataGridTextColumn Header="Model" Binding="{Binding Model, Mode=OneWay}"/>
@@ -111,13 +112,12 @@
                                 <DataGridTextColumn Header="Certificate" Binding="{Binding CertificateNumber, Mode=OneWay}"/>
                                 <DataGridTextColumn Header="Due Date" Binding="{Binding ActionDueDate, Mode=OneWay}"/>
                                 <DataGridTextColumn Header="Remarks" Binding="{Binding Remarks, Mode=OneWay}" Width="150"/>
-                                <DataGridCheckBoxColumn Header="Selected"/>
                             </DataGrid.Columns>
                         </DataGrid>
                     </Grid>
                 </DockPanel>
-            
-                <DockPanel x:Name="FindingsPanel" MinHeight="150">
+
+                <DockPanel x:Name="FindingsPanel" MinHeight="150"  Margin="0,0,0,10">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="150"/>
@@ -133,7 +133,7 @@
                         <Button x:Name="AddParameter" Content="Add Parameter" Grid.Row="1" Grid.Column="0" Height="25" Width="130" Click="AddParameter_Click"/>
                         <Button x:Name="RemoveParameter" Content="Remove Parameter" Grid.Row="2" Grid.Column="0" Height="25" Width="130" Click="RemoveParameter_Click"/>
                         <DataGrid x:Name="FindingsDataGrid" Grid.Row="0" Grid.Column="1" Grid.RowSpan="4"
-                              CanUserAddRows="False" CanUserDeleteRows="False" AutoGenerateColumns="False" Grid.ColumnSpan="4" Margin="0,0,0,10">
+                              CanUserAddRows="False" CanUserDeleteRows="False" AutoGenerateColumns="False" Grid.ColumnSpan="4">
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="Parameter" Binding="{Binding Name, Mode=TwoWay}"/>
                                 <DataGridTextColumn Header="Setting" Binding="{Binding Setting, Mode=TwoWay}"/>
@@ -146,8 +146,8 @@
                         </DataGrid>
                     </Grid>
                 </DockPanel>
-            
-                <DockPanel x:Name="FilesPanel" MinHeight="150">
+
+                <DockPanel x:Name="FilesPanel" MinHeight="150"  Margin="0,0,0,10">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="150"/>
@@ -161,16 +161,12 @@
                         </Grid.RowDefinitions>
                         <Label Content="Files:" Grid.Row="0" Grid.Column="0" HorizontalAlignment="Center" FontSize="16"/>
                         <Button x:Name="AddFile" Content="Add File" Grid.Row="1" Grid.Column="0" Height="25" Width="130" Click="AddFile_Click"/>
+                        <Button x:Name="RemoveFile" Content="Remove File" Grid.Row="2" Grid.Column="0" Height="25" Width="130" Click="RemoveFile_Click"/>
                         <DataGrid x:Name="FilesDataGrid" Grid.Row="0" Grid.Column="1" Grid.RowSpan="4"
                           CanUserAddRows="False" CanUserDeleteRows="False" AutoGenerateColumns="False" Grid.ColumnSpan="4">
                             <DataGrid.Columns>
-                                <DataGridTextColumn Header="Parameter" Binding="{Binding Name, Mode=TwoWay}"/>
-                                <DataGridTextColumn Header="Setting" Binding="{Binding Setting, Mode=TwoWay}"/>
-                                <DataGridTextColumn Header="Tolerance" Binding="{Binding Tolerance, Mode=TwoWay}"/>
-                                <DataGridCheckBoxColumn Header="Tolerance Is Percent?" Binding="{Binding ToleranceIsPercent, Mode=TwoWay}"/>
-                                <DataGridTextColumn Header="UoM" Binding="{Binding UnitOfMeasure, Mode=TwoWay}"/>
-                                <DataGridTextColumn Header="Measurement Before" Binding="{Binding MeasurementBefore, Mode=TwoWay}"/>
-                                <DataGridTextColumn Header="Measurement After" Binding="{Binding MeasurementAfter, Mode=TwoWay}"/>
+                                <DataGridTextColumn Header="Description" Binding="{Binding Description, Mode=TwoWay}"/>
+                                <DataGridTextColumn Header="Path" Binding="{Binding Path, Mode=TwoWay}"/>
                             </DataGrid.Columns>
                         </DataGrid>
                     </Grid>
@@ -186,7 +182,7 @@
                             <RowDefinition/>
                         </Grid.RowDefinitions>
                         <Label Content="Remarks:" Grid.Row="0" Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Top" FontSize="16"/>
-                        <TextBox x:Name="RemarksBox" Grid.Row="0" Grid.Column="1" VerticalAlignment="Center" MinHeight="100" TextWrapping="Wrap"/>
+                        <TextBox x:Name="RemarksBox" Grid.Row="0" Grid.Column="1" VerticalAlignment="Center" MinHeight="100" TextWrapping="Wrap" TextChanged="RemarksBox_TextChanged"/>
                     </Grid>
                 </DockPanel>
             
