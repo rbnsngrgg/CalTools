@@ -25,7 +25,7 @@ namespace CalTools_WPF
             if (reader.GetString((int)ItemsColumnsV5.Timestamp).Length > 0)
             { item.TimeStamp = DateTime.ParseExact(reader.GetString((int)ItemsColumnsV5.Timestamp), timestampFormat, CultureInfo.InvariantCulture); }
             item.ItemGroup = reader.GetString((int)ItemsColumnsV5.ItemGroup);
-            item.StandardEquipment = reader.GetString((int)ItemsColumnsV5.StandardEquipment) == "1";
+            item.IsStandardEquipment = reader.GetString((int)ItemsColumnsV5.StandardEquipment) == "1";
             item.CertificateNumber = reader.GetString((int)ItemsColumnsV5.CertificateNumber);
             item.ChangesMade = false;
         }
@@ -50,20 +50,20 @@ namespace CalTools_WPF
         }
         private void AssignTaskValuesV5(ref CTTask task)
         {
-            task.TaskID = reader.GetInt32((int)TasksColumnsV5.TaskID);
+            task.TaskId = reader.GetInt32((int)TasksColumnsV5.TaskID);
             task.SerialNumber = reader.GetString((int)TasksColumnsV5.SerialNumber);
             task.TaskTitle = reader.GetString((int)TasksColumnsV5.TaskTitle);
             task.ServiceVendor = reader.GetString((int)TasksColumnsV5.ServiceVendor);
-            task.Mandatory = reader.GetInt32((int)TasksColumnsV5.Mandatory) == 1;
+            task.IsMandatory = reader.GetInt32((int)TasksColumnsV5.Mandatory) == 1;
             task.Interval = reader.GetInt32((int)TasksColumnsV5.Interval);
             if (reader.GetString((int)TasksColumnsV5.CompleteDate).Length > 0)
             { task.CompleteDate = DateTime.ParseExact(reader.GetString((int)TasksColumnsV5.CompleteDate), dateFormat, CultureInfo.InvariantCulture); }
             if (reader.GetString((int)TasksColumnsV5.DueDate).Length > 0)
             { task.DueDate = DateTime.ParseExact(reader.GetString((int)TasksColumnsV5.DueDate), dateFormat, CultureInfo.InvariantCulture); }
-            task.Due = reader.GetInt32((int)TasksColumnsV5.Due) == 1;
+            task.IsDue = reader.GetInt32((int)TasksColumnsV5.Due) == 1;
             task.ActionType = reader.GetString((int)TasksColumnsV5.ActionType);
             task.TaskDirectory = reader.GetString((int)TasksColumnsV5.Directory);
-            task.Comment = reader.GetString((int)TasksColumnsV5.Comments);
+            task.Remarks = reader.GetString((int)TasksColumnsV5.Comments);
             if (reader.GetString((int)TasksColumnsV5.ManualFlag).Length > 0)
             { task.DateOverride = DateTime.ParseExact(reader.GetString((int)TasksColumnsV5.ManualFlag), dateFormat, CultureInfo.InvariantCulture); }
 

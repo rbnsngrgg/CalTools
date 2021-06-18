@@ -14,14 +14,15 @@ namespace CalTools_WPF
     /// </summary>
     public partial class CalDataViewer : Window
     {
-        readonly List<TaskData> taskDataList;
+        private readonly List<TaskData> taskDataList;
         private readonly CTTask currentTask;
         public CalDataViewer(ref List<TaskData> inputData, CTTask task)
         {
             InitializeComponent();
             taskDataList = inputData;
             currentTask = task;
-            taskDataList.Sort((y, x) => x.CompleteDateString.CompareTo(y.CompleteDateString));
+            taskDataList.Sort((y, x) => x.CompleteDateString
+                .CompareTo(y.CompleteDateString));
             foreach (TaskData data in taskDataList)
             {
                 TreeViewItem newItem = new();
@@ -88,7 +89,7 @@ namespace CalTools_WPF
             RepairedBox.IsChecked = ((ActionTaken)data.Actions).Repaired;
             MaintenanceBox.IsChecked = ((ActionTaken)data.Actions).Maintenance;
 
-            DateBox.Text = data.CompleteDate.Value.ToString("yyyy-MM-dd");
+            DateBox.Text = data.CompleteDateString;
             ProcedureBox.Text = data.Procedure;
             //CTItem standardEquipment = JsonConvert.DeserializeObject<CTItem>(data.StandardEquipment);
             //if (standardEquipment != null) { EquipmentBox.Text = standardEquipment.SerialNumber; }

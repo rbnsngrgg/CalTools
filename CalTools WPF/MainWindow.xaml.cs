@@ -18,7 +18,7 @@ namespace CalTools_WPF
         #region Main
         public MainWindow()
         {
-            config.LoadConfig();
+            config.LoadConfig(Directory.GetCurrentDirectory());
             database = new(config.DbPath);
             database.ItemScansDir = config.ItemScansDir;
             database.Folders = config.Folders;
@@ -84,10 +84,10 @@ namespace CalTools_WPF
                         }
                         newFileName = $"{info.DateBox.Text}_{info.SerialNumberBox.Text}{Path.GetExtension(file)}";
                         CTTask currentTask = (CTTask)info.TaskBox.SelectedItem;
-                        taskFolder = currentTask.GetTaskFolder();
+                        taskFolder = currentTask.GetTaskFolderIfExists();
                         if (taskFolder == null)
                         {
-                            MessageBox.Show($"{info.SerialNumberBox.Text} Task: ({currentTask.TaskID}){currentTask.TaskTitle} does not have a valid folder.",
+                            MessageBox.Show($"{info.SerialNumberBox.Text} Task: ({currentTask.TaskId}){currentTask.TaskTitle} does not have a valid folder.",
                                 "Invalid Directory", MessageBoxButton.OK, MessageBoxImage.Error);
                             break;
                         }
@@ -120,10 +120,10 @@ namespace CalTools_WPF
                     {
                         newFileName = $"{info.DateBox.Text}_{info.SerialNumberBox.Text}{Path.GetExtension(file)}";
                         CTTask currentTask = (CTTask)info.TaskBox.SelectedItem;
-                        taskFolder = currentTask.GetTaskFolder();
+                        taskFolder = currentTask.GetTaskFolderIfExists();
                         if (taskFolder == null)
                         {
-                            MessageBox.Show($"{info.SerialNumberBox.Text} Task: ({currentTask.TaskID}){currentTask.TaskTitle} does not have a valid folder.",
+                            MessageBox.Show($"{info.SerialNumberBox.Text} Task: ({currentTask.TaskId}){currentTask.TaskTitle} does not have a valid folder.",
                                 "Invalid Directory", MessageBoxButton.OK, MessageBoxImage.Error);
                             break;
                         }
@@ -216,7 +216,7 @@ namespace CalTools_WPF
                 if (MessageBox.Show($"This will delete {selectedItem} from the database. Any files will remain (the item will be re-added if its folder isn't removed). Continue?",
                     "Delete Item", MessageBoxButton.YesNo, MessageBoxImage.Information) == MessageBoxResult.Yes)
                 {
-                    database.RemoveCalItem(selectedItem);
+                    database.RemoveItem(selectedItem);
                     UpdateItemList();
                 }
             }
@@ -292,9 +292,9 @@ namespace CalTools_WPF
                 //Make all tasks mandatory for standard equipment
                 foreach (CTTask task in database.GetTasks("serial_number", SelectedSN()))
                 {
-                    if (!task.Mandatory)
+                    if (!task.IsMandatory)
                     {
-                        task.Mandatory = true;
+                        task.IsMandatory = true;
                         database.SaveTask(task);
                     }
                 }
@@ -310,26 +310,26 @@ namespace CalTools_WPF
 
         }
         //Task data grid event handlers----------------------------------------------------------------------------------------------------
-        private void ContextMarkDue_Click(object sender, RoutedEventArgs e)
+        private void ContextDateOverride_Click(object sender, RoutedEventArgs e)
         {
             CTTask currentTask = DetailsTasksTable.SelectedItem as CTTask;
             if (currentTask.DateOverride != null)
             {
                 currentTask.DateOverride = null;
             }
-            else { currentTask.DateOverride = DateTime.UtcNow; }
+            else { currentTask.DateOverride = DateTime.Today; }
         }
         private void ContextViewData_Click(object sender, RoutedEventArgs e)
         {
             if (DetailsTasksTable.SelectedItem != null)
             {
                 CTTask currentTask = (CTTask)DetailsTasksTable.SelectedItem;
-                List<TaskData> currentTaskData = database.GetTaskData(currentTask.TaskID.ToString());
+                List<TaskData> currentTaskData = database.GetTaskData(currentTask.TaskId.ToString());
                 //Viewer may modify currentTaskData
                 CalDataViewer viewer = new(ref currentTaskData, currentTask);
                 if (viewer.ShowDialog() == true)
                 {
-                    foreach (TaskData dbData in database.GetTaskData(currentTask.TaskID.ToString()))
+                    foreach (TaskData dbData in database.GetTaskData(currentTask.TaskId.ToString()))
                     {
                         bool delete = true;
                         foreach (TaskData windowData in currentTaskData)
@@ -370,16 +370,14 @@ namespace CalTools_WPF
             CTTask currentTask = DetailsTasksTable.SelectedItem as CTTask;
             if (IsTaskSelected())
             {
-                if (DetailsSN.IsEnabled) { ContextMarkDue.IsEnabled = true; }
-                else { ContextMarkDue.IsEnabled = false; }
+                ContextDateOverride.IsEnabled = DetailsSN.IsEnabled;
                 ContextViewData.IsEnabled = true;
                 ContextOpenLocation.IsEnabled = true;
-                if (currentTask.DateOverride != null) { ContextMarkDue.Header = "Clear Due Flag"; }
-                else { ContextMarkDue.Header = "Manually Mark Due"; }
+                ContextDateOverride.Header = currentTask.DateOverride == null ? "Apply Date Override" : "Clear Date Override";
             }
             else
             {
-                ContextMarkDue.IsEnabled = false;
+                ContextDateOverride.IsEnabled = false;
                 ContextViewData.IsEnabled = false;
                 ContextOpenLocation.IsEnabled = false;
             }
@@ -405,11 +403,11 @@ namespace CalTools_WPF
             if (IsTaskSelected())
             {
                 CTTask task = (CTTask)DetailsTasksTable.SelectedItem;
-                if (MessageBox.Show($"Remove ({task.TaskID}){task.TaskTitle}? This cannot be undone.", "Remove Task", MessageBoxButton.YesNo, MessageBoxImage.Warning)
+                if (MessageBox.Show($"Remove ({task.TaskId}){task.TaskTitle}? This cannot be undone.", "Remove Task", MessageBoxButton.YesNo, MessageBoxImage.Warning)
                     == MessageBoxResult.Yes)
                 {
                     if (Directory.Exists(task.TaskDirectory)) { Directory.Delete(task.TaskDirectory, true); }
-                    database.RemoveTask(task.TaskID.ToString());
+                    database.RemoveTask(task.TaskId.ToString());
                     UpdateTasksTable();
                 }
             }

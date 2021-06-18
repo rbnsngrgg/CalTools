@@ -19,7 +19,7 @@ namespace CalTools_WPF
         public List<CTStandardEquipment> standardEquipment = new();
         public bool ItemIsStandard
         {
-            get { return ItemIsStandard; }
+            get => ItemIsStandard;
             set
             {
                 if (value)

@@ -8,18 +8,18 @@ namespace CalTools_WPF.ObjectClasses
         #region Private Fields
 #nullable enable
         private int dataID = -1;
-        private int? taskID = null;
+        private int? taskID;
         private string serialNumber = "";
-        private State? stateBefore = null;
-        private State? stateAfter = null;
-        private ActionTaken? actionTaken = null;
-        private DateTime? completeDate = null;
+        private State? stateBefore;
+        private State? stateAfter;
+        private ActionTaken? actionTaken;
+        private DateTime? completeDate;
         private string procedure = "";
         private readonly List<Parameter> findings = new();
         private List<CTStandardEquipment> standardEquipment = new();
         private string remarks = "";
         private string technician = "";
-        public string timestamp = "";
+        private string timestamp = "";
         private List<TaskDataFile> dataFiles = new();
         #endregion
 
@@ -37,14 +37,9 @@ namespace CalTools_WPF.ObjectClasses
             {
                 if (completeDate != value) { ChangesMade = true; }
                 completeDate = value;
-#pragma warning disable CS8629 // Nullable value type may be null.
-                if (value != null)
-                { CompleteDateString = completeDate.Value.ToString("yyyy-MM-dd"); }
-#pragma warning restore CS8629 // Nullable value type may be null.
-                else { CompleteDateString = ""; }
             }
         }
-        public string CompleteDateString { get; private set; } = "";
+        public string CompleteDateString { get => CompleteDate.HasValue ? CompleteDate.Value.ToString("yyyy-MM-dd") : ""; }
         public string Procedure { get => procedure; set { procedure = value; ChangesMade = true; } }
         public List<Parameter> Findings { get => findings; set { ChangesMade = true; } }
         public List<CTStandardEquipment> StandardEquipment { get => standardEquipment; set { standardEquipment = value; ChangesMade = true; } }

@@ -1,4 +1,5 @@
 ﻿using CalTools_WPF.ObjectClasses;
+using CalTools_WPF.ObjectClasses.Database;
 using Microsoft.Data.Sqlite;
 using Newtonsoft.Json;
 using System;
@@ -17,6 +18,7 @@ namespace CalTools_WPF
         public bool tablesExist = false;
         public string ItemScansDir { get; set; }
         public List<string> Folders { get; set; }
+        private readonly SqliteConnectionHandler handler;
         private readonly SqliteConnection conn;
         private SqliteDataReader reader;
         public string DbPath { get; set; }
@@ -24,6 +26,7 @@ namespace CalTools_WPF
         {
             this.DbPath = dbPath;
             conn = new SqliteConnection($"Data Source={DbPath}");
+            handler = new(DbPath);
         }
 
         //Basic Operations-----------------------------------------------------------------------------------------------------------------
@@ -52,14 +55,7 @@ namespace CalTools_WPF
         }
         public bool DatabaseReady() //Check for successful connect and disconnect
         {
-            if (Connect())
-            {
-                if (Disconnect())
-                { return true; }
-                else
-                { return false; } }
-            else
-            { return false; }
+            return (Connect() & Disconnect());
         }
         private bool Disconnect() //True if disconnected successfully, false if error
         {
@@ -76,7 +72,7 @@ namespace CalTools_WPF
                     return false;
                 }
             }
-            else { return true; }
+            return true;
         }
         private void Execute(string com)
         {
@@ -85,37 +81,20 @@ namespace CalTools_WPF
         }
         public bool IsConnected()
         {
-            if (conn.State == System.Data.ConnectionState.Open) { return true; }
-            else { return false; }
+            return conn.State == System.Data.ConnectionState.Open;
         }
 
         //Data Retrieval-------------------------------------------------------------------------------------------------------------------
         public List<CTItem> GetAllItems()
         {
-            List<CTItem> allItems = new();
-            if (!Connect()) { return allItems; }
-            Execute("SELECT * FROM items");
-            while (reader.Read())
-            {
-                CTItem item = new(reader.GetString(0));
-                AssignItemValues(ref item);
-                allItems.Add(item);
-            }
-            Disconnect();
+            List<CTItem> allItems = AssignItemValues(
+                handler.SelectAllFromTable("items"));
             return allItems;
         }
         public List<CTTask> GetAllTasks()
         {
-            List<CTTask> allTasks = new();
-            if (!Connect()) { return allTasks; }
-            Execute("SELECT * FROM tasks");
-            while (reader.Read())
-            {
-                CTTask task = new();
-                AssignTaskValues(ref task);
-                allTasks.Add(task);
-            }
-            Disconnect();
+            List<CTTask> allTasks = AssignTaskValues(
+                handler.SelectAllFromTable("tasks"));
             return allTasks;
         }
         public List<TaskData> GetAllTaskData()
@@ -153,6 +132,7 @@ namespace CalTools_WPF
                     calData.Add(data);
                 }
                 Disconnect();
+                //TODO: break into separate method
                 foreach (TaskData data in calData)
                 {
                     data.Findings = GetFindingsFromTaskData(data.DataID);
@@ -163,46 +143,34 @@ namespace CalTools_WPF
             return calData;
         }
 #nullable enable
-        public CTItem? GetItem(string col, string item)
+        public CTItem? GetItem(string col, string value)
         {
-            if (!Connect()) return null;
-            Execute($" SELECT * FROM items WHERE {col}='{item}'");
-            if (reader.Read())
-            {
-                CTItem returnItem = new(reader.GetString(0));
-                AssignItemValues(ref returnItem);
-                Disconnect();
-                return returnItem;
-            }
-            Disconnect();
-            return null;
+            List<CTItem> items = AssignItemValues(
+                handler.SelectFromTableWhere(
+                "items",
+                new string[] { col },
+                new string[] { value }
+            ));
+            return items.Count > 0 ? items[0] : null;
         }
         public CTItem? GetItemFromTask(CTTask task)
         {
-            if (!Connect()) return null;
-            Execute($"SELECT * FROM items WHERE serial_number='{task.SerialNumber}'");
-            if (reader.Read())
-            {
-                CTItem returnItem = new(reader.GetString(0));
-                AssignItemValues(ref returnItem);
-                Disconnect();
-                return returnItem;
-            }
-            Disconnect();
-            return null;
+            List<CTItem> items = AssignItemValues(
+                handler.SelectFromTableWhere(
+                "items",
+                new string[] { "serial_number" },
+                new string[] { task.SerialNumber }
+            ));
+            return items.Count > 0 ? items[0] : null;
         }
-        public List<CTTask> GetTasks(string col, string item, bool disconnect = true)
+        public List<CTTask> GetTasks(string col, string value, bool disconnect = true)
         {
-            List<CTTask> tasks = new();
-            if (!Connect()) return tasks;
-            Execute($"SELECT * FROM tasks WHERE {col}='{item}'");
-            while (reader.Read())
-            {
-                CTTask task = new();
-                AssignTaskValues(ref task);
-                tasks.Add(task);
-            }
-            if (disconnect) { Disconnect(); }
+            List<CTTask> tasks = AssignTaskValues(
+                handler.SelectFromTableWhere(
+                "tasks",
+                new string[] { col },
+                new string[] { value }
+            ));
             return tasks;
         }
         public List<Parameter> GetFindingsFromTaskData(int taskDataId, bool disconnect = true)
@@ -322,16 +290,13 @@ namespace CalTools_WPF
                         $"timestamp='{DateTime.UtcNow.ToString(timestampFormat, CultureInfo.InvariantCulture)}'," +
                         $"item_group='{item.ItemGroup.Replace("'", "''")}'," +
                         $"certificate_number='{item.CertificateNumber.Replace("'", "''")}'," +
-                        $"is_standard_equipment='{(item.StandardEquipment == true ? 1 : 0)}' " +
+                        $"is_standard_equipment='{(item.IsStandardEquipment == true ? 1 : 0)}' " +
                         $"WHERE serial_number='{item.SerialNumber.Replace("'", "''")}'";
                     Execute(command);
                     if (disconnect) { Disconnect(); }
                     return true;
                 }
-                else
-                {
                     return false;
-                }
             }
             catch (System.Exception ex)
             {
@@ -370,10 +335,7 @@ namespace CalTools_WPF
                     if (disconnect) { Disconnect(); }
                     return true;
                 }
-                else
-                {
                     return false;
-                }
             }
             catch (System.Exception ex)
             {
@@ -389,26 +351,26 @@ namespace CalTools_WPF
                 if (Connect())
                 {
                     //New task that hasn't yet been inserted into the database
-                    if (overrideId && task.TaskID != -1)
+                    if (overrideId && task.TaskId != -1)
                     {
                         command = $"INSERT OR IGNORE INTO tasks " +
                             $"(id,serial_number,task_title,service_vendor,is_mandatory," +
                             $"interval,complete_date,due_date,is_due,action_type,directory,remarks,date_override) " +
-                            $"VALUES ('{task.TaskID}'," +
+                            $"VALUES ('{task.TaskId}'," +
                             $"'{task.SerialNumber}'," +
                             $"'{task.TaskTitle}'," +
                             $"'{task.ServiceVendor}'," +
-                            $"'{(task.Mandatory ? 1 : 0)}'," +
+                            $"'{(task.IsMandatory ? 1 : 0)}'," +
                             $"'{task.Interval}'," +
                             $"'{task.CompleteDateString}'," +
                             $"'{task.DueDateString}'," +
-                            $"'{(task.Due ? 1 : 0)}'," +
+                            $"'{(task.IsDue ? 1 : 0)}'," +
                             $"'{task.ActionType}'," +
                             $"'{task.TaskDirectory}'," +
-                            $"'{task.Comment}'," +
+                            $"'{task.Remarks}'," +
                             $"'{task.DateOverrideString}')";
                     }
-                    else if (task.TaskID == -1 )
+                    else if (task.TaskId == -1 )
                     {
                         command = $"INSERT OR IGNORE INTO tasks " +
                             $"(serial_number,task_title,service_vendor,is_mandatory," +
@@ -416,14 +378,14 @@ namespace CalTools_WPF
                             $"VALUES ('{task.SerialNumber}'," +
                             $"'{task.TaskTitle}'," +
                             $"'{task.ServiceVendor}'," +
-                            $"'{(task.Mandatory ? 1 : 0)}'," +
+                            $"'{(task.IsMandatory ? 1 : 0)}'," +
                             $"'{task.Interval}'," +
                             $"'{task.CompleteDateString}'," +
                             $"'{task.DueDateString}'," +
-                            $"'{(task.Due ? 1 : 0)}'," +
+                            $"'{(task.IsDue ? 1 : 0)}'," +
                             $"'{task.ActionType}'," +
                             $"'{task.TaskDirectory}'," +
-                            $"'{task.Comment}'," +
+                            $"'{task.Remarks}'," +
                             $"'{task.DateOverrideString}')";
                     }
                     //Existing task
@@ -433,16 +395,16 @@ namespace CalTools_WPF
                             $"serial_number='{task.SerialNumber}'," +
                             $"task_title='{task.TaskTitle}'," +
                             $"service_vendor='{task.ServiceVendor}'," +
-                            $"is_mandatory='{(task.Mandatory ? 1 : 0)}'," +
+                            $"is_mandatory='{(task.IsMandatory ? 1 : 0)}'," +
                             $"interval='{task.Interval}'," +
                             $"complete_date='{task.CompleteDateString}'," +
                             $"due_date='{task.DueDateString}'," +
-                            $"is_due='{(task.Due ? 1 : 0)}'," +
+                            $"is_due='{(task.IsDue ? 1 : 0)}'," +
                             $"action_type='{task.ActionType}'," +
                             $"directory='{task.TaskDirectory}'," +
-                            $"remarks='{task.Comment}'," +
+                            $"remarks='{task.Remarks}'," +
                             $"date_override='{task.DateOverrideString}' " +
-                            $"WHERE id='{task.TaskID}'";
+                            $"WHERE id='{task.TaskId}'";
                     }
                     Execute(command);
                     if (disconnect) { Disconnect(); }
@@ -481,7 +443,7 @@ namespace CalTools_WPF
                         $"'{(data.Actions.Value.Adjusted ? 1 : 0)}'," +
                         $"'{(data.Actions.Value.Repaired ? 1 : 0)}'," +
                         $"'{(data.Actions.Value.Maintenance ? 1 : 0)}'," +
-                        $"'{((DateTime)data.CompleteDate).ToString(dateFormat)}'," +
+                        $"'{data.CompleteDateString}'," +
                         $"'{data.Procedure.Replace("'", "''")}'," +
                         $"'{data.Remarks.Replace("'", "''")}'," +
                         $"'{data.Technician.Replace("'", "''")}'," +
@@ -503,7 +465,7 @@ namespace CalTools_WPF
                             $"'{(data.Actions.Value.Adjusted ? 1 : 0)}'," +
                             $"'{(data.Actions.Value.Repaired ? 1 : 0)}'," +
                             $"'{(data.Actions.Value.Maintenance ? 1 : 0)}'," +
-                            $"'{((DateTime)data.CompleteDate).ToString(dateFormat)}'," +
+                            $"'{data.CompleteDateString}'," +
                             $"'{data.Procedure.Replace("'", "''")}'," +
                             $"'{data.Remarks.Replace("'", "''")}'," +
                             $"'{data.Technician.Replace("'", "''")}'," +
@@ -580,7 +542,7 @@ namespace CalTools_WPF
 
         //Remove data----------------------------------------------------------------------------------------------------------------------
         //Delete operations in the DB cascade Item -> Task -> TaskData
-        public bool RemoveCalItem(string sn)
+        public bool RemoveItem(string sn)
         {
             try
             {
@@ -681,21 +643,27 @@ namespace CalTools_WPF
         }
 
         //Data parsing---------------------------------------------------------------------------------------------------------------------
-        private void AssignItemValues(ref CTItem item)
+        private List<CTItem> AssignItemValues(List<Dictionary<string,string>> queryResults)
         {
-            item.Location = reader.GetString((int)ItemsColumns.location);
-            item.Manufacturer = reader.GetString((int)ItemsColumns.manufacturer);
-            item.Directory = reader.GetString((int)ItemsColumns.directory);
-            item.Description = reader.GetString((int)ItemsColumns.description);
-            item.InService = reader.GetString((int)ItemsColumns.in_service) == "1";
-            item.Model = reader.GetString((int)ItemsColumns.model);
-            item.Remarks = reader.GetString((int)ItemsColumns.remarks);
-            if (reader.GetString((int)ItemsColumns.timestamp).Length > 0)
-            { item.TimeStamp = DateTime.ParseExact(reader.GetString((int)ItemsColumns.timestamp), timestampFormat, CultureInfo.InvariantCulture); }
-            item.ItemGroup = reader.GetString((int)ItemsColumns.item_group);
-            item.StandardEquipment = reader.GetBoolean((int)ItemsColumns.is_standard_equipment);
-            item.CertificateNumber = reader.GetString((int)ItemsColumns.certificate_number);
-            item.ChangesMade = false;
+            List<CTItem> items = new();
+            try
+            {
+                foreach (Dictionary<string, string> row in queryResults)
+                {
+                    items.Add(new CTItem(row));
+                }
+                return items;
+            }
+            catch(Exception ex)
+            {
+                MessageBox.Show(
+                    $"Error parsing query results: {ex.Message}",
+                    "CTDatabase.AssignItemValues",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                items.Clear();
+                return items;
+            }
         }
         private void AssignStandardEquipmentValues(ref CTStandardEquipment item)
         {
@@ -755,26 +723,27 @@ namespace CalTools_WPF
             param.MeasurementAfter = reader.GetFloat((int)FindingsColumns.measurement_after);
             param.Setting = reader.GetFloat((int)FindingsColumns.setting);
         }
-        private void AssignTaskValues(ref CTTask task)
+        private List<CTTask> AssignTaskValues(List<Dictionary<string, string>> queryResults)
         {
-            task.TaskID = reader.GetInt32((int)TasksColumns.id);
-            task.SerialNumber = reader.GetString((int)TasksColumns.serial_number);
-            task.TaskTitle = reader.GetString((int)TasksColumns.task_title);
-            task.ServiceVendor = reader.GetString((int)TasksColumns.service_vendor);
-            task.Mandatory = reader.GetBoolean((int)TasksColumns.is_mandatory);
-            task.Interval = reader.GetInt32((int)TasksColumns.interval);
-            if (reader.GetString((int)TasksColumns.complete_date).Length > 0)
-            { task.CompleteDate = DateTime.ParseExact(reader.GetString((int)TasksColumns.complete_date), dateFormat, CultureInfo.InvariantCulture); }
-            if (reader.GetString((int)TasksColumns.due_date).Length > 0)
-            { task.DueDate = DateTime.ParseExact(reader.GetString((int)TasksColumns.due_date), dateFormat, CultureInfo.InvariantCulture); }
-            task.Due = reader.GetBoolean((int)TasksColumns.is_due);
-            task.ActionType = reader.GetString((int)TasksColumns.action_type);
-            task.TaskDirectory = reader.GetString((int)TasksColumns.directory);
-            task.Comment = reader.GetString((int)TasksColumns.remarks);
-            if (reader.GetString((int)TasksColumns.date_override).Length > 0)
-            { task.DateOverride = DateTime.ParseExact(reader.GetString((int)TasksColumns.date_override), dateFormat, CultureInfo.InvariantCulture); }
-            
-            task.ChangesMade = false;
+            List<CTTask> tasks = new();
+            try
+            {
+                foreach (Dictionary<string, string> row in queryResults)
+                {
+                    tasks.Add(new CTTask(row));
+                }
+                return tasks;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    $"Error parsing query results: {ex.Message}",
+                    "CTDatabase.AssignTaskValues",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                tasks.Clear();
+                return tasks;
+            }
         }
     }
 }
