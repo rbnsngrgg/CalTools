@@ -6,7 +6,7 @@ using System.IO;
 
 namespace CalTools_WPF
 {
-    public class CTTask
+    public class CTTask : ICTObject
     {
         #region Private Fields
         private int taskId = -1;
@@ -80,6 +80,11 @@ namespace CalTools_WPF
         public List<string> ServiceVendorList { get; set; } = new();
         //---------------------------------------------------------------------------------------------------------------------------------
 
+        public CTTask()
+        {
+            directoryWrapper = new DirectoryWrapper();
+        }
+
         public CTTask(IDirectoryWrapper wrapper = null)
         {
             if (wrapper != null)
@@ -94,6 +99,11 @@ namespace CalTools_WPF
             {
                 directoryWrapper = wrapper;
             }
+            ParseParameters(parameters);
+        }
+
+        public void ParseParameters(Dictionary<string, string> parameters)
+        {
             TaskId = int.Parse(parameters["id"]);
             SerialNumber = parameters["serial_number"];
             TaskTitle = parameters["task_title"];
@@ -112,6 +122,7 @@ namespace CalTools_WPF
                 null;
             ChangesMade = false;
         }
+
 
         //Methods for checking the completion dates of TaskData and task folders
         private bool TaskFolderStartsWithId(string folder)

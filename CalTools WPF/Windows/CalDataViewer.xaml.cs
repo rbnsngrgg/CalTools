@@ -26,7 +26,7 @@ namespace CalTools_WPF
             foreach (TaskData data in taskDataList)
             {
                 TreeViewItem newItem = new();
-                newItem.Header = $"({data.DataID}) {data.CompleteDateString}";
+                newItem.Header = $"({data.DataId}) {data.CompleteDateString}";
                 TaskDataTree.Items.Add(newItem);
             }
             TaskDataTree.Items.Refresh();
@@ -72,7 +72,7 @@ namespace CalTools_WPF
         private void FillForm(TaskData data)
         {
             SerialNumberBox.Text = data.SerialNumber;
-            TaskBox.Text = $"({data.TaskID})";
+            TaskBox.Text = $"({data.TaskId})";
             InToleranceBox1.IsChecked = ((State)data.StateBefore).InTolerance;
             OutOfToleranceBox1.IsChecked = !((State)data.StateBefore).InTolerance;
             MalfunctioningBox1.IsChecked = !((State)data.StateBefore).Operational;
@@ -91,8 +91,6 @@ namespace CalTools_WPF
 
             DateBox.Text = data.CompleteDateString;
             ProcedureBox.Text = data.Procedure;
-            //CTItem standardEquipment = JsonConvert.DeserializeObject<CTItem>(data.StandardEquipment);
-            //if (standardEquipment != null) { EquipmentBox.Text = standardEquipment.SerialNumber; }
             RemarksBox.Text = data.Remarks;
             TechnicianBox.Text = data.Technician;
         }
@@ -114,7 +112,7 @@ namespace CalTools_WPF
                 {
                     {
                         string currentItemHeader = ((TreeViewItem)((TreeView)sender).SelectedItem).Header.ToString();
-                        if ($"({data.DataID}) {data.CompleteDateString}" == currentItemHeader)
+                        if ($"({data.DataId}) {data.CompleteDateString}" == currentItemHeader)
                         { OpenForm(data); break; }
                     }
                 }
@@ -139,7 +137,7 @@ namespace CalTools_WPF
                 {
                     {
                         string currentItemHeader = ((TreeViewItem)TaskDataTree.SelectedItem).Header.ToString();
-                        if ($"({data.DataID}) {data.CompleteDateString}" == currentItemHeader)
+                        if ($"({data.DataId}) {data.CompleteDateString}" == currentItemHeader)
                         {
                             taskDataList.Remove(data);
                             TaskDataTree.Items.Remove(TaskDataTree.SelectedItem);

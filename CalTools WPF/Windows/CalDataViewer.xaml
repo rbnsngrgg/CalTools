@@ -108,7 +108,7 @@
                         <TextBox x:Name="DateBox" Grid.Row="0" Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Center" FontSize="16" Height="25" Width="150" IsReadOnly="True"/>
 
                         <Label Content="Procedure:" Grid.Row="1" Grid.Column="0" HorizontalAlignment="Center" FontSize="16"/>
-                        <ComboBox x:Name="ProcedureBox" Grid.Row="1" Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Center" Height="25" Width="150" IsReadOnly="True"/>
+                        <TextBox x:Name="ProcedureBox" Grid.Row="1" Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Center" FontSize="16" Height="25" Width="150" IsReadOnly="True"/>
                     </Grid>
                 </DockPanel>
 
@@ -131,7 +131,7 @@
                                 <DataGridTextColumn Header="Serial Number" Binding="{Binding SerialNumber, Mode=OneWay}"/>
                                 <DataGridTextColumn Header="Manufacturer" Binding="{Binding Manufacturer, Mode=OneWay}"/>
                                 <DataGridTextColumn Header="Model" Binding="{Binding Model, Mode=OneWay}"/>
-                                <DataGridCheckBoxColumn Header="Description" Binding="{Binding Description, Mode=OneWay}"/>
+                                <DataGridTextColumn Header="Description" Binding="{Binding Description, Mode=OneWay}"/>
                                 <DataGridTextColumn Header="Certificate" Binding="{Binding CertificateNumber, Mode=OneWay}"/>
                                 <DataGridTextColumn Header="Due Date" Binding="{Binding ActionDueDate, Mode=OneWay}"/>
                                 <DataGridTextColumn Header="Remarks" Binding="{Binding Remarks, Mode=OneWay}" Width="150"/>

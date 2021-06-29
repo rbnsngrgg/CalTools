@@ -5,7 +5,7 @@ using System.Globalization;
 
 namespace CalTools_WPF
 {
-    public class CTItem
+    public class CTItem : ICTObject
     {
         #region Private Fields
         private string serialNumber = "";
@@ -46,6 +46,8 @@ namespace CalTools_WPF
         public bool ChangesMade { get; set; } = false;
         #endregion
 
+        public CTItem() { }
+
         public CTItem(string sn)
         {
             SerialNumber = sn;
@@ -53,6 +55,11 @@ namespace CalTools_WPF
         }
 
         public CTItem(Dictionary<string,string> parameters)
+        {
+            ParseParameters(parameters);
+        }
+
+        public void ParseParameters(Dictionary<string,string> parameters)
         {
             SerialNumber = parameters["serial_number"];
             Location = parameters["location"];
@@ -62,6 +69,7 @@ namespace CalTools_WPF
             InService = parameters["in_service"] == "1";
             Model = parameters["model"];
             ItemGroup = parameters["item_group"];
+            CertificateNumber = parameters["certificate_number"];
             Remarks = parameters["remarks"];
             IsStandardEquipment = parameters["is_standard_equipment"] == "1";
             TimeStamp = parameters["timestamp"].Length > 0 ?
@@ -70,7 +78,6 @@ namespace CalTools_WPF
             ChangesMade = false;
         }
 
-        //Return a JSON string that represents this instance
         public CTStandardEquipment ToStandardEquipment(DateTime dueDate)
         {
             return new CTStandardEquipment(SerialNumber)
@@ -85,7 +92,7 @@ namespace CalTools_WPF
             };
         }
     }
-    public class CTStandardEquipment
+    public class CTStandardEquipment : ICTObject
     {
         #region Private Fields
         private int id = -1;
@@ -123,10 +130,31 @@ namespace CalTools_WPF
         public bool ChangesMade { get; set; } = false;
         #endregion
 
+        public CTStandardEquipment() { }
         public CTStandardEquipment(string sn, int id = -1)
         {
             SerialNumber = sn;
             this.id = id;
+            ChangesMade = false;
+        }
+        public CTStandardEquipment(Dictionary<string,string> parameters)
+        {
+            ParseParameters(parameters);
+        }
+        public void ParseParameters(Dictionary<string,string> parameters)
+        {
+            Id = int.Parse(parameters["id"]);
+            SerialNumber = parameters["serial_number"];
+            Manufacturer = parameters["manufacturer"];
+            Description = parameters["description"];
+            Model = parameters["model"];
+            ItemGroup = parameters["item_group"];
+            CertificateNumber = parameters["certificate_number"];
+            Remarks = parameters["remarks"];
+            ActionDueDate = DateTime.ParseExact(parameters["action_due_date"], "yyyy-MM-dd", CultureInfo.InvariantCulture);
+            TimeStamp = parameters["timestamp"].Length > 0 ?
+                DateTime.ParseExact(parameters["timestamp"], "yyyy-MM-dd-HH-mm-ss-ffffff", CultureInfo.InvariantCulture) :
+                null;
             ChangesMade = false;
         }
     }

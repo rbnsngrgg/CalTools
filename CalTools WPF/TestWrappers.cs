@@ -34,5 +34,4 @@ namespace CalTools_WPF
             File.WriteAllLines(path, contents);
         }
     }
-
 }

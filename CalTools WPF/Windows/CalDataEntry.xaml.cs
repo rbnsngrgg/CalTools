@@ -15,7 +15,7 @@ namespace CalTools_WPF
     public partial class CalDataEntry : Window
     {
         public TaskData data = new();
-        public List<Parameter> parameters = new();
+        public List<Findings> parameters = new();
         public List<CTStandardEquipment> standardEquipment = new();
         public bool ItemIsStandard
         {
@@ -154,12 +154,12 @@ namespace CalTools_WPF
         }
         private void AddParameter_Click(object sender, RoutedEventArgs e)
         {
-            parameters.Add(new Parameter($"Parameter {parameters.Count + 1}"));
+            parameters.Add(new Findings($"Parameter {parameters.Count + 1}"));
             FindingsDataGrid.Items.Refresh();
         }
         private void RemoveParameter_Click(object sender, RoutedEventArgs e)
         {
-            Parameter selectedItem = (Parameter)FindingsDataGrid.SelectedItem;
+            Findings selectedItem = (Findings)FindingsDataGrid.SelectedItem;
             if (selectedItem != null) { parameters.Remove(selectedItem); }
             FindingsDataGrid.Items.Refresh();
         }
@@ -169,7 +169,7 @@ namespace CalTools_WPF
             if(dlg.ShowDialog().Value)
             {
                 string fileName = dlg.FileName;
-                data.DataFiles.Add(new TaskDataFile() { Path = fileName });
+                data.DataFiles.Add(new TaskDataFile() { Location = fileName });
                 FilesDataGrid.Items.Refresh();
             }
             
