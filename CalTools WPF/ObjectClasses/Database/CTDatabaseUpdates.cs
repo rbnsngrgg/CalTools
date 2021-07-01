@@ -208,11 +208,11 @@ namespace CalTools_WPF
             }
             foreach (CTTask task in v5Tasks)
             {
-                SaveTask(task, true, true);
+                SaveTask(task);
             }
             foreach(TaskDataV5 data in v5TaskData)
             {
-                SaveTaskData(TaskDataV5toV6(data), true, true, true);
+                SaveTaskData(TaskDataV5toV6(data));
             }
             
             handler.DropTable("old_items");
@@ -279,7 +279,7 @@ namespace CalTools_WPF
                 StandardEquipment = standardEquipment,
                 Remarks = v5.Remarks,
                 Technician = v5.Technician,
-                Timestamp = v5.Timestamp,
+                Timestamp = DateTime.ParseExact(v5.Timestamp, timestampFormat, CultureInfo.InvariantCulture),
                 DataFiles = dataFiles,
             };
         }

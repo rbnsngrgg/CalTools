@@ -80,6 +80,10 @@ namespace CalToolsTests
                 CultureInfo.InvariantCulture
                 ), testEquipment.TimeStamp);
             Assert.IsFalse(testEquipment.ChangesMade);
+
+            testItemParameters.Remove("id");
+            testEquipment = new(testItemParameters);
+            Assert.AreEqual(-1, testEquipment.Id);
         }
     }
 }

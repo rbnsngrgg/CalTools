@@ -201,7 +201,7 @@ namespace CalTools_WPF
             {
                 taskDataLines.Add($"{data.DataId}\t{data.TaskId}\t{data.SerialNumber}\t{JsonConvert.SerializeObject(data.StateBefore)}\t{JsonConvert.SerializeObject(data.StateAfter)}\t" +
                     $"{JsonConvert.SerializeObject(data.Actions)}\t{data.CompleteDate.Value.ToString("yyyy-MM-dd")}\t{data.Procedure}\t{data.StandardEquipment}\t" +
-                    $"{JsonConvert.SerializeObject(data.Findings)}\t{data.Remarks}\t{data.Technician}\t{data.Timestamp}");
+                    $"{JsonConvert.SerializeObject(data.Findings)}\t{data.Remarks}\t{data.Technician}\t{data.TimestampString}");
             }
             foreach (CTTask task in database.GetAll<CTTask>())
             {
@@ -377,7 +377,7 @@ namespace CalTools_WPF
                         if (calItem.Directory != itemFolder)                                    //Check if directory is valid. Set to the found folder if not
                         {
                             calItem.Directory = itemFolder;
-                            if (newItem) { database.CreateItem(calItem.SerialNumber); }
+                            if (newItem) { database.SaveItem(calItem); }
                         }
                         CheckTasks(itemFolder, ref allTasks, ref taskData);
                         if (calItem.ChangesMade) { database.SaveItem(calItem); }

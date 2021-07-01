@@ -4,6 +4,7 @@ using Microsoft.Data.Sqlite;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Windows;
@@ -46,6 +47,7 @@ namespace CalTools_WPF
             else if (type == typeof(Findings)) { table = "findings"; }
             else if (type == typeof(TaskData)) { table = "task_data"; }
             else if (type == typeof(TaskDataFile)) { table = "task_data_files"; }
+            else if (type == typeof(CTStandardEquipment)) { table = "standard_equipment"; }
             return table;
         }
         public List<Type> GetAll<Type>() where Type : ICTObject, new()
@@ -66,44 +68,29 @@ namespace CalTools_WPF
         {
             List<CTStandardEquipment> equipment = AssignValues<CTStandardEquipment>(
                 handler.SelectStandardEquipmentWhere(
-                new string[] { "task_data_id" },
-                new string[] { $"{taskDataId}" }
-            ));
-            return equipment;
-        }
-        public List<CTStandardEquipment> GetAllStandardEquipment()
-        {
-            List<CTStandardEquipment> equipment = AssignValues<CTStandardEquipment>(
-                handler.SelectStandardEquipment());
+                    new() { { "task_data_id", $"{taskDataId}" } }
+                ));
             return equipment;
         }
 
         //Save data------------------------------------------------------------------------------------------------------------------------
-        public void CreateItem(string sn)
-        {
-            handler.InsertIntoTable("items",
-                new()
-                {
-                    { "serial_number", sn}
-                });
-        }
-        public void SaveItem(CTItem item, bool disconnect = true)
+        public void SaveItem(CTItem item)
         {
             handler.InsertIntoTable("items", new() { { "serial_number", item.SerialNumber } });
             handler.UpdateTable("items",
                 new()
                 {
-                    { "serial_number", item.SerialNumber},
+                    { "serial_number", item.SerialNumber },
                     { "model", item.Model },
-                    { "description", item.Description},
-                    { "location", item.Location},
-                    { "manufacturer", item.Manufacturer},
-                    { "directory", item.Directory},
-                    { "in_service", item.InService ? "1" : "0"},
-                    { "remarks", item.Remarks},
+                    { "description", item.Description },
+                    { "location", item.Location },
+                    { "manufacturer", item.Manufacturer },
+                    { "directory", item.Directory },
+                    { "in_service", item.InService ? "1" : "0" },
+                    { "remarks", item.Remarks },
                     { "timestamp", DateTime.UtcNow.ToString(timestampFormat, CultureInfo.InvariantCulture) },
-                    { "item_group", item.ItemGroup},
-                    { "certificate_number", item.CertificateNumber},
+                    { "item_group", item.ItemGroup },
+                    { "certificate_number", item.CertificateNumber },
                     { "is_standard_equipment", item.IsStandardEquipment ? "1" : "0" }
                 },
                 new()
@@ -111,7 +98,7 @@ namespace CalTools_WPF
                     { "serial_number", $"{item.SerialNumber}" }
                 });
         }
-        private void SaveDataStandardEquipment(int dataId, int equipmentId)
+        internal virtual void SaveDataStandardEquipment(int dataId, int equipmentId)
         {
             List<Dictionary<string, string>> id_pairs = handler.SelectFromTableWhere(
                 "data_standard_equipment",
@@ -132,7 +119,7 @@ namespace CalTools_WPF
                     false);
             }
         }
-        public int SaveStandardEquipment(CTStandardEquipment item, bool disconnect = false)
+        public int SaveStandardEquipment(CTStandardEquipment item)
         {
             int id = handler.InsertIntoTable("standard_equipment",
                 new()
@@ -149,17 +136,18 @@ namespace CalTools_WPF
                 }, false);
             return id;
         }
-        public int SaveTask(CTTask task, bool disconnect = true, bool overrideId = false)
+        public int SaveTask(CTTask task)
         {
-            int id;
+            int id = task.TaskId;
             Dictionary<string, string> colValues = new()
             {
+                { "id", $"{task.TaskId}" },
                 { "serial_number", $"{task.SerialNumber}"},
                 { "task_title", $"{task.TaskTitle}" },
                 { "service_vendor", $"{task.ServiceVendor}" },
                 { "is_mandatory", $"{(task.IsMandatory ? 1 : 0)}" },
                 { "interval", $"{task.Interval}" },
-                { "complete_Date", $"{task.CompleteDateString}" },
+                { "complete_date", $"{task.CompleteDateString}" },
                 { "due_date", $"{task.DueDateString}" },
                 { "is_due", $"{(task.IsDue ? 1 : 0)}" },
                 { "action_type", $"{task.ActionType}" },
@@ -167,30 +155,41 @@ namespace CalTools_WPF
                 { "remarks", $"{task.Remarks}" },
                 { "date_override", $"{task.DateOverrideString}" },
             };
-            if (overrideId && task.TaskId != -1)
+            if(task.TaskId == -1)
             {
-                colValues.Add("id", $"{task.TaskId}");
-                id = handler.InsertIntoTable("tasks", colValues);
-            }
-            else if (task.TaskId == -1)
-            {
+                colValues.Remove("id");
                 id = handler.InsertIntoTable("tasks", colValues);
             }
             else
             {
                 handler.UpdateTable("tasks", colValues,
                     new() { { "id", $"{task.TaskId}" } });
-                id = task.TaskId;
             }
             return id;
         }
-        public void SaveTaskData(TaskData data, bool timestampOverride = false, bool disconnect = false, bool overrideId = false)
+        public void SaveTaskData(TaskData data)
         {
-            if (data.TaskId == null)
+            List<int> equipmentIds;
+            try
             {
-                MessageBox.Show($"Task data TaskID is null.", "Null TaskID", MessageBoxButton.OK, MessageBoxImage.Error);
+                equipmentIds = CheckStandardEquipment(data.StandardEquipment);
+                if (data.TaskId == null)
+                {
+                    throw new ArgumentException("CTDatabase.SaveTaskData: Task data TaskID is null.");
+                }
+            }
+            catch (ArgumentException ex)
+            {
+#if DEBUG
+                Debug.WriteLine(ex.Message);
+#else
+                MessageBox.Show($"{ex.Message}", "CTDatabase.SaveTaskData", MessageBoxButton.OK, MessageBoxImage.Error);
+#endif
                 return;
             }
+
+            string newTimestamp = data.Timestamp != DateTime.MinValue ? 
+                data.TimestampString : DateTime.UtcNow.ToString(timestampFormat, CultureInfo.InvariantCulture);
             Dictionary<string, string> colValues = new()
             {
                 { "task_id", $"{data.TaskId}" },
@@ -208,23 +207,23 @@ namespace CalTools_WPF
                 { "procedure", $"{data.Procedure}" },
                 { "remarks", $"{data.Remarks}" },
                 { "technician", $"{data.Technician}" },
-                { "timestamp", $"{(timestampOverride ? data.Timestamp : DateTime.UtcNow.ToString(timestampFormat, CultureInfo.InvariantCulture))}" },
+                { "timestamp", newTimestamp }
             };
-            if(overrideId & data.DataId != -1) { colValues.Add("id", $"{data.DataId}"); }
+            if(data.DataId != -1) { colValues.Add("id", $"{data.DataId}"); }
             data.DataId = handler.InsertIntoTable("task_data", colValues, false);
 
             foreach(Findings p in data.Findings)
             {
                 p.DataId = data.DataId;
-                SaveParameter(p, false);
+                SaveFindings(p);
             }
-            foreach(int equipmentId in CheckStandardEquipment(data.StandardEquipment))
+            foreach(int equipmentId in equipmentIds)
             {
                 SaveDataStandardEquipment(data.DataId, equipmentId);
             }
             SaveTaskDataFiles(data);
         }
-        private void SaveTaskDataFiles(TaskData data, bool disconnect = false)
+        internal virtual void SaveTaskDataFiles(TaskData data)
         {
             foreach (TaskDataFile file in data.DataFiles)
             {
@@ -238,21 +237,28 @@ namespace CalTools_WPF
                 if (fileRow.Count == 0) { handler.InsertIntoTable("task_data_files", colValues, false); }
             }
         }
-        private void SaveParameter(Findings findings, bool disconnect = true)
+        internal virtual void SaveFindings(Findings findings)
         {
-            handler.InsertIntoTable("findings",
-                new()
-                {
-                    { "task_data_id", $"{findings.DataId}" },
-                    { "name", $"{findings.Name}" },
-                    { "tolerance", $"{findings.Tolerance}" },
-                    { "tolerance_is_percent", $"{(findings.ToleranceIsPercent ? 1 : 0)}" },
-                    { "unit_of_measure", $"{findings.UnitOfMeasure}" },
-                    { "measurement_before", $"{findings.MeasurementBefore}" },
-                    { "measurement_after", $"{findings.MeasurementAfter}" },
-                    { "setting", $"{findings.Setting}" },
-                },
-                false);
+            if(findings.DataId != -1)
+            {
+                handler.InsertIntoTable("findings",
+                    new()
+                    {
+                        { "task_data_id", $"{findings.DataId}" },
+                        { "name", $"{findings.Name}" },
+                        { "tolerance", $"{findings.Tolerance}" },
+                        { "tolerance_is_percent", $"{(findings.ToleranceIsPercent ? 1 : 0)}" },
+                        { "unit_of_measure", $"{findings.UnitOfMeasure}" },
+                        { "measurement_before", $"{findings.MeasurementBefore}" },
+                        { "measurement_after", $"{findings.MeasurementAfter}" },
+                        { "setting", $"{findings.Setting}" },
+                    },
+                    false);
+            }
+            else
+            {
+                throw new ArgumentException("CTDatabase.SaveFindings: Invalid findings.DataId (-1).");
+            }
         }
 
         //Remove data----------------------------------------------------------------------------------------------------------------------
@@ -265,7 +271,7 @@ namespace CalTools_WPF
         }
 
         //Misc members-------------------------------------------------------------------------------------------------------------
-        private List<int> CheckStandardEquipment(List<CTStandardEquipment> equipmentList)
+        internal virtual List<int> CheckStandardEquipment(List<CTStandardEquipment> equipmentList)
         {
             List<int> idList = new();
             foreach(CTStandardEquipment e in equipmentList)
@@ -280,10 +286,9 @@ namespace CalTools_WPF
                     List<CTStandardEquipment> items = AssignValues<CTStandardEquipment>(equipment);
                     if (items[0].ActionDueDate != e.ActionDueDate)
                     {
-                        MessageBox.Show($"The selected standard equipment matches the serial number" +
-                            $" and certificate number of an existing database entry, but with a different date. The current or previous certificate number must be updated.",
-                            "CTDatabase.CheckStandardEquipment");
-                        throw new ArgumentException("Invalid standard equipment entry.");
+                        throw new ArgumentException($"CTDatabase.CheckStandardEquipment: The selected standard equipment matches the serial number" +
+                            $" and certificate number of an existing database entry, but with a different date. " +
+                            $"The current or previous certificate number must be updated. The data was not saved.");
                     }
                     else
                     {
@@ -318,11 +323,15 @@ namespace CalTools_WPF
             }
             catch (Exception ex)
             {
+#if DEBUG
+                Debug.WriteLine($"CTDatabase.AssignValues<{typeof(Type)}>:\n\tError parsing query results: {ex.Message}");
+#else
                 MessageBox.Show(
                     $"Error parsing query results: {ex.Message}",
                     $"CTDatabase.AssignValues<{typeof(Type)}>",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
+#endif
                 data.Clear();
                 return data;
             }

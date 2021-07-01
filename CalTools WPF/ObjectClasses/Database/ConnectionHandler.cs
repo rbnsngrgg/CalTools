@@ -23,8 +23,7 @@ namespace CalTools_WPF.ObjectClasses.Database
         public void RemoveFromTable(string tableName, Dictionary<string, string> whereValues);
         public List<Dictionary<string, string>> SelectAllFromTable(string tableName);
         public List<Dictionary<string, string>> SelectFromTableWhere(string tableName, Dictionary<string, string> whereValues);
-        public List<Dictionary<string, string>> SelectStandardEquipment();
-        public List<Dictionary<string, string>> SelectStandardEquipmentWhere(string[] whereCols, string[] whereValues);
+        public List<Dictionary<string, string>> SelectStandardEquipmentWhere(Dictionary<string, string> whereValues);
     }
 
     internal class SqliteConnectionHandler : IConnectionHandler
@@ -168,32 +167,32 @@ namespace CalTools_WPF.ObjectClasses.Database
             return id;
         }
 
-        public void CreateTable(string schema)
+        public virtual void CreateTable(string schema)
         {
             ExecuteQuery(schema);
             Disconnect();
         }
-        public void DropTable(string tableName)
+        public virtual void DropTable(string tableName)
         {
             string query = $"DROP TABLE IF EXISTS {tableName}";
             ExecuteQuery(query);
             Disconnect();
         }
-        public void RenameTable(string oldName, string newName)
+        public virtual void RenameTable(string oldName, string newName)
         {
             ExecuteQuery($"ALTER TABLE {oldName} RENAME TO {newName}");
             Disconnect();
         }
-        public void SetVersion(string version)
+        public virtual void SetVersion(string version)
         {
             ExecuteQuery($"PRAGMA user_version = {version}");
             Disconnect();
         }
-        public bool DatabaseReady()
+        public virtual bool DatabaseReady()
         {
             return Connect() && Disconnect();
         }
-        public int GetDatabaseVersion()
+        public virtual int GetDatabaseVersion()
         {
             string query = "PRAGMA user_version";
             SqliteDataReader reader = ExecuteQuery(query);
@@ -201,7 +200,7 @@ namespace CalTools_WPF.ObjectClasses.Database
             Disconnect();
             return version;
         }
-        public int InsertIntoTable(string tableName, Dictionary<string,string> colValues, bool orIgnore = true)
+        public virtual int InsertIntoTable(string tableName, Dictionary<string,string> colValues, bool orIgnore = true)
         {
             if (IsTableValid(tableName))
             {
@@ -234,7 +233,7 @@ namespace CalTools_WPF.ObjectClasses.Database
                 return -1;
             }
         }
-        public void UpdateTable(string tableName, Dictionary<string, string> colValues, Dictionary<string, string> whereValues)
+        public virtual void UpdateTable(string tableName, Dictionary<string, string> colValues, Dictionary<string, string> whereValues)
         {
             if (IsTableValid(tableName))
             {
@@ -270,7 +269,7 @@ namespace CalTools_WPF.ObjectClasses.Database
                     MessageBoxImage.Error);
             }
         }
-        public void RemoveFromTable(string tableName, Dictionary<string, string> whereValues)
+        public virtual void RemoveFromTable(string tableName, Dictionary<string, string> whereValues)
         {
             if (IsTableValid(tableName))
             {
@@ -317,23 +316,14 @@ namespace CalTools_WPF.ObjectClasses.Database
             Disconnect();
             return results;
         }
-        public List<Dictionary<string, string>> SelectStandardEquipment()
-        {
-            List<Dictionary<string, string>> results = GetQueryResults(
-                ExecuteQuery("SELECT * FROM (SELECT * FROM standard_equipment ORDER BY id DESC) " +
-                    "WHERE action_due_date > date('now') GROUP BY serial_number"
-                ));
-            Disconnect();
-            return results;
-        }
-        public List<Dictionary<string, string>> SelectStandardEquipmentWhere(string[] whereCols, string[] whereValues)
+        public virtual List<Dictionary<string, string>> SelectStandardEquipmentWhere(Dictionary<string, string> whereValues)
         {
             List<Dictionary<string, string>> results = new();
             string queryWhere = "";
-            for (int i = 0; i < whereCols.Length; i++)
+            foreach (string col in whereValues.Keys)
             {
-                if (i > 0) { queryWhere += " AND"; }
-                queryWhere += $" {whereCols[i]}='{whereValues[i]}'";
+                if (queryWhere != "") { queryWhere += " AND"; }
+                queryWhere += $" {col}='{whereValues[col]}'";
             }
             string query = $"SELECT * FROM standard_equipment " +
                     $"WHERE standard_equipment.id IN " +

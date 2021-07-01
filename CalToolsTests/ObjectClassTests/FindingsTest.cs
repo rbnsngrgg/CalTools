@@ -60,6 +60,12 @@ namespace CalToolsTests
             Assert.AreEqual(float.Parse(testParameters["measurement_before"]), findings.MeasurementBefore);
             Assert.AreEqual(float.Parse(testParameters["measurement_after"]), findings.MeasurementAfter);
             Assert.AreEqual(float.Parse(testParameters["setting"]), findings.Setting);
+
+            testParameters.Remove("id");
+            testParameters.Remove("task_data_id");
+            findings = new(testParameters);
+            Assert.AreEqual(-1, findings.Id);
+            Assert.AreEqual(-1, findings.DataId);
         }
     }
 }

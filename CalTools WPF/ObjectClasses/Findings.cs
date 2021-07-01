@@ -22,17 +22,21 @@ namespace CalTools_WPF.ObjectClasses
         {
             ParseParameters(values);
         }
-        public void ParseParameters(Dictionary<string, string> values)
+        public void ParseParameters(Dictionary<string, string> parameters)
         {
-            Id = int.Parse(values["id"]);
-            DataId = int.Parse(values["task_data_id"]);
-            Name = values["name"];
-            Tolerance = float.Parse(values["tolerance"]);
-            ToleranceIsPercent = values["tolerance_is_percent"] == "1";
-            UnitOfMeasure = values["unit_of_measure"];
-            MeasurementBefore = float.Parse(values["measurement_before"]);
-            MeasurementAfter = float.Parse(values["measurement_after"]);
-            Setting = float.Parse(values["setting"]);
+            if (parameters.ContainsKey("id") && parameters["id"] != "")
+            { Id = int.Parse(parameters["id"]); }
+
+            if (parameters.ContainsKey("task_data_id") && parameters["task_data_id"] != "")
+            { DataId = int.Parse(parameters["task_data_id"]); }
+
+            Name = parameters["name"];
+            Tolerance = float.Parse(parameters["tolerance"]);
+            ToleranceIsPercent = parameters["tolerance_is_percent"] == "1";
+            UnitOfMeasure = parameters["unit_of_measure"];
+            MeasurementBefore = float.Parse(parameters["measurement_before"]);
+            MeasurementAfter = float.Parse(parameters["measurement_after"]);
+            Setting = float.Parse(parameters["setting"]);
         }
     }
 }

@@ -386,7 +386,7 @@ namespace CalTools_WPF
             CTItem currentItem = database.GetFromWhere<CTItem>(new() { { "serial_number", SelectedSN() } })[0];
             if (Directory.Exists(currentItem.Directory))
             {
-                int taskID = database.SaveTask(new CTTask { SerialNumber = SelectedSN() }, true);
+                int taskID = database.SaveTask(new CTTask { SerialNumber = SelectedSN() });
                 if (taskID == -1) { return; }
                 CTTask task = database.GetFromWhere<CTTask>(new() { { "id", $"{taskID}" } })[0];
                 string newPath = Path.Combine(currentItem.Directory, $"{taskID}_{task.TaskTitle}");

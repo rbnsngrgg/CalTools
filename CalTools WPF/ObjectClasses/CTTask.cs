@@ -104,7 +104,7 @@ namespace CalTools_WPF
 
         public void ParseParameters(Dictionary<string, string> parameters)
         {
-            TaskId = int.Parse(parameters["id"]);
+            if (parameters.ContainsKey("id")) { TaskId = int.Parse(parameters["id"]); }
             SerialNumber = parameters["serial_number"];
             TaskTitle = parameters["task_title"];
             ServiceVendor = parameters["service_vendor"];

@@ -20,7 +20,7 @@ namespace CalTools_WPF.ObjectClasses
         private List<CTStandardEquipment> standardEquipment = new();
         private string remarks = "";
         private string technician = "";
-        private string timestamp = "";
+        private DateTime timestamp = DateTime.MinValue;
         private List<TaskDataFile> dataFiles = new();
         #endregion
 
@@ -46,7 +46,8 @@ namespace CalTools_WPF.ObjectClasses
         public List<CTStandardEquipment> StandardEquipment { get => standardEquipment; set { standardEquipment = value; ChangesMade = true; } }
         public string Remarks { get => remarks; set { remarks = value; ChangesMade = true; } }
         public string Technician { get => technician; set { technician = value; ChangesMade = true; } }
-        public string Timestamp { get => timestamp; set { timestamp = value; ChangesMade = true; } }
+        public DateTime Timestamp { get => timestamp; set { timestamp = value; ChangesMade = true; } }
+        public string TimestampString { get => timestamp.ToString("yyyy-MM-dd-HH-mm-ss-ffffff", CultureInfo.InvariantCulture); }
         public List<TaskDataFile> DataFiles { get => dataFiles; set { dataFiles = value; ChangesMade = true; } }
         public bool ChangesMade { get; set; }
         #endregion
@@ -60,7 +61,7 @@ namespace CalTools_WPF.ObjectClasses
 
         public void ParseParameters(Dictionary<string, string> parameters)
         {
-            DataId = int.Parse(parameters["id"]);
+            if (parameters.ContainsKey("id")) { DataId = int.Parse(parameters["id"]); }
             TaskId = int.Parse(parameters["task_id"]);
             SerialNumber = parameters["serial_number"];
             StateBefore = new()
@@ -85,7 +86,8 @@ namespace CalTools_WPF.ObjectClasses
             Procedure = parameters["procedure"];
             Remarks = parameters["remarks"];
             Technician = parameters["technician"];
-            Timestamp = parameters["timestamp"];
+            if (parameters.ContainsKey("timestamp") && parameters["timestamp"] != "")
+            { Timestamp = DateTime.ParseExact(parameters["timestamp"], "yyyy-MM-dd-HH-mm-ss-ffffff", CultureInfo.InvariantCulture); }
             ChangesMade = false;
         }
     }

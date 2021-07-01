@@ -92,6 +92,10 @@ namespace CalToolsTests
             Assert.AreEqual(testParameters["remarks"], task.Remarks);
             Assert.IsNull(task.DateOverride);
             Assert.IsFalse(task.ChangesMade);
+
+            testParameters.Remove("id");
+            task = new(testParameters);
+            Assert.AreEqual(-1, task.TaskId);
         }
 
         [TestMethod, TestCategory("CTTaskSetters")]

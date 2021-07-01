@@ -35,7 +35,9 @@ namespace CalToolsTests
             Assert.IsInstanceOfType(data.Findings, typeof(List<Findings>));
             Assert.AreEqual("", data.Remarks);
             Assert.AreEqual("", data.Technician);
-            Assert.AreEqual("", data.Timestamp);
+            Assert.AreEqual(DateTime.MinValue, data.Timestamp);
+            Assert.AreEqual(DateTime.MinValue.ToString("yyyy-MM-dd-HH-mm-ss-ffffff", CultureInfo.InvariantCulture),
+                data.TimestampString);
             Assert.IsInstanceOfType(data.DataFiles, typeof(List<TaskDataFile>));
             Assert.IsFalse(data.ChangesMade);
         }
@@ -93,8 +95,14 @@ namespace CalToolsTests
             Assert.AreEqual(testParameters["complete_date"], data.CompleteDateString);
             Assert.AreEqual(testParameters["remarks"], data.Remarks);
             Assert.AreEqual(testParameters["technician"], data.Technician);
-            Assert.AreEqual(testParameters["timestamp"], data.Timestamp);
+            Assert.AreEqual(testParameters["timestamp"], data.TimestampString);
             Assert.IsFalse(data.ChangesMade);
+
+            testParameters.Remove("id");
+            testParameters.Remove("timestamp");
+            data = new(testParameters);
+            Assert.AreEqual(-1, data.DataId);
+            Assert.AreEqual(DateTime.MinValue, data.Timestamp);
         }
     }
 }

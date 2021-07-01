@@ -143,7 +143,7 @@ namespace CalTools_WPF
         }
         public void ParseParameters(Dictionary<string,string> parameters)
         {
-            Id = int.Parse(parameters["id"]);
+            if (parameters.ContainsKey("id")) { Id = int.Parse(parameters["id"]); }
             SerialNumber = parameters["serial_number"];
             Manufacturer = parameters["manufacturer"];
             Description = parameters["description"];
