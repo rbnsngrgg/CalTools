@@ -12,6 +12,7 @@ namespace CalTools_WPF.ObjectClasses.Database
 {
     public interface IConnectionHandler
     {
+        public string[] TableNames { get; }
         public void CreateTable(string schema);
         public void DropTable(string tableName);
         public void RenameTable(string oldName, string newName);
@@ -31,18 +32,18 @@ namespace CalTools_WPF.ObjectClasses.Database
         private readonly SqliteConnection connection;
         private SqliteDataReader reader;
 
-        public readonly string[] TableNames = {
-            "items",
-            "tasks",
-            "task_data",
-            "task_data_files",
-            "data_standard_equipment",
-            "findings",
-            "standard_equipment",
-            "old_items",
-            "old_tasks",
-            "old_data"
-        };
+        public string[] TableNames { get; } =
+            {   "items",
+                "tasks",
+                "task_data",
+                "task_data_files",
+                "data_standard_equipment",
+                "findings",
+                "standard_equipment",
+                "old_items",
+                "old_tasks",
+                "old_data"
+            };
         public string DbPath { get; set; }
 
         public SqliteConnectionHandler(string dbPath)

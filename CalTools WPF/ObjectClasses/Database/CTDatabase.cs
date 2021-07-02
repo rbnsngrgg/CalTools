@@ -357,6 +357,19 @@ namespace CalTools_WPF
             }
             return taskData;
         }
+
+        public void ExportDb(string exportFolder)
+        {
+            string targetFolder = Path.Join(exportFolder, $"{DateTime.UtcNow.ToString(timestampFormat)}");
+            foreach (string table in handler.TableNames)
+            {
+                List<string> tableLines = new();
+                foreach (Dictionary<string, string> row in handler.SelectAllFromTable(table))
+                {
+
+                }
+            }
+        }
     }
     public interface ICTObject
     {
