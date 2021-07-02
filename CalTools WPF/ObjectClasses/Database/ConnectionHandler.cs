@@ -115,8 +115,8 @@ namespace CalTools_WPF.ObjectClasses.Database
             {
                 Disconnect();
                 MessageBox.Show(
-                    $"Error executing query: {ex.Message}",
-                    $"SQLiteConnectionHandler.ExecuteQuery: {query}",
+                    $"Error executing query: ({ex.Message}) {query}",
+                    $"SQLiteConnectionHandler.ExecuteQuery",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
                 return reader;
@@ -280,7 +280,7 @@ namespace CalTools_WPF.ObjectClasses.Database
                     if (queryWhere != "") { queryWhere += " AND"; }
                     queryWhere += $" {key}='{whereValues[key]}'";
                 }
-                string query = $"DELETE * FROM {tableName} WHERE{queryWhere}";
+                string query = $"DELETE FROM {tableName} WHERE{queryWhere}";
                 ExecuteQuery(query);
                 Disconnect();
             }

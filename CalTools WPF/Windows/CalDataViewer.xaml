@@ -185,7 +185,7 @@
                           CanUserAddRows="False" CanUserDeleteRows="False" AutoGenerateColumns="False" Grid.ColumnSpan="4" IsReadOnly="True">
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="Description" Binding="{Binding Description, Mode=TwoWay}"/>
-                                <DataGridTextColumn Header="Path" Binding="{Binding Path, Mode=TwoWay}"/>
+                                <DataGridTextColumn Header="Path" Binding="{Binding Location, Mode=TwoWay}"/>
                             </DataGrid.Columns>
                         </DataGrid>
                     </Grid>

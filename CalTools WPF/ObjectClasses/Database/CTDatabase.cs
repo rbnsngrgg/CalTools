@@ -74,7 +74,7 @@ namespace CalTools_WPF
         }
 
         //Save data------------------------------------------------------------------------------------------------------------------------
-        public void SaveItem(CTItem item)
+        public void SaveItem(CTItem item, bool timestampOverride = false)
         {
             handler.InsertIntoTable("items", new() { { "serial_number", item.SerialNumber } });
             handler.UpdateTable("items",
@@ -88,7 +88,9 @@ namespace CalTools_WPF
                     { "directory", item.Directory },
                     { "in_service", item.InService ? "1" : "0" },
                     { "remarks", item.Remarks },
-                    { "timestamp", DateTime.UtcNow.ToString(timestampFormat, CultureInfo.InvariantCulture) },
+                    { "timestamp", timestampOverride ?
+                        item.TimeStampString :
+                        DateTime.UtcNow.ToString(timestampFormat, CultureInfo.InvariantCulture) },
                     { "item_group", item.ItemGroup },
                     { "certificate_number", item.CertificateNumber },
                     { "is_standard_equipment", item.IsStandardEquipment ? "1" : "0" }
@@ -129,10 +131,12 @@ namespace CalTools_WPF
                     { "description", $"{item.Description}" },
                     { "manufacturer", $"{item.Manufacturer}" },
                     { "remarks", $"{item.Remarks}" },
-                    { "timestamp", $"{DateTime.UtcNow.ToString(timestampFormat, CultureInfo.InvariantCulture)}" },
+                    { "timestamp", item.TimeStamp != DateTime.MinValue ?
+                        item.TimeStampString :
+                        DateTime.UtcNow.ToString(timestampFormat, CultureInfo.InvariantCulture) },
                     { "item_group", $"{item.ItemGroup}" },
                     { "certificate_number", $"{item.CertificateNumber}" },
-                    { "action_due_date", $"{item.ActionDueDate.ToString(dateFormat)}" }
+                    { "action_due_date", $"{item.ActionDueDate.ToString(dateFormat, CultureInfo.InvariantCulture)}" }
                 }, false);
             return id;
         }
@@ -149,7 +153,7 @@ namespace CalTools_WPF
                 { "interval", $"{task.Interval}" },
                 { "complete_date", $"{task.CompleteDateString}" },
                 { "due_date", $"{task.DueDateString}" },
-                { "is_due", $"{(task.IsDue ? 1 : 0)}" },
+                { "is_due", $"{(task.DueDate.HasValue && task.DueDate.Value <= DateTime.Today ? 1 : 0)}" },
                 { "action_type", $"{task.ActionType}" },
                 { "directory", $"{task.TaskDirectory}" },
                 { "remarks", $"{task.Remarks}" },
@@ -162,8 +166,15 @@ namespace CalTools_WPF
             }
             else
             {
-                handler.UpdateTable("tasks", colValues,
-                    new() { { "id", $"{task.TaskId}" } });
+                if (handler.SelectFromTableWhere("tasks", new() { { "id", $"{task.TaskId}" } }).Count > 0)
+                {
+                    handler.UpdateTable("tasks", colValues,
+                        new() { { "id", $"{task.TaskId}" } });
+                }
+                else
+                {
+                    handler.InsertIntoTable("tasks", colValues);
+                }
             }
             return id;
         }
@@ -284,7 +295,7 @@ namespace CalTools_WPF
                 if (equipment.Count > 0)
                 {
                     List<CTStandardEquipment> items = AssignValues<CTStandardEquipment>(equipment);
-                    if (items[0].ActionDueDate != e.ActionDueDate)
+                    if (items[0].ActionDueDate.Date != e.ActionDueDate.Date)
                     {
                         throw new ArgumentException($"CTDatabase.CheckStandardEquipment: The selected standard equipment matches the serial number" +
                             $" and certificate number of an existing database entry, but with a different date. " +

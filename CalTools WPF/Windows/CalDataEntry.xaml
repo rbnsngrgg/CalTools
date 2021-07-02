@@ -166,7 +166,7 @@
                           CanUserAddRows="False" CanUserDeleteRows="False" AutoGenerateColumns="False" Grid.ColumnSpan="4">
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="Description" Binding="{Binding Description, Mode=TwoWay}"/>
-                                <DataGridTextColumn Header="Path" Binding="{Binding Path, Mode=TwoWay}"/>
+                                <DataGridTextColumn Header="Path" Binding="{Binding Location, Mode=TwoWay}"/>
                             </DataGrid.Columns>
                         </DataGrid>
                     </Grid>
@@ -182,7 +182,7 @@
                             <RowDefinition/>
                         </Grid.RowDefinitions>
                         <Label Content="Remarks:" Grid.Row="0" Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Top" FontSize="16"/>
-                        <TextBox x:Name="RemarksBox" Grid.Row="0" Grid.Column="1" VerticalAlignment="Center" MinHeight="100" TextWrapping="Wrap" TextChanged="RemarksBox_TextChanged"/>
+                        <TextBox x:Name="RemarksBox" Grid.Row="0" Grid.Column="1" VerticalAlignment="Center" MinHeight="100" TextWrapping="Wrap"/>
                     </Grid>
                 </DockPanel>
             

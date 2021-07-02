@@ -204,7 +204,7 @@ namespace CalTools_WPF
             List<TaskDataV5> v5TaskData = GetAllTaskDataV5();
             foreach(CTItem item in v5Items)
             {
-                SaveItem(item);
+                SaveItem(item, true);
             }
             foreach (CTTask task in v5Tasks)
             {
@@ -250,6 +250,8 @@ namespace CalTools_WPF
             {
                 dataFiles.Add(new TaskDataFile() { Location = file});
             }
+            if(!DateTime.TryParseExact(v5.Timestamp, timestampFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out _))
+            { v5.Timestamp = DateTime.MinValue.ToString(timestampFormat); }
             return new TaskData()
             {
                 DataId = (int)v5.DataID,

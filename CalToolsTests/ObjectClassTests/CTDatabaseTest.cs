@@ -182,7 +182,15 @@ namespace CalToolsTests
             Assert.AreEqual(1, equipmentId);
             mockHandler.Verify(x => x.InsertIntoTable(
                 It.IsRegex("^standard_equipment$"),
-                It.Is<Dictionary<string,string>>(x => VerifyParams(testItemParameters, x, false)),
+                It.Is<Dictionary<string,string>>(x => VerifyParams(testItemParameters, x, true)),
+                false));
+
+            testItemParameters.Remove("timestamp");
+            testEquipment = new(testItemParameters);
+
+            mockHandler.Verify(x => x.InsertIntoTable(
+                It.IsRegex("^standard_equipment$"),
+                It.Is<Dictionary<string, string>>(x => VerifyParams(testItemParameters, x, false)),
                 false));
         }
         [TestMethod, TestCategory("DataSaving")]
@@ -211,11 +219,22 @@ namespace CalToolsTests
             int taskId = database.Object.SaveTask(testTask);
 
             Assert.AreEqual(101, taskId);
+            mockHandler.Verify(x => x.InsertIntoTable(
+                It.IsRegex("^tasks$"),
+                It.Is<Dictionary<string, string>>(
+                    colValues => VerifyParams(testParameters, colValues, false)),
+                true));
+
+            mockHandler.Setup(x => x.SelectFromTableWhere(It.IsAny<string>(), It.IsAny<Dictionary<string, string>>()))
+                .Returns(new List<Dictionary<string, string>>() { new() });
+
+            database.Object.SaveTask(testTask);
+
             mockHandler.Verify(x => x.UpdateTable(
                 It.IsRegex("^tasks$"),
-                It.Is<Dictionary<string,string>>(
+                It.Is<Dictionary<string, string>>(
                     colValues => VerifyParams(testParameters, colValues, false)),
-                It.Is<Dictionary<string,string>>(
+                It.Is<Dictionary<string, string>>(
                     whereValues => whereValues["id"] == "101" && whereValues.Count == 1)));
 
             testParameters.Remove("id");

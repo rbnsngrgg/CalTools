@@ -101,7 +101,7 @@ namespace CalTools_WPF
         private string description = "";
         private string model = "";
         private string remarks = "";
-        private DateTime? timestamp = null;
+        private DateTime timestamp = DateTime.MinValue;
         private DateTime actionDueDate = new();
         private string itemGroup = "";
         private string certificateNumber = "";
@@ -114,7 +114,7 @@ namespace CalTools_WPF
         public string Description { get => description; set { description = value; ChangesMade = true; } }
         public string Model { get => model; set { model = value; ChangesMade = true; } }
         public string Remarks { get => remarks; set { remarks = value; ChangesMade = true; } }
-        public DateTime? TimeStamp
+        public DateTime TimeStamp
         {
             get => timestamp;
             set
@@ -123,7 +123,7 @@ namespace CalTools_WPF
                 ChangesMade = true;
             }
         }
-        public string TimeStampString { get => TimeStamp.HasValue ? TimeStamp.Value.ToString("yyyy-MM-dd-HH-mm-ss-ffffff") : ""; }
+        public string TimeStampString { get => TimeStamp.ToString("yyyy-MM-dd-HH-mm-ss-ffffff"); }
         public DateTime ActionDueDate { get => actionDueDate; set { actionDueDate = value; ChangesMade = true; } }
         public string ItemGroup { get => itemGroup; set { itemGroup = value; ChangesMade = true; } }
         public string CertificateNumber { get => certificateNumber; set { certificateNumber = value; ChangesMade = true; } }
@@ -152,9 +152,10 @@ namespace CalTools_WPF
             CertificateNumber = parameters["certificate_number"];
             Remarks = parameters["remarks"];
             ActionDueDate = DateTime.ParseExact(parameters["action_due_date"], "yyyy-MM-dd", CultureInfo.InvariantCulture);
-            TimeStamp = parameters["timestamp"].Length > 0 ?
-                DateTime.ParseExact(parameters["timestamp"], "yyyy-MM-dd-HH-mm-ss-ffffff", CultureInfo.InvariantCulture) :
-                null;
+            if(parameters.ContainsKey("timestamp"))
+            {
+                DateTime.TryParseExact(parameters["timestamp"], "yyyy-MM-dd-HH-mm-ss-ffffff", CultureInfo.InvariantCulture, DateTimeStyles.None, out timestamp);
+            }
             ChangesMade = false;
         }
     }

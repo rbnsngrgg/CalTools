@@ -26,7 +26,7 @@ namespace CalToolsTests
             Assert.AreEqual("", testEquipment.Description);
             Assert.AreEqual("", testEquipment.Model);
             Assert.AreEqual("", testEquipment.Remarks);
-            Assert.IsNull(testEquipment.TimeStamp);
+            Assert.AreEqual(DateTime.MinValue, testEquipment.TimeStamp);
             Assert.AreEqual("", testEquipment.ItemGroup);
             Assert.AreEqual("", testEquipment.CertificateNumber);
             Assert.IsFalse(testEquipment.ChangesMade);
