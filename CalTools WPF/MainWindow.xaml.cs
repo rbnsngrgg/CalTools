@@ -146,7 +146,8 @@ namespace CalTools_WPF
         }
         private void ToolsMenuExportTsv_Click(object sender, RoutedEventArgs e)
         {
-            ExportTSV();
+            string exportsFolder = Path.Join(config.ListDir, "CalTools Exports");
+            database.ExportDb(exportsFolder);
         }
         private void ReceivingFolderButton_Click(object sender, RoutedEventArgs e)
         {

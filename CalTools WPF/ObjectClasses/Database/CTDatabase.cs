@@ -360,15 +360,39 @@ namespace CalTools_WPF
 
         public void ExportDb(string exportFolder)
         {
-            string targetFolder = Path.Join(exportFolder, $"{DateTime.UtcNow.ToString(timestampFormat)}");
+            string targetFolder = Path.Join(exportFolder, $"TSV_Export_{DateTime.UtcNow.ToString(timestampFormat)}");
+            if (!Directory.Exists(Directory.GetParent(targetFolder).FullName))
+            {
+                MessageBox.Show($"Directory does not exist or is inaccessible. {Directory.GetParent(targetFolder).FullName}",
+                    "Invalid Directory", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            Directory.CreateDirectory(targetFolder);
             foreach (string table in handler.TableNames)
             {
+                if (table.Contains("old")) { continue; }
                 List<string> tableLines = new();
-                foreach (Dictionary<string, string> row in handler.SelectAllFromTable(table))
+                List<Dictionary<string, string>> tableItems = handler.SelectAllFromTable(table);
+                if(tableItems.Count == 0) { continue; }
+                foreach (Dictionary<string, string> row in tableItems)
                 {
-
+                    if(tableLines.Count == 0)
+                    {
+                        tableLines.Add("");
+                        foreach(string key in row.Keys)
+                        {
+                            tableLines[0] = $"{tableLines[0]}{key}\t";
+                        }
+                    }
+                    string newLine = "";
+                    foreach(string key in row.Keys)
+                    {
+                        newLine = $"{newLine}{row[key]}\t";
+                    }
+                    tableLines.Add(newLine);
                 }
+                File.WriteAllLines(Path.Join(targetFolder, $"{table}.txt"), tableLines);
             }
+            Process.Start("explorer", targetFolder);
         }
     }
     public interface ICTObject

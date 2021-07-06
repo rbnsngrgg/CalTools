@@ -182,39 +182,6 @@ namespace CalTools_WPF
             }
             return fileInfo;
         }
-        private void ExportTSV()
-        {
-            List<string> files = new() { $"CalTools_dbv{database.currentVersion}_Items.txt", $"CalTools_dbv{database.currentVersion}_TaskData.txt", $"CalTools_dbv{database.currentVersion}_Tasks.txt" };
-            string exportsFolder = Path.Join(config.ListDir, "CalTools Exports");
-            string targetFolder = Path.Join(exportsFolder, $"{DateTime.UtcNow.ToString(database.timestampFormat)}");
-            if (!Directory.Exists(targetFolder)) { Directory.CreateDirectory(targetFolder); }
-            List<string> itemLines = new() { "SerialNumber\tLocation\tManufacturer\tDirectory\tDescription\tInService\tModel\tComment\tTimestamp\tItemGroup\tStandardEquipment\tCertificateNumber" };
-            List<string> taskDataLines = new() { "DataID\tTaskID\tSerialNumber\tStateBeforeAction\tStateAfterAction\tActionTaken\tCompleteDate\tProcedure\tStandardEquipment\tFindings\tRemarks\tTechnician\tEntryTimestamp" };
-            List<string> tasksLines = new() { "TaskID\tSerialNumber\tTaskTitle\tServiceVendor\tMandatory\tInterval\tCompleteDate\tDueDate\tDue\tActionType\tDirectory\tComments\tManualFlag" };
-            foreach (CTItem item in database.GetAll<CTItem>())
-            {
-                itemLines.Add($"{item.SerialNumber}\t{item.Location}\t{item.Manufacturer}\t{item.Directory}\t\"{item.Description}\"\t{(item.InService ? 1 : 0)}\t" +
-                    $"\"{item.Model}\"\t\"{item.Remarks}\"\t{item.TimeStampString}\t\"{item.ItemGroup}\"\t{(item.IsStandardEquipment ? 1 : 0)}\t" +
-                    $"{item.CertificateNumber}");
-            }
-            foreach (TaskData data in database.GetAll<TaskData>())
-            {
-                taskDataLines.Add($"{data.DataId}\t{data.TaskId}\t{data.SerialNumber}\t{JsonConvert.SerializeObject(data.StateBefore)}\t{JsonConvert.SerializeObject(data.StateAfter)}\t" +
-                    $"{JsonConvert.SerializeObject(data.Actions)}\t{data.CompleteDate.Value.ToString("yyyy-MM-dd")}\t{data.Procedure}\t{data.StandardEquipment}\t" +
-                    $"{JsonConvert.SerializeObject(data.Findings)}\t{data.Remarks}\t{data.Technician}\t{data.TimestampString}");
-            }
-            foreach (CTTask task in database.GetAll<CTTask>())
-            {
-                tasksLines.Add($"{task.TaskId}\t{task.SerialNumber}\t{task.TaskTitle}\t{task.ServiceVendor}\t{(task.IsMandatory ? 1 : 0)}\t{task.Interval}\t" +
-                    $"{task.CompleteDateString}\t" +
-                    $"{task.DueDateString}\t{(task.IsDue ? 1 : 0)}\t{task.ActionType}\t" +
-                    $"{task.TaskDirectory}\t{task.Remarks}\t{task.DateOverride.Value:yyyy-MM-dd}");
-            }
-            System.IO.File.WriteAllLines(Path.Join(targetFolder, files[0]), itemLines);
-            System.IO.File.WriteAllLines(Path.Join(targetFolder, files[1]), taskDataLines);
-            System.IO.File.WriteAllLines(Path.Join(targetFolder, files[2]), tasksLines);
-            Process.Start("explorer", targetFolder);
-        }
         private void ExportDueListTSV()
         {
             string file = $"{DateTime.UtcNow.ToString(database.dateFormat)}_Items Due Near {((DateTime)ItemCalendar.SelectedDate).ToString(database.dateFormat)}.txt";
