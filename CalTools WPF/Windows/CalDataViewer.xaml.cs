@@ -190,5 +190,35 @@ namespace CalTools_WPF
                 FindingsPanel.Visibility = v1;
             }
         }
+
+        private void ContextOpenFile_Click(object sender, RoutedEventArgs e)
+        {
+            if (FilesDataGrid.SelectedItem != null)
+            {
+                try
+                {
+                    Process.Start("explorer", ((TaskDataFile)FilesDataGrid.SelectedItem).Location);
+                }
+                catch (System.Exception ex)
+                {
+                    MessageBox.Show($"{ex.Message}", "CalDataViewer", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
+
+        private void ContextOpenFolder_Click(object sender, RoutedEventArgs e)
+        {
+            if (FilesDataGrid.SelectedItem != null)
+            {
+                try
+                {
+                    Process.Start("explorer", Directory.GetParent(((TaskDataFile)FilesDataGrid.SelectedItem).Location).FullName);
+                }
+                catch (System.Exception ex)
+                {
+                    MessageBox.Show($"{ex.Message}", "CalDataViewer", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
     }
 }

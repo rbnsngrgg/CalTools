@@ -188,8 +188,9 @@ namespace CalTools_WPF
             DateTime latestFileDate = LatestDateFromFolder(taskFolder);
             DateTime latestDataDate = LatestDateFromTaskData(ref taskDataList);
             if (latestFileDate == latestDataDate && latestDataDate == new DateTime()) { CompleteDate = null; }
-            else if (latestFileDate > latestDataDate) { CompleteDate = latestFileDate; }
-            else if (latestDataDate > latestFileDate) { CompleteDate = latestDataDate; }
+            else if (latestFileDate > latestDataDate && CompleteDate != latestFileDate) { CompleteDate = latestFileDate; }
+            else if (latestDataDate > latestFileDate && CompleteDate != latestDataDate) { CompleteDate = latestDataDate; }
+
         }
         public string GetTaskFolderIfExists()
         {

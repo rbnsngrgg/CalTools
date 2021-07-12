@@ -157,6 +157,10 @@ namespace CalToolsTests
             DateTime latestDate = DateTime.ParseExact("2021-03-01", "yyyy-MM-dd", CultureInfo.InvariantCulture);
             task.SetCompleteDateFromData(testTaskFolder, mockTaskData);
             Assert.AreEqual(latestDate, task.CompleteDate);
+
+            task.ChangesMade = false;
+            task.SetCompleteDateFromData(testTaskFolder, mockTaskData);
+            Assert.IsFalse(task.ChangesMade);
         }
         [TestMethod, TestCategory("CTTaskSetCompleteDate")]
         public void TestSetCompleteDateFileIsLatest()

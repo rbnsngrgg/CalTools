@@ -363,32 +363,21 @@ namespace CalTools_WPF
             string targetFolder = Path.Join(exportFolder, $"TSV_Export_{DateTime.UtcNow.ToString(timestampFormat)}");
             if (!Directory.Exists(Directory.GetParent(targetFolder).FullName))
             {
-                MessageBox.Show($"Directory does not exist or is inaccessible. {Directory.GetParent(targetFolder).FullName}",
+                MessageBox.Show($"The directory does not exist or is inaccessible: {Directory.GetParent(targetFolder).FullName}",
                     "Invalid Directory", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
             }
             Directory.CreateDirectory(targetFolder);
             foreach (string table in handler.TableNames)
             {
                 if (table.Contains("old")) { continue; }
-                List<string> tableLines = new();
+                
                 List<Dictionary<string, string>> tableItems = handler.SelectAllFromTable(table);
                 if(tableItems.Count == 0) { continue; }
+                List<string> tableLines = new() { string.Join('\t', tableItems[0].Keys) };
                 foreach (Dictionary<string, string> row in tableItems)
                 {
-                    if(tableLines.Count == 0)
-                    {
-                        tableLines.Add("");
-                        foreach(string key in row.Keys)
-                        {
-                            tableLines[0] = $"{tableLines[0]}{key}\t";
-                        }
-                    }
-                    string newLine = "";
-                    foreach(string key in row.Keys)
-                    {
-                        newLine = $"{newLine}{row[key]}\t";
-                    }
-                    tableLines.Add(newLine);
+                    tableLines.Add(string.Join('\t', row.Values));
                 }
                 File.WriteAllLines(Path.Join(targetFolder, $"{table}.txt"), tableLines);
             }

@@ -121,7 +121,7 @@
                             <CheckBox x:Name="DetailsInOperation" IsEnabled="False" VerticalAlignment="Center" HorizontalAlignment="Left" Grid.Row="6" Grid.Column="1"/>
                         <Label Content="Item Group:" HorizontalAlignment="Left" Grid.Row="7" Grid.Column="0"/>
                             <ComboBox x:Name="DetailsItemGroup" IsEnabled="False" IsEditable ="True" Grid.Row="7" Grid.Column="1" Height="22" Width="Auto"/>
-                        <Label Content="Comments:" HorizontalAlignment="Left" Grid.Row="8" Grid.Column="0"/>
+                        <Label Content="Remarks:" HorizontalAlignment="Left" Grid.Row="8" Grid.Column="0"/>
                             <TextBox x:Name="DetailsComments" Background="#FFFBFBFB" IsEnabled="False" Grid.Row="8" Grid.Column="1" Margin="0,0,0,5"/>
                         <DataGrid x:Name="DetailsTasksTable" CanUserAddRows="False" CanUserDeleteRows="False" AutoGenerateColumns="False"
                                   Grid.Row="9" Grid.Column="0" MinHeight="100" Height="Auto" Visibility="Visible" Grid.ColumnSpan="2" IsReadOnly="True">
@@ -164,7 +164,7 @@
                                         </Style>
                                     </DataGridComboBoxColumn.EditingElementStyle>
                                 </DataGridComboBoxColumn>
-                                <DataGridTextColumn Header="Comment" MinWidth="165" Binding="{Binding Remarks, Mode=TwoWay}"/>
+                                <DataGridTextColumn Header="Remarks" MinWidth="165" Binding="{Binding Remarks, Mode=TwoWay}"/>
                             </DataGrid.Columns>
                             <DataGrid.ContextMenu>
                                 <ContextMenu x:Name="TaskDataGridContextMenu" Opened="TaskDataGridContextMenu_Opened">

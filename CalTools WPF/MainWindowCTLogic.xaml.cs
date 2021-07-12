@@ -21,17 +21,17 @@ namespace CalTools_WPF
         private readonly CTDatabase database;
         private readonly CTConfig config = new();
         private readonly Dictionary<string, string> searchModes = new() {
-            { "Serial Number","SerialNumber" },
-            { "Location","Location" },
-            { "Service Vendor","Vendor" },
-            { "Manufacturer","Manufacturer" },
-            { "Description","Description" },
-            { "Action Due","Due" },
-            { "Model","Model" },
-            { "Has Comment","Comment" },
-            { "Item Group","ItemGroup" },
-            { "Action","ActionType" },
-            { "Standard Equipment","StandardEquipment"} };
+            { "Serial Number", "SerialNumber" },
+            { "Location", "Location" },
+            { "Service Vendor", "Vendor" },
+            { "Manufacturer", "Manufacturer" },
+            { "Description", "Description" },
+            { "Action Due", "Due" },
+            { "Model", "Model" },
+            { "Has Remarks", "Remarks" },
+            { "Item Group", "ItemGroup" },
+            { "Action", "ActionType" },
+            { "Standard Equipment", "IsStandardEquipment"} };
         private readonly List<string> manufacturers = new();
         private readonly List<string> locations = new();
         private readonly List<string> serviceVendors = new();
@@ -207,15 +207,16 @@ namespace CalTools_WPF
                 string folderTaskID = Path.GetFileName(taskFolder).Split("_")[0];
                 foreach (CTTask task in tasks)
                 {
-                    List<TaskData> currentData = new();
-                    foreach (TaskData data in taskData)
-                    {
-                        if (data.TaskId == task.TaskId) { currentData.Add(data); }
-                    }
                     if (folderTaskID == task.TaskId.ToString() & Path.GetFileName(folder) == task.SerialNumber)
                     {
-                        task.TaskDirectory = taskFolder;
+                        List<TaskData> currentData = new();
+                        foreach (TaskData data in taskData)
+                        {
+                            if (data.TaskId == task.TaskId) { currentData.Add(data); }
+                        }
+                        if (task.TaskDirectory != taskFolder) { task.TaskDirectory = taskFolder; }
                         task.SetCompleteDateFromData(taskFolder, currentData);
+                        break;
                     }
                 }
             }
@@ -320,9 +321,9 @@ namespace CalTools_WPF
             List<CTTask> allTasks = database.GetAll<CTTask>();
             List<CTItem> allItems = database.GetAll<CTItem>();
             List<TaskData> taskData = database.GetAll<TaskData>();
-
             foreach (string folder in config.Folders)
             {
+
                 string scanFolder = Path.Combine(config.ItemScansDir, folder);
                 if (Directory.Exists(scanFolder))
                 {
@@ -578,8 +579,8 @@ namespace CalTools_WPF
                         }
                     }
                 }
-                else if (mode == "Comment") { if (property.GetValue(item).ToString().Length > 0) { filteredItems.Add(item); } }
-                else if (mode == "StandardEquipment") { if ((bool)property.GetValue(item) == true) { filteredItems.Add(item); } }
+                else if (mode == "Remarks") { if (property.GetValue(item).ToString().Length > 0) { filteredItems.Add(item); } }
+                else if (mode == "IsStandardEquipment") { if ((bool)property.GetValue(item)) { filteredItems.Add(item); } }
                 else if (mode == "Due")
                 {
                     foreach (CTTask task in allTasks)
@@ -619,7 +620,7 @@ namespace CalTools_WPF
         {
             SearchBox.Clear();
             string selection = SearchOptions.SelectedItem.ToString();
-            if (selection == "Calibration Due" | selection == "Has Comment" | selection == "Standard Equipment" | selection == "Action Due")
+            if (selection == "Action Due" | selection == "Has Remarks" | selection == "Standard Equipment")
             {
                 AddItemsToList(ItemListFilter(searchModes[selection], ""));
                 SearchBox.IsEnabled = false;
@@ -655,6 +656,7 @@ namespace CalTools_WPF
             string currentItem = SelectedSN();
             if (single) { ScanFoldersSingle(database.GetFromWhere<CTItem>(new() { { "serial_number", currentItem } })[0]); }
             else { ScanFolders(); }
+
             if (SearchBox.Text.Length != 0)
             {
                 AddItemsToList(ItemListFilter(searchModes[SearchOptions.SelectedItem.ToString()], SearchBox.Text));
@@ -663,6 +665,8 @@ namespace CalTools_WPF
             else { AddItemsToList(database.GetAll<CTItem>()); }
             UpdateLists();
             GoToItem(currentItem);
+            
+            
         }
         private void UpdateListsSingle(CTItem item)
         {

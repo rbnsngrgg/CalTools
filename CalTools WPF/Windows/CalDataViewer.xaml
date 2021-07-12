@@ -187,6 +187,12 @@
                                 <DataGridTextColumn Header="Description" Binding="{Binding Description, Mode=TwoWay}"/>
                                 <DataGridTextColumn Header="Path" Binding="{Binding Location, Mode=TwoWay}"/>
                             </DataGrid.Columns>
+                            <DataGrid.ContextMenu>
+                                <ContextMenu x:Name="FileGridContextMenu">
+                                    <MenuItem x:Name="ContextOpenFile" Header="Open File" Click="ContextOpenFile_Click"/>
+                                    <MenuItem x:Name="ContextOpenFolder" Header="Open Folder" Click="ContextOpenFolder_Click"/>
+                                </ContextMenu>
+                            </DataGrid.ContextMenu>
                         </DataGrid>
                     </Grid>
                 </DockPanel>
