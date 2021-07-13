@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -152,7 +153,7 @@ namespace CalTools_WPF
         private void ReceivingFolderButton_Click(object sender, RoutedEventArgs e)
         {
             try { Process.Start("explorer", $"{config.ListDir}\\receiving"); }
-            catch (System.Exception ex) { MessageBox.Show($"Error opening receiving folder: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error); }
+            catch (Exception ex) { MessageBox.Show($"Error opening receiving folder: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error); }
         }
         private void UpdateButton_Click(object sender, RoutedEventArgs e)
         {

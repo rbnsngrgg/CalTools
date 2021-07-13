@@ -227,7 +227,7 @@
             </StackPanel>
         </Grid>
         <StatusBar x:Name="MainStatusBar" Grid.Row="3" Background="#f0f0f0">
-            <StatusBarItem x:Name="StatusBarMainLabel" VerticalAlignment="Center" Content="Ready"/>
+            <StatusBarItem x:Name="StatusBarMainLabel" VerticalAlignment="Center" Content=""/>
             <ProgressBar x:Name="StatusProgressBar" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="100,0,0,0" Width="150" Height="20" Value="0" Visibility="Hidden"/>
         </StatusBar>
     </Grid>

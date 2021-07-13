@@ -1,7 +1,6 @@
 ﻿using CalTools_WPF.ObjectClasses;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
@@ -17,17 +16,6 @@ namespace CalTools_WPF
         public TaskData data = new();
         public List<Findings> parameters = new();
         public List<CTStandardEquipment> standardEquipment = new();
-        public bool ItemIsStandard
-        {
-            get => ItemIsStandard;
-            set
-            {
-                if (value)
-                {
-                    //show certificate number box
-                }
-            }
-        }
         public CalDataEntry()
         {
             InitializeComponent();
@@ -69,6 +57,14 @@ namespace CalTools_WPF
                 Repaired = (bool)RepairedBox.IsChecked,
                 Maintenance = false
             };
+            if(!(bool)CalibrationBox.IsChecked &&
+                !(bool)VerificationBox.IsChecked &&
+                !(bool)AdjustedBox.IsChecked &&
+                !(bool)RepairedBox.IsChecked)
+            {
+                MessageBox.Show("An action must be selected.", "Action Taken", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                return false;
+            }
             DateTime calDate;
             if (!DateTime.TryParseExact(DateBox.Text, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out calDate))
             { MessageBox.Show("The calibration date entered isn't valid.", "Date Format", MessageBoxButton.OK, MessageBoxImage.Exclamation); return false; }
@@ -86,8 +82,8 @@ namespace CalTools_WPF
             data.Findings.Clear();
             data.Findings.AddRange(parameters);
 
-            if (RemarksBox.Text.Length == 0 & parameters.Count == 0)
-            { MessageBox.Show("Remarks are required if there are no findings parameters.", "Remarks", MessageBoxButton.OK, MessageBoxImage.Exclamation); return false; }
+            if (RemarksBox.Text.Length == 0 && parameters.Count == 0 && FilesDataGrid.Items.Count == 0)
+            { MessageBox.Show("Remarks are required if there are no findings or data files.", "Remarks", MessageBoxButton.OK, MessageBoxImage.Exclamation); return false; }
             data.Remarks = RemarksBox.Text;
             if (TechnicianBox.Text.Length == 0) { MessageBox.Show("A technician name is required", "Technician Required", MessageBoxButton.OK, MessageBoxImage.Exclamation); return false; }
             data.Technician = TechnicianBox.Text;
@@ -132,8 +128,11 @@ namespace CalTools_WPF
             data.Findings.Clear();
             data.Findings.AddRange(parameters);
 
-            if (RemarksBox.Text.Length == 0)
-            { MessageBox.Show("Remarks are required for maintenance actions.", "Remarks", MessageBoxButton.OK, MessageBoxImage.Exclamation); return false; }
+            if (RemarksBox.Text.Length == 0 && FilesDataGrid.Items.Count == 0)
+            {
+                MessageBox.Show("Remarks are required if there are no data files.", "Remarks", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                return false;
+            }
             data.Remarks = RemarksBox.Text;
             if (TechnicianBox.Text.Length == 0) { MessageBox.Show("A technician name is required", "Technician Required", MessageBoxButton.OK, MessageBoxImage.Exclamation); return false; }
             data.Technician = TechnicianBox.Text;

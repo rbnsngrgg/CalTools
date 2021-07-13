@@ -1,15 +1,14 @@
 ﻿using CalTools_WPF.ObjectClasses;
 using CalTools_WPF.Windows;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using System.Diagnostics;
-using System.Linq;
 
 namespace CalTools_WPF
 {
@@ -665,8 +664,6 @@ namespace CalTools_WPF
             else { AddItemsToList(database.GetAll<CTItem>()); }
             UpdateLists();
             GoToItem(currentItem);
-            
-            
         }
         private void UpdateListsSingle(CTItem item)
         {
@@ -824,10 +821,6 @@ namespace CalTools_WPF
             try
             {
                 CalDataEntry dataEntry = new();
-                if (database.GetFromWhere<CTItem>(new() { { "serial_number", task.SerialNumber } })[0].IsStandardEquipment)
-                {
-                    dataEntry.ItemIsStandard = true;
-                }
                 dataEntry.SerialNumberBox.Text = task.SerialNumber;
                 dataEntry.DateBox.Text = DateTime.UtcNow.ToString(database.dateFormat);
                 dataEntry.ProcedureBox.ItemsSource = config.Procedures;
@@ -837,7 +830,6 @@ namespace CalTools_WPF
                 if (task.ActionType == "MAINTENANCE")
                 { dataEntry.MaintenanceSelection.IsSelected = true; }
                 if (config.Procedures.Count > 0) { dataEntry.ProcedureBox.SelectedIndex = 0; }
-                dataEntry.parameters.Add(new Findings($"Parameter {dataEntry.parameters.Count + 1}"));
                 if (dataEntry.ShowDialog() == true)
                 {
                     database.SaveTaskData(dataEntry.data);

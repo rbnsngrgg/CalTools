@@ -1,5 +1,4 @@
 ﻿using CalTools_WPF.ObjectClasses;
-using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -219,6 +218,34 @@ namespace CalTools_WPF
                     MessageBox.Show($"{ex.Message}", "CalDataViewer", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
+        }
+
+        private void FileGridContextMenu_Opened(object sender, RoutedEventArgs e)
+        {
+            bool enable = true;
+            if (FilesDataGrid.SelectedItem == null) { enable = false; }
+            ContextOpenFile.IsEnabled = enable;
+            ContextOpenFolder.IsEnabled = enable;
+            ContextCopyPath.IsEnabled = enable;
+        }
+
+        private void ContextCopyPath_Click(object sender, RoutedEventArgs e)
+        {
+            Clipboard.SetText(((TaskDataFile)FilesDataGrid.SelectedItem).Location);
+        }
+
+        private void TaskFilesContextMenu_Opened(object sender, RoutedEventArgs e)
+        {
+            bool enable = true;
+            if (TaskFilesTree.SelectedItem == null) { enable = false; }
+            TaskFilesDeleteContext.IsEnabled = enable;
+        }
+
+        private void TaskDataContextMenu_Opened(object sender, RoutedEventArgs e)
+        {
+            bool enable = true;
+            if (TaskDataTree.SelectedItem == null) { enable = false; }
+            TaskDataDeleteContext.IsEnabled = enable;
         }
     }
 }

@@ -26,7 +26,7 @@
         <GroupBox Grid.Row="1" Grid.Column="0" Header="Database Task Data">
             <TreeView x:Name="TaskDataTree" VerticalAlignment="Stretch" SelectedItemChanged="TaskDataTree_SelectedItemChanged">
                 <TreeView.ContextMenu>
-                    <ContextMenu>
+                    <ContextMenu x:Name="TaskDataContextMenu" Opened="TaskDataContextMenu_Opened">
                         <MenuItem x:Name="TaskDataDeleteContext" Header="Delete Data" Click="TaskDataDeleteContext_Click"/>
                     </ContextMenu>
                 </TreeView.ContextMenu>
@@ -35,7 +35,7 @@
         <GroupBox Grid.Row="2" Grid.Column="0" Header="Task Data Files">
             <TreeView x:Name="TaskFilesTree" VerticalAlignment="Stretch" MouseDoubleClick="TaskFilesTree_MouseDoubleClick">
                 <TreeView.ContextMenu>
-                    <ContextMenu>
+                    <ContextMenu x:Name="TaskFilesContextMenu" Opened="TaskFilesContextMenu_Opened">
                         <MenuItem x:Name="TaskFilesDeleteContext" Header="Delete Data" Click="TaskFilesDeleteContext_Click"/>
                     </ContextMenu>
                 </TreeView.ContextMenu>
@@ -188,9 +188,10 @@
                                 <DataGridTextColumn Header="Path" Binding="{Binding Location, Mode=TwoWay}"/>
                             </DataGrid.Columns>
                             <DataGrid.ContextMenu>
-                                <ContextMenu x:Name="FileGridContextMenu">
+                                <ContextMenu x:Name="FileGridContextMenu" Opened="FileGridContextMenu_Opened">
                                     <MenuItem x:Name="ContextOpenFile" Header="Open File" Click="ContextOpenFile_Click"/>
                                     <MenuItem x:Name="ContextOpenFolder" Header="Open Folder" Click="ContextOpenFolder_Click"/>
+                                    <MenuItem x:Name="ContextCopyPath" Header="Copy Path" Click="ContextCopyPath_Click"/>
                                 </ContextMenu>
                             </DataGrid.ContextMenu>
                         </DataGrid>

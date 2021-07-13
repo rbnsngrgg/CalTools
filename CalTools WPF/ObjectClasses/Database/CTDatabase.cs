@@ -1,7 +1,5 @@
 ﻿using CalTools_WPF.ObjectClasses;
 using CalTools_WPF.ObjectClasses.Database;
-using Microsoft.Data.Sqlite;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
