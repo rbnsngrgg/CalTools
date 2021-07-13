@@ -3,288 +3,307 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
 using System.Windows;
-//using System.Diagnostics;
 
 namespace CalTools_WPF
 {
     //Contains the CTDatabase methods related to checking and updating the structure and version of the SQLite database.
-    partial class CTDatabase
+    internal partial class CTDatabase
     {
-        private void AssignItemValuesLegacy(ref CalibrationItemV4 item)
+        #region V5 Methods
+        private List<CTItem> AssignItemValuesV5(List<Dictionary<string, string>> v5rows)
         {
-            item.Location = reader.GetString((int)CalibrationItemV4.DatabaseColumns.location);
-            item.Interval = reader.GetInt32((int)CalibrationItemV4.DatabaseColumns.interval);
-            item.CalVendor = reader.GetString((int)CalibrationItemV4.DatabaseColumns.cal_vendor);
-            item.Manufacturer = reader.GetString((int)CalibrationItemV4.DatabaseColumns.manufacturer);
-            if (reader.GetString(5).Length > 0) { item.LastCal = DateTime.ParseExact(reader.GetString((int)CalibrationItemV4.DatabaseColumns.lastcal), dateFormat, CultureInfo.InvariantCulture); }
-            if (reader.GetString(6).Length > 0) { item.NextCal = DateTime.ParseExact(reader.GetString((int)CalibrationItemV4.DatabaseColumns.nextcal), dateFormat, CultureInfo.InvariantCulture); }
-            item.Mandatory = reader.GetString((int)CalibrationItemV4.DatabaseColumns.mandatory) == "1";
-            item.Directory = reader.GetString((int)CalibrationItemV4.DatabaseColumns.directory);
-            item.Description = reader.GetString((int)CalibrationItemV4.DatabaseColumns.description);
-            item.InService = reader.GetString((int)CalibrationItemV4.DatabaseColumns.inservice) == "1";
-            if (reader.GetString(11).Length > 0) { item.InServiceDate = DateTime.ParseExact(reader.GetString((int)CalibrationItemV4.DatabaseColumns.inservicedate), dateFormat, CultureInfo.InvariantCulture); }
-            if (reader.GetString(12).Length > 0) { item.OutOfServiceDate = DateTime.ParseExact(reader.GetString((int)CalibrationItemV4.DatabaseColumns.outofservicedate), dateFormat, CultureInfo.InvariantCulture); }
-            item.CalDue = reader.GetString((int)CalibrationItemV4.DatabaseColumns.caldue) == "1";
-            item.Model = reader.GetString((int)CalibrationItemV4.DatabaseColumns.model);
-            item.Comment = reader.GetString((int)CalibrationItemV4.DatabaseColumns.comments);
-            if (reader.GetString(16).Length > 0) { item.TimeStamp = DateTime.ParseExact(reader.GetString((int)CalibrationItemV4.DatabaseColumns.timestamp), timestampFormat, CultureInfo.InvariantCulture); }
-            item.ItemGroup = reader.GetString((int)CalibrationItemV4.DatabaseColumns.item_group);
-            item.VerifyOrCalibrate = reader.GetString((int)CalibrationItemV4.DatabaseColumns.verify_or_calibrate);
-            item.StandardEquipment = reader.GetString((int)CalibrationItemV4.DatabaseColumns.standard_equipment) == "1";
-            item.CertificateNumber = reader.GetString((int)CalibrationItemV4.DatabaseColumns.certificate_number);
-        }
-        private void AssignDataValuesLegacy(ref CalibrationDataV4 data)
-        {
-            data.ID = reader.GetInt32((int)CalibrationDataV4.DatabaseColumns.ColID);
-            data.SerialNumber = reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColSerialNumber);
-            data.StateBefore = JsonConvert.DeserializeObject<State>(reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColStateBeforeAction));
-            data.StateAfter = JsonConvert.DeserializeObject<State>(reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColStateAfterAction));
-            data.ActionTaken = JsonConvert.DeserializeObject<ActionTaken>(reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColActionTaken));
-            if (reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColCalibrationDate).Length > 0)
-            { data.CalibrationDate = DateTime.ParseExact(reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColCalibrationDate), dateFormat, CultureInfo.InvariantCulture); }
-            if (reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColDueDate).Length > 0)
-            { data.DueDate = DateTime.ParseExact(reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColDueDate), dateFormat, CultureInfo.InvariantCulture); }
-            data.Procedure = reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColProcedure);
-            data.StandardEquipment = reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColStandardEquipment);
-            data.findings = JsonConvert.DeserializeObject<Findings>(reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColFindings));
-            data.Remarks = reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColRemarks);
-            data.Technician = reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColTechnician);
-            data.Timestamp = reader.GetString((int)CalibrationDataV4.DatabaseColumns.ColEntryTimestamp);
-        }
-        private void ConvertFileStructure() //Converts the file structure from V4 to V5, adding folders for each task
-        {
-            List<CTItem> allItems = GetAllItems();
-            foreach (string folder in Directory.GetDirectories(ItemScansDir))
+            List<CTItem> v5Items = new();
+            foreach( Dictionary<string, string> row in v5rows)
             {
-                foreach (string configFolder in Folders)
-                {
-                    //If folder in ItemScansDir is a folder specified in config
-                    if (folder.Contains(configFolder))
-                    {
-                        foreach (string itemFolder in Directory.GetDirectories(folder))
-                        {
-                            bool itemExists = false;
-                            //Get DB item that matches current folder
-                            foreach (CTItem item in allItems)
-                            {
-                                if (Path.GetFileName(itemFolder) == item.SerialNumber)
-                                {
-                                    itemExists = true;
-                                    if (itemFolder != item.Directory) { item.Directory = itemFolder; }
-                                    foreach (CTTask task in GetTasks("SerialNumber", item.SerialNumber))
-                                    {
-                                        //Create task folder, then move all files to the task folder.
-                                        MoveToTaskFolder(item, task);
-                                    }
-                                    if (item.ChangesMade) { SaveItem(item); }
-                                    break;
-                                }
-                            }
-                            if (itemExists) { continue; }
-                            else if (GetItem("SerialNumber", Path.GetFileName(itemFolder)) == null)
-                            {
-                                CTItem newItem = new(Path.GetFileName(itemFolder));
-                                newItem.Directory = itemFolder;
-                                SaveItem(newItem);
-                                CTTask newTask = new();
-                                newTask.SerialNumber = newItem.SerialNumber;
-                                SaveTask(newTask);
-                                MoveToTaskFolder(newItem, GetTasks("SerialNumber", newItem.SerialNumber)[0]);
-                            }
-                        }
-                    }
-                }
+                CTItem item = new();
+                item.SerialNumber = row["SerialNumber"];
+                item.Location = row["Location"];
+                item.Manufacturer = row["Manufacturer"];
+                item.Directory = row["Directory"];
+                item.Description = row["Description"];
+                item.InService = row["InService"] == "1";
+                item.Model = row["Model"];
+                item.Remarks = row["Comment"];
+                if (row["Timestamp"].Length > 0)
+                { item.TimeStamp = DateTime.ParseExact(row["Timestamp"], timestampFormat, CultureInfo.InvariantCulture); }
+                item.ItemGroup = row["ItemGroup"];
+                item.IsStandardEquipment = row["StandardEquipment"] == "1";
+                item.CertificateNumber = row["CertificateNumber"];
+                item.ChangesMade = false;
+                v5Items.Add(item);
             }
+            return v5Items;
         }
-        private void CreateV5Tables()
+        private List<TaskDataV5> AssignDataValuesV5(List<Dictionary<string, string>> v5rows)
         {
-            //Assumes open connection, create the current structure if it isn't present.
-            string command = "CREATE TABLE IF NOT EXISTS Items (" +
-                    "SerialNumber TEXT PRIMARY KEY," +
-                    "Location TEXT DEFAULT ''," +
-                    "Manufacturer TEXT DEFAULT ''," +
-                    "Directory TEXT DEFAULT ''," +
-                    "Description TEXT DEFAULT ''," +
-                    "InService INTEGER DEFAULT 1," +
-                    "InServiceDate TEXT DEFAULT ''," +
-                    "Model TEXT DEFAULT ''," +
-                    "Comment TEXT DEFAULT ''," +
-                    "Timestamp TEXT DEFAULT ''," +
-                    "ItemGroup TEXT DEFAULT ''," +
-                    "StandardEquipment INTEGER DEFAULT 0," +
-                    "CertificateNumber TEXT DEFAULT '')";
-            Execute(command);
-            command = "CREATE TABLE IF NOT EXISTS Tasks (" +
-                    "TaskID INTEGER PRIMARY KEY AUTOINCREMENT," +
-                    "SerialNumber TEXT," +
-                    "TaskTitle TEXT DEFAULT ''," +
-                    "ServiceVendor TEXT DEFAULT ''," +
-                    "Mandatory INTEGER DEFAULT 1," +
-                    "Interval INTEGER DEFAULT 12," +
-                    "CompleteDate TEXT DEFAULT ''," +
-                    "DueDate TEXT DEFAULT ''," +
-                    "Due INTEGER DEFAULT 0," +
-                    "ActionType TEXT DEFAULT 'CALIBRATION'," +
-                    "Directory TEXT DEFAULT ''," +
-                    "Comments TEXT DEFAULT ''," +
-                    "FOREIGN KEY(SerialNumber) REFERENCES Items(SerialNumber) ON DELETE CASCADE ON UPDATE CASCADE)";
-            Execute(command);
-            command = "CREATE TABLE IF NOT EXISTS TaskData (" +
-                    "DataID INTEGER PRIMARY KEY AUTOINCREMENT," +
-                    "TaskID INTEGER," +
-                    "SerialNumber TEXT," +
-                    "StateBeforeAction TEXT DEFAULT ''," +
-                    "StateAfterAction TEXT DEFAULT ''," +
-                    "ActionTaken TEXT DEFAULT ''," +
-                    "CompleteDate TEXT DEFAULT ''," +
-                    "Procedure TEXT DEFAULT ''," +
-                    "StandardEquipment TEXT DEFAULT ''," +
-                    "Findings TEXT DEFAULT ''," +
-                    "Remarks TEXT DEFAULT ''," +
-                    "Technician TEXT DEFAULT ''," +
-                    "EntryTimestamp TEXT DEFAULT ''," +
-                    "FOREIGN KEY(TaskID) REFERENCES Tasks(TaskID) ON DELETE CASCADE)";
-            Execute(command);
-            tablesExist = true;
-        }
-        private void FromVersion4() //Gets all CalibrationItems and CalibrationData, converts to Items, Tasks, and TaskData
-        {
-            List<CalibrationItemV4> legacyItems = GetAllItemsLegacy();
-            if (!IsConnected()) { conn.Open(); }
-            //Convert old CalibrationItems to CTItems and CTTasks
-            foreach (CalibrationItemV4 calItem in legacyItems)
+            List<TaskDataV5> v5Data = new();
+            foreach (Dictionary<string, string> row in v5rows)
             {
-                CTItem item = new(calItem.SerialNumber);
-                item.Location = calItem.Location;
-                item.Manufacturer = calItem.Manufacturer;
-                item.Directory = calItem.Directory;
-                item.Description = calItem.Description;
-                item.InService = calItem.InService;
-                item.InServiceDate = calItem.InServiceDate;
-                item.Model = calItem.Model;
-                item.Comment = calItem.Comment;
-                item.ItemGroup = calItem.ItemGroup;
-                item.StandardEquipment = calItem.StandardEquipment;
-                item.CertificateNumber = calItem.CertificateNumber;
-
+                TaskDataV5 data = new();
+                data.DataID = int.Parse(row["DataID"]);
+                data.TaskID = int.Parse(row["TaskID"]);
+                data.SerialNumber = row["SerialNumber"];
+                data.StateBefore = JsonConvert.DeserializeObject<State>(row["StateBeforeAction"]);
+                data.StateAfter = JsonConvert.DeserializeObject<State>(row["StateAfterAction"]);
+                data.ActionTaken = JsonConvert.DeserializeObject<ActionTakenV5>(row["ActionTaken"]);
+                if (row["CompleteDate"].Length > 0)
+                { data.CompleteDate = DateTime.ParseExact(row["CompleteDate"], dateFormat, CultureInfo.InvariantCulture); }
+                data.Procedure = row["Procedure"];
+                data.StandardEquipment = row["StandardEquipment"];
+                data.Findings = JsonConvert.DeserializeObject<FindingsV5>(row["Findings"]);
+                if (data.Findings == null) { data.Findings = new(); }
+                data.Remarks = row["Remarks"];
+                data.Technician = row["Technician"];
+                data.Timestamp = row["EntryTimestamp"];
+                data.ChangesMade = false;
+                v5Data.Add(data);
+            }
+            return v5Data;
+        }
+        private List<CTTask> AssignTaskValuesV5(List<Dictionary<string, string>> v5rows)
+        {
+            List<CTTask> v5Tasks = new();
+            foreach (Dictionary<string, string> row in v5rows)
+            {
                 CTTask task = new();
-                task.SerialNumber = calItem.SerialNumber;
-                task.TaskTitle = calItem.VerifyOrCalibrate;
-                task.ServiceVendor = calItem.CalVendor;
-                task.Mandatory = calItem.Mandatory;
-                task.Interval = calItem.Interval;
-                task.CompleteDate = calItem.lastCal;
-                task.DueDate = calItem.NextCal;
-                task.Due = calItem.CalDue;
-                task.ActionType = calItem.VerifyOrCalibrate;
-
-                SaveItem(item, false);
-                SaveTask(task);
+                task.TaskId = int.Parse(row["TaskID"]);
+                task.SerialNumber = row["SerialNumber"];
+                task.TaskTitle = row["TaskTitle"];
+                task.ServiceVendor = row["ServiceVendor"];
+                task.IsMandatory = row["Mandatory"] == "1";
+                task.Interval = int.Parse(row["Interval"]);
+                if (row["CompleteDate"].Length > 0)
+                { task.CompleteDate = DateTime.ParseExact(row["CompleteDate"], dateFormat, CultureInfo.InvariantCulture); }
+                if (row["DueDate"].Length > 0)
+                { task.DueDate = DateTime.ParseExact(row["DueDate"], dateFormat, CultureInfo.InvariantCulture); }
+                task.IsDue = row["Due"] == "1";
+                task.ActionType = row["ActionType"];
+                task.TaskDirectory = row["Directory"];
+                task.Remarks = row["Comments"];
+                if (row["ManualFlag"].Length > 0)
+                { task.DateOverride = DateTime.ParseExact(row["ManualFlag"], dateFormat, CultureInfo.InvariantCulture); }
+                task.ChangesMade = false;
+                v5Tasks.Add(task);
             }
-            //Convert old CalibrationData to TaskData
-            foreach (CalibrationDataV4 calData in GetAllCalDataLegacy())
-            {
-                TaskData taskData = new();
-                taskData.TaskID = GetTasks("SerialNumber", calData.SerialNumber, false)[0].TaskID;
-                taskData.SerialNumber = calData.SerialNumber;
-                taskData.StateBefore = calData.StateBefore;
-                taskData.StateAfter = calData.StateAfter;
-                taskData.ActionTaken = calData.ActionTaken;
-                taskData.CompleteDate = calData.CalibrationDate;
-                taskData.Procedure = calData.Procedure;
-                taskData.StandardEquipment = calData.StandardEquipment;
-                taskData.Findings = calData.findings;
-                taskData.Remarks = calData.Remarks;
-                taskData.Technician = calData.Technician;
-                taskData.Timestamp = calData.Timestamp;
-
-                SaveTaskData(taskData, true);
-            }
-            ResetConnection();
-            string command = "DROP TABLE IF EXISTS calibration_items";
-            Execute(command);
-            ResetConnection();
-            command = "DROP TABLE IF EXISTS calibration_data";
-            Execute(command);
-            ResetConnection();
-            command = "PRAGMA user_version = 5";
-            Execute(command);
-            ResetConnection();
+            return v5Tasks;
         }
-        public List<CalibrationDataV4> GetAllCalDataLegacy()
+        public List<CTItem> GetAllItemsV5()
         {
-            List<CalibrationDataV4> calData = new();
-            if (Connect())
-            {
-                string command = $"SELECT * FROM calibration_data";
-                Execute(command);
-                while (reader.Read())
-                {
-                    CalibrationDataV4 data = new();
-                    AssignDataValuesLegacy(ref data);
-                    calData.Add(data);
-                }
-            }
-            return calData;
-        }
-        public List<CalibrationItemV4> GetAllItemsLegacy()
-        {
-            List<CalibrationItemV4> allItems = new();
-            string command = "SELECT * FROM calibration_items";
-            if (!Connect()) { return allItems; }
-            Execute(command);
-            while (reader.Read())
-            {
-                CalibrationItemV4 item = new(reader.GetString(0));
-                AssignItemValuesLegacy(ref item);
-                allItems.Add(item);
-            }
+            List<Dictionary<string,string>> v5rows = handler.SelectAllFromTable("old_items");
+            List<CTItem> allItems = AssignItemValuesV5(v5rows);
             return allItems;
         }
-        private void MoveToTaskFolder(CTItem item, CTTask task) //Move existing files to the new task folder
+        public List<CTTask> GetAllTasksV5()
         {
-            if (item == null | task == null) { return; }
-            string taskFolder = Path.Combine(item.Directory, $"{task.TaskID}_{task.TaskTitle}");
-            if (Directory.Exists(taskFolder)) { return; }
-            Directory.CreateDirectory(taskFolder);
-            foreach (string file in Directory.GetFiles(item.Directory))
+            List<Dictionary<string, string>> v5rows = handler.SelectAllFromTable("old_tasks");
+            List<CTTask> allTasks = AssignTaskValuesV5(v5rows);
+            return allTasks;
+        }
+        public List<TaskDataV5> GetAllTaskDataV5()
+        {
+            List<Dictionary<string, string>> v5rows = handler.SelectAllFromTable("old_data");
+            List<TaskDataV5> data = AssignDataValuesV5(v5rows);
+            return data;
+        }
+        #endregion
+        private void CreateV6Tables()
+        {
+            handler.CreateTable("CREATE TABLE IF NOT EXISTS items (" +
+                    "serial_number TEXT PRIMARY KEY," +
+                    "location TEXT DEFAULT ''," +
+                    "manufacturer TEXT DEFAULT ''," +
+                    "directory TEXT DEFAULT ''," +
+                    "description TEXT DEFAULT ''," +
+                    "in_service INTEGER DEFAULT 1," +
+                    "model TEXT DEFAULT ''," +
+                    "item_group TEXT DEFAULT ''," +
+                    "remarks TEXT DEFAULT ''," +
+                    "is_standard_equipment INTEGER DEFAULT 0," +
+                    "certificate_number TEXT DEFAULT ''," +
+                    "timestamp DATETIME DEFAULT '')");
+            handler.CreateTable("CREATE TABLE IF NOT EXISTS tasks (" +
+                    "id INTEGER PRIMARY KEY AUTOINCREMENT," +
+                    "serial_number TEXT," +
+                    "task_title TEXT DEFAULT ''," +
+                    "service_vendor TEXT DEFAULT ''," +
+                    "is_mandatory INTEGER DEFAULT 1," +
+                    "interval INTEGER DEFAULT 12," +
+                    "complete_date DATE DEFAULT ''," +
+                    "due_date DATE DEFAULT ''," +
+                    "is_due INTEGER DEFAULT 0," +
+                    "action_type TEXT DEFAULT 'CALIBRATION'," +
+                    "directory TEXT DEFAULT ''," +
+                    "remarks TEXT DEFAULT ''," +
+                    "date_override DATE DEFAULT ''," +
+                    "FOREIGN KEY(serial_number) REFERENCES items(serial_number) ON DELETE CASCADE ON UPDATE CASCADE)");
+            handler.CreateTable("CREATE TABLE IF NOT EXISTS standard_equipment (" +
+                "id INTEGER PRIMARY KEY AUTOINCREMENT," +
+                "serial_number TEXT NOT NULL," +
+                "manufacturer TEXT DEFAULT ''," +
+                "model TEXT DEFAULT ''," +
+                "description TEXT DEFAULT ''," +
+                "remarks TEXT DEFAULT ''," +
+                "item_group TEXT DEFAULT ''," +
+                "certificate_number TEXT NOT NULL," +
+                "action_due_date DATE," +
+                "timestamp DATETIME)");
+            handler.CreateTable("CREATE TABLE IF NOT EXISTS task_data (" +
+                    "id INTEGER PRIMARY KEY AUTOINCREMENT," +
+                    "task_id INTEGER," +
+                    "serial_number TEXT," +
+                    "in_tolerance_before INTEGER," +
+                    "operational_before INTEGER," +
+                    "in_tolerance_after INTEGER," +
+                    "operational_after INTEGER," +
+                    "calibrated INTEGER," +
+                    "verified INTEGER," +
+                    "adjusted INTEGER," +
+                    "repaired INTEGER," +
+                    "maintenance INTEGER," +
+                    "complete_date DATE DEFAULT ''," +
+                    "procedure TEXT DEFAULT ''," +
+                    "remarks TEXT DEFAULT ''," +
+                    "technician TEXT," +
+                    "timestamp DATE DEFAULT ''," +
+                    "FOREIGN KEY(task_id) REFERENCES tasks(id) ON DELETE CASCADE," +
+                    "FOREIGN KEY(serial_number) REFERENCES items(serial_number) ON DELETE CASCADE)");
+            handler.CreateTable("CREATE TABLE IF NOT EXISTS data_standard_equipment (" +
+                "id INTEGER PRIMARY KEY AUTOINCREMENT," +
+                "task_data_id INTEGER," +
+                "standard_equipment_id INTEGER," +
+                "FOREIGN KEY(task_data_id) REFERENCES task_data(id) ON DELETE CASCADE," +
+                "FOREIGN KEY(standard_equipment_id) REFERENCES standard_equipment(id))");
+            handler.CreateTable("CREATE TABLE IF NOT EXISTS findings (" +
+                "id INTEGER PRIMARY KEY AUTOINCREMENT," +
+                "task_data_id INTEGER," +
+                "name TEXT," +
+                "tolerance DOUBLE DEFAULT 0.0," +
+                "tolerance_is_percent INTEGER DEFAULT 1," +
+                "unit_of_measure TEXT DEFAULT ''," +
+                "measurement_before DOUBLE DEFAULT 0.0," +
+                "measurement_after DOUBLE DEFAULT 0.0," +
+                "setting DOUBLE DEFAULT 0.0)");
+            handler.CreateTable("CREATE TABLE IF NOT EXISTS task_data_files(" +
+                "id INTEGER PRIMARY KEY AUTOINCREMENT," +
+                "task_data_id INTEGER," +
+                "description TEXT," +
+                "location TEXT NOT NULL," +
+                "FOREIGN KEY(task_data_id) REFERENCES task_data(id) ON DELETE CASCADE)");
+        }
+        private void FromVersion5()
+        {
+            handler.RenameTable("Items", "old_items");
+            handler.RenameTable("Tasks", "old_tasks");
+            handler.RenameTable("TaskData", "old_data");
+
+            CreateV6Tables();
+            List<CTItem> v5Items = GetAllItemsV5();
+            List<CTTask> v5Tasks = GetAllTasksV5();
+            List<TaskDataV5> v5TaskData = GetAllTaskDataV5();
+            foreach(CTItem item in v5Items)
             {
-                string newLocation = Path.Combine(taskFolder, Path.GetFileName(file));
-                File.Move(file, newLocation);
+                SaveItem(item, true);
             }
+            foreach (CTTask task in v5Tasks)
+            {
+                SaveTask(task);
+            }
+            foreach(TaskDataV5 data in v5TaskData)
+            {
+                SaveTaskData(TaskDataV5toV6(data));
+            }
+            
+            handler.DropTable("old_items");
+            handler.DropTable("old_tasks");
+            handler.DropTable("old_data");
+            handler.SetVersion("7");
+        }
+        public TaskData TaskDataV5toV6(TaskDataV5 v5)
+        {
+            List<Findings> parameters = new();
+            if(v5.Findings != null)
+            {
+                foreach (Param param in v5.Findings.parameters)
+                {
+                    parameters.Add(new Findings()
+                    {
+                        DataId = (int)v5.DataID,
+                        Name = param.Name,
+                        Tolerance = param.Tolerance,
+                        ToleranceIsPercent = param.ToleranceIsPercent,
+                        UnitOfMeasure = param.UnitOfMeasure,
+                        MeasurementBefore = param.MeasurementBefore,
+                        MeasurementAfter = param.MeasurementAfter,
+                        Setting = param.Setting
+                    });
+                }
+            }
+            List<CTStandardEquipment> standardEquipment = new();
+            if(v5.StandardEquipment != null && v5.StandardEquipment != "null")
+            {
+                standardEquipment.Add(JsonConvert.DeserializeObject<CTItem>(v5.StandardEquipment).ToStandardEquipment(DateTime.MaxValue));
+            }
+            List<TaskDataFile> dataFiles = new();
+            foreach(string file in v5.Findings.files)
+            {
+                dataFiles.Add(new TaskDataFile() { Location = file});
+            }
+            if(!DateTime.TryParseExact(v5.Timestamp, timestampFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out _))
+            { v5.Timestamp = DateTime.MinValue.ToString(timestampFormat); }
+            return new TaskData()
+            {
+                DataId = (int)v5.DataID,
+                TaskId = v5.TaskID,
+                SerialNumber = v5.SerialNumber,
+                StateBefore = new State
+                {
+                    InTolerance = v5.StateBefore.Value.InTolerance,
+                    Operational = v5.StateBefore.Value.Operational
+                },
+                StateAfter = new State
+                {
+                    InTolerance = v5.StateAfter.Value.InTolerance,
+                    Operational = v5.StateAfter.Value.Operational
+                },
+                Actions = new ActionTaken
+                {
+                    Calibration = v5.ActionTaken.Value.Calibration,
+                    Verification = v5.ActionTaken.Value.Verification,
+                    Adjusted = v5.ActionTaken.Value.Adjusted,
+                    Repaired = v5.ActionTaken.Value.Repaired,
+                    Maintenance = v5.ActionTaken.Value.Maintenance
+                },
+                CompleteDate = v5.CompleteDate,
+                Procedure = v5.Procedure,
+                Findings = parameters,
+                StandardEquipment = standardEquipment,
+                Remarks = v5.Remarks,
+                Technician = v5.Technician,
+                Timestamp = DateTime.ParseExact(v5.Timestamp, timestampFormat, CultureInfo.InvariantCulture),
+                DataFiles = dataFiles,
+            };
         }
         private bool UpdateDatabase()
         {
             try
             {
                 //Check DB version
-                int dbVersion = GetDatabaseVersion();
+                int dbVersion = handler.GetDatabaseVersion();
                 if (dbVersion == currentVersion)
                 {
                     return true;
                 }
-                //Reset connection to prevent db table from being locked.
-                ResetConnection();
-                string command = "DROP TABLE IF EXISTS item_groups";
-                Execute(command);
-                CreateV5Tables();
                 while (dbVersion < currentVersion)
                 {
-                    if (dbVersion < 4)
+                    if (dbVersion < 6)
                     {
-                        ConvertFileStructure();
-                        command = "PRAGMA user_version = 5";
-                        Execute(command);
+                        MessageBox.Show($"The database version is not compatible with this version of CalTools.",
+                            "Database Version Outdated", MessageBoxButton.OK, MessageBoxImage.Error);
+                        return false;
                     }
-                    else if (dbVersion == 4) { FromVersion4(); ConvertFileStructure(); ResetConnection(); }
-                    else if (dbVersion == 5)
-                    {
-                        Execute("ALTER TABLE Tasks ADD COLUMN ManualFlag TEXT DEFAULT ''");
-                        Execute("PRAGMA user_version = 6");
-                    }
-                    dbVersion = GetDatabaseVersion();
+                    else if(dbVersion == 6) { FromVersion5(); }
+                    dbVersion = handler.GetDatabaseVersion();
                 }
                 if (dbVersion > currentVersion)
                 {
@@ -295,9 +314,9 @@ namespace CalTools_WPF
                 }
                 return true;
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
-                MessageBox.Show(ex.Message, " Update Database, SQLite Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(ex.Message, "CTDatabaseUpdates.UpdateDatabase", MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
             }
         }

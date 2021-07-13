@@ -2,15 +2,10 @@
 
 namespace CalTools_WPF.ObjectClasses
 {
-    public class Findings
+    public class Findings : ICTObject
     {
-        public List<Param> parameters = new();
-        public bool DataFiles { get; set; } = false;
-        public List<string> files = new();
-    }
-
-    public class Param //To be embedded within Findings object
-    {
+        public int Id { get; set; } = -1;
+        public int DataId { get; set; } = -1;
         public string Name { get; set; }
         public float Tolerance { get; set; }
         public bool ToleranceIsPercent { get; set; }
@@ -18,19 +13,30 @@ namespace CalTools_WPF.ObjectClasses
         public float MeasurementBefore { get; set; }
         public float MeasurementAfter { get; set; }
         public float Setting { get; set; }
-        public Param() { }
-        public Param(string name)
+        public Findings() { }
+        public Findings(string name)
         {
             Name = name;
         }
-        public Param(string name, float tolerance, bool isPercent, string uom, float measureBefore, float measureAfter)
+        public Findings(Dictionary<string, string> values)
         {
-            Name = name;
-            Tolerance = tolerance;
-            ToleranceIsPercent = isPercent;
-            UnitOfMeasure = uom;
-            MeasurementBefore = measureBefore;
-            MeasurementAfter = measureAfter;
+            ParseParameters(values);
+        }
+        public void ParseParameters(Dictionary<string, string> parameters)
+        {
+            if (parameters.ContainsKey("id") && parameters["id"] != "")
+            { Id = int.Parse(parameters["id"]); }
+
+            if (parameters.ContainsKey("task_data_id") && parameters["task_data_id"] != "")
+            { DataId = int.Parse(parameters["task_data_id"]); }
+
+            Name = parameters["name"];
+            Tolerance = float.Parse(parameters["tolerance"]);
+            ToleranceIsPercent = parameters["tolerance_is_percent"] == "1";
+            UnitOfMeasure = parameters["unit_of_measure"];
+            MeasurementBefore = float.Parse(parameters["measurement_before"]);
+            MeasurementAfter = float.Parse(parameters["measurement_after"]);
+            Setting = float.Parse(parameters["setting"]);
         }
     }
 }

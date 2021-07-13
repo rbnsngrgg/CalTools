@@ -1,36 +1,36 @@
 ﻿using CalTools_WPF.ObjectClasses;
 using CalTools_WPF.Windows;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using System.Diagnostics;
-using System.Linq;
 
 namespace CalTools_WPF
 {
     //Main window code-behind logic outside of event handlers
+    //TODO: Create separate class. Decouple from MainWindow, which isn't unit tested
     public partial class MainWindow : Window
     {
-        public readonly string version = "5.4.0";
+        public readonly string version = "6.0.0";
         private readonly CTDatabase database;
         private readonly CTConfig config = new();
         private readonly Dictionary<string, string> searchModes = new() {
-            { "Serial Number","SerialNumber" },
-            { "Location","Location" },
-            { "Service Vendor","Vendor" },
-            { "Manufacturer","Manufacturer" },
-            { "Description","Description" },
-            { "Action Due","Due" },
-            { "Model","Model" },
-            { "Has Comment","Comment" },
-            { "Item Group","ItemGroup" },
-            { "Action","ActionType" },
-            { "Standard Equipment","StandardEquipment"} };
+            { "Serial Number", "SerialNumber" },
+            { "Location", "Location" },
+            { "Service Vendor", "Vendor" },
+            { "Manufacturer", "Manufacturer" },
+            { "Description", "Description" },
+            { "Action Due", "Due" },
+            { "Model", "Model" },
+            { "Has Remarks", "Remarks" },
+            { "Item Group", "ItemGroup" },
+            { "Action", "ActionType" },
+            { "Standard Equipment", "IsStandardEquipment"} };
         private readonly List<string> manufacturers = new();
         private readonly List<string> locations = new();
         private readonly List<string> serviceVendors = new();
@@ -59,10 +59,10 @@ namespace CalTools_WPF
             {
                 if (task.TaskDirectory == "")
                 {
-                    CTItem taskItem = database.GetItemFromTask(task);
+                    CTItem taskItem = database.GetFromWhere<CTItem>(new() { { "serial_number", task.SerialNumber } })[0];
                     if (Directory.Exists(taskItem.Directory))
                     {
-                        string newPath = Path.Combine(taskItem.Directory, $"{task.TaskID}_{task.TaskTitle}");
+                        string newPath = Path.Combine(taskItem.Directory, $"{task.TaskId}_{task.TaskTitle}");
                         Directory.CreateDirectory(newPath);
                         task.TaskDirectory = newPath;
                     }
@@ -128,9 +128,8 @@ namespace CalTools_WPF
         {
             Dictionary<string, string> fileInfo;
             CTItem calItem;
-            if (newFileName == "")
-            { fileInfo = ParseFileName(file); calItem = database.GetItem("SerialNumber", fileInfo["SN"]); }
-            else { fileInfo = ParseFileName(newFileName); calItem = database.GetItem("SerialNumber", fileInfo["SN"]); }
+            fileInfo = newFileName == "" ? ParseFileName(file) : ParseFileName(newFileName);
+            calItem = database.GetFromWhere<CTItem>(new() { { "serial_number", fileInfo["SN"] } })[0];
             if (calItem != null)
             {
                 if (Directory.Exists(calItem.Directory))
@@ -167,7 +166,7 @@ namespace CalTools_WPF
                 { "Date", "" },
                 { "SN", "" }
             };
-            string file = System.IO.Path.GetFileNameWithoutExtension(filePath);
+            string file = Path.GetFileNameWithoutExtension(filePath);
             DateTime fileDate;
             foreach (string split in file.Split("_"))
             {
@@ -175,43 +174,12 @@ namespace CalTools_WPF
                 {
                     fileInfo["Date"] = split;
                 }
-                else if (database.GetItem("SerialNumber", split) != null)
+                else if (database.GetFromWhere<CTItem>(new() { { "serial_number", split } }).Count > 0)
                 {
                     fileInfo["SN"] = split;
                 }
             }
             return fileInfo;
-        }
-        private void ExportTSV()
-        {
-            List<string> files = new() { $"CalTools_dbv{database.currentVersion}_Items.txt", $"CalTools_dbv{database.currentVersion}_TaskData.txt", $"CalTools_dbv{database.currentVersion}_Tasks.txt" };
-            string exportsFolder = Path.Join(config.ListDir, "CalTools Exports");
-            string targetFolder = Path.Join(exportsFolder, $"{DateTime.UtcNow.ToString(database.timestampFormat)}");
-            if (!Directory.Exists(targetFolder)) { Directory.CreateDirectory(targetFolder); }
-            List<string> itemLines = new() { "SerialNumber\tLocation\tManufacturer\tDirectory\tDescription\tInService\tInServiceDate\tModel\tComment\tTimestamp\tItemGroup\tStandardEquipment\tCertificateNumber" };
-            List<string> taskDataLines = new() { "DataID\tTaskID\tSerialNumber\tStateBeforeAction\tStateAfterAction\tActionTaken\tCompleteDate\tProcedure\tStandardEquipment\tFindings\tRemarks\tTechnician\tEntryTimestamp" };
-            List<string> tasksLines = new() { "TaskID\tSerialNumber\tTaskTitle\tServiceVendor\tMandatory\tInterval\tCompleteDate\tDueDate\tDue\tActionType\tDirectory\tComments\tManualFlag" };
-            foreach (CTItem item in database.GetAllItems())
-            {
-                itemLines.Add($"{item.SerialNumber}\t{item.Location}\t{item.Manufacturer}\t{item.Directory}\t\"{item.Description}\"\t{(item.InService ? 1 : 0)}\t" +
-                    $"{item.InServiceDateString}\t\"{item.Model}\"\t\"{item.Comment}\"\t{item.TimeStampString}\t\"{item.ItemGroup}\"\t{(item.StandardEquipment ? 1 : 0)}\t" +
-                    $"{item.CertificateNumber}");
-            }
-            foreach (TaskData data in database.GetAllTaskData())
-            {
-                taskDataLines.Add($"{data.DataID}\t{data.TaskID}\t{data.SerialNumber}\t{JsonConvert.SerializeObject(data.StateBefore)}\t{JsonConvert.SerializeObject(data.StateAfter)}\t" +
-                    $"{JsonConvert.SerializeObject(data.ActionTaken)}\t{data.CompleteDateString}\t{data.Procedure}\t{data.StandardEquipment}\t" +
-                    $"{JsonConvert.SerializeObject(data.Findings)}\t{data.Remarks}\t{data.Technician}\t{data.Timestamp}");
-            }
-            foreach (CTTask task in database.GetAllTasks())
-            {
-                tasksLines.Add($"{task.TaskID}\t{task.SerialNumber}\t{task.TaskTitle}\t{task.ServiceVendor}\t{(task.Mandatory ? 1 : 0)}\t{task.Interval}\t{task.CompleteDateString}\t" +
-                    $"{task.DueDateString}\t{(task.Due ? 1 : 0)}\t{task.ActionType}\t{task.TaskDirectory}\t{task.Comment}\t{task.ManualFlagString}");
-            }
-            System.IO.File.WriteAllLines(Path.Join(targetFolder, files[0]), itemLines);
-            System.IO.File.WriteAllLines(Path.Join(targetFolder, files[1]), taskDataLines);
-            System.IO.File.WriteAllLines(Path.Join(targetFolder, files[2]), tasksLines);
-            Process.Start("explorer", targetFolder);
         }
         private void ExportDueListTSV()
         {
@@ -238,15 +206,16 @@ namespace CalTools_WPF
                 string folderTaskID = Path.GetFileName(taskFolder).Split("_")[0];
                 foreach (CTTask task in tasks)
                 {
-                    List<TaskData> currentData = new();
-                    foreach (TaskData data in taskData)
+                    if (folderTaskID == task.TaskId.ToString() & Path.GetFileName(folder) == task.SerialNumber)
                     {
-                        if (data.TaskID == task.TaskID) { currentData.Add(data); }
-                    }
-                    if (folderTaskID == task.TaskID.ToString() & Path.GetFileName(folder) == task.SerialNumber)
-                    {
-                        task.TaskDirectory = taskFolder;
-                        task.CheckDates(taskFolder, currentData);
+                        List<TaskData> currentData = new();
+                        foreach (TaskData data in taskData)
+                        {
+                            if (data.TaskId == task.TaskId) { currentData.Add(data); }
+                        }
+                        if (task.TaskDirectory != taskFolder) { task.TaskDirectory = taskFolder; }
+                        task.SetCompleteDateFromData(taskFolder, currentData);
+                        break;
                     }
                 }
             }
@@ -256,8 +225,7 @@ namespace CalTools_WPF
         {
             if (DetailsSN.Text.Length > 0)
             {
-                CTItem item;
-                item = database.GetItem("SerialNumber", DetailsSN.Text);
+                CTItem item = database.GetFromWhere<CTItem>(new() { { "serial_number", DetailsSN.Text } })[0];
                 MessageBoxResult result = MessageBoxResult.None;
                 if (item == null)
                 {
@@ -268,21 +236,19 @@ namespace CalTools_WPF
                 item.Description = DetailsDescription.Text;
                 item.Location = DetailsLocation.Text;
                 item.Manufacturer = DetailsManufacturer.Text;
-                if (DateTime.TryParseExact(DetailsOperationDate.Text, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out DateTime inservice))
-                { item.InServiceDate = inservice; };
                 item.InService = DetailsInOperation.IsChecked == true;
                 item.ItemGroup = DetailsItemGroup.Text;
-                item.Comment = DetailsComments.Text;
+                item.Remarks = DetailsComments.Text;
                 if ((bool)DetailsStandardBox.IsChecked)
                 {
-                    item.StandardEquipment = true;
+                    item.IsStandardEquipment = true;
                     if (DetailsCertificateNum.Text.Length == 0)
                     {
                         MessageBox.Show("A certificate number is required for items marked as Standard Equipment.", "Certificate Number", MessageBoxButton.OK, MessageBoxImage.Exclamation);
                         return false;
                     }
                 }
-                else { item.StandardEquipment = false; }
+                else { item.IsStandardEquipment = false; }
                 item.CertificateNumber = DetailsCertificateNum.Text;
                 if (result == MessageBoxResult.Yes | result == MessageBoxResult.None)
                 {
@@ -294,7 +260,8 @@ namespace CalTools_WPF
                             item.Directory = folder;
                             Directory.CreateDirectory(folder);
                             database.SaveItem(item);
-                            UpdateDetails(database.GetItem("SerialNumber", item.SerialNumber));
+                            if (ItemIsSelected())
+                            { UpdateDetails(database.GetFromWhere<CTItem>(new() { { "serial_number", item.SerialNumber } })[0]); }
                             UpdateItemList();
                         }
                     }
@@ -329,7 +296,7 @@ namespace CalTools_WPF
             {
                 string itemFolder = Directory.GetParent(task.TaskDirectory).FullName;
                 string currentFolder = Path.Combine(itemFolder, Path.GetFileName(task.TaskDirectory));
-                string newFolder = Path.Combine(itemFolder, $"{task.TaskID}_{task.TaskTitle}");
+                string newFolder = Path.Combine(itemFolder, $"{task.TaskId}_{task.TaskTitle}");
 
                 if (currentFolder != newFolder) { Directory.Move(currentFolder, newFolder); task.TaskDirectory = newFolder; }
                 if (task.ChangesMade)
@@ -342,20 +309,20 @@ namespace CalTools_WPF
         private void ScanFoldersSingle(CTItem item)
         {
             if (item == null) { return; }
-            List<CTTask> itemTasks = database.GetTasks("SerialNumber", item.SerialNumber);
-            List<TaskData> taskData = database.GetAllTaskData();
+            List<CTTask> itemTasks = database.GetFromWhere<CTTask>(new() { { "serial_number", item.SerialNumber } });
+            List<TaskData> taskData = database.GetAll<TaskData>();
             if (!Directory.Exists(item.Directory)) { item.Directory = FindItemDirectory(item.SerialNumber); }
             CheckTasks(item.Directory, ref itemTasks, ref taskData);
             if (item.ChangesMade) { database.SaveItem(item); }
         }
         private void ScanFolders()
         {
-            List<CTTask> allTasks = database.GetAllTasks();
-            List<CTItem> allItems = database.GetAllItems();
-            List<TaskData> taskData = database.GetAllTaskData();
-
+            List<CTTask> allTasks = database.GetAll<CTTask>();
+            List<CTItem> allItems = database.GetAll<CTItem>();
+            List<TaskData> taskData = database.GetAll<TaskData>();
             foreach (string folder in config.Folders)
             {
+
                 string scanFolder = Path.Combine(config.ItemScansDir, folder);
                 if (Directory.Exists(scanFolder))
                 {
@@ -377,7 +344,7 @@ namespace CalTools_WPF
                         if (calItem.Directory != itemFolder)                                    //Check if directory is valid. Set to the found folder if not
                         {
                             calItem.Directory = itemFolder;
-                            if (newItem) { database.CreateItem(calItem.SerialNumber); }
+                            if (newItem) { database.SaveItem(calItem); }
                         }
                         CheckTasks(itemFolder, ref allTasks, ref taskData);
                         if (calItem.ChangesMade) { database.SaveItem(calItem); }
@@ -423,9 +390,9 @@ namespace CalTools_WPF
                         break;
                     }
                     bool itemDue = false;
-                    foreach (CTTask task in database.GetTasks("SerialNumber", item.SerialNumber))
+                    foreach (CTTask task in database.GetFromWhere<CTTask>(new() { { "serial_number", item.SerialNumber } }))
                     {
-                        if (task.IsTaskDue(config.MarkDueDays, DateTime.UtcNow) & task.Mandatory)
+                        if (task.IsTaskDueWithinDays(config.MarkDueDays, DateTime.UtcNow) & task.IsMandatory)
                         { itemDue = true; break; }
                     }
                     if (itemDue & availableItems > 0)
@@ -439,15 +406,44 @@ namespace CalTools_WPF
                 }
             }
         }
+        private List<CTStandardEquipment> GetCurrentStandardEquipment()
+        {
+            List<CTItem> items = database.GetAll<CTItem>();
+            List<CTStandardEquipment> standardEquipment = new();
+            items.RemoveAll(item => !item.IsStandardEquipment);
+            foreach(CTItem item in items)
+            {
+                standardEquipment.Add(item.ToStandardEquipment(GetMandatoryDueDate(item.SerialNumber)));
+            }
+            //Standard equipment that has a mandatory task due will not be included in the list.
+            standardEquipment.RemoveAll(item => item.ActionDueDate < DateTime.Today);
+            return standardEquipment;
+        }
+        private DateTime GetMandatoryDueDate(string sn)
+        {
+            List<CTTask> tasks = database.GetFromWhere<CTTask>(new() { { "serial_number", sn } });
+            DateTime earliest = DateTime.MaxValue;
+            bool hasMandatoryTasks = false;
+            foreach(CTTask task in tasks)
+            {
+                if (task.IsMandatory) { hasMandatoryTasks = true; }
+                if (task.DueDate < earliest) { earliest = (DateTime)task.DueDate; }
+            }
+            if (earliest == DateTime.MaxValue)
+            {
+                return hasMandatoryTasks ? DateTime.MinValue : earliest;
+            }
+            else { return earliest; }
+        }
         private bool IsItemAvailable(CTItem item = null)
         {
             bool tasksDue = false;
-            foreach (CTTask task in database.GetTasks("SerialNumber", item.SerialNumber))
+            foreach (CTTask task in database.GetFromWhere<CTTask>(new() { { "serial_number", item.SerialNumber } }))
             {
                 if (ItemCalendar.SelectedDate != null)
                 {
                     DateTime calendarDate = (DateTime)ItemCalendar.SelectedDate;
-                    if (task.IsTaskDue(config.MarkDueDays, calendarDate) & task.Mandatory)
+                    if (task.IsTaskDueWithinDays(config.MarkDueDays, calendarDate) & task.IsMandatory)
                     {
                         tasksDue = true;
                     }
@@ -462,14 +458,14 @@ namespace CalTools_WPF
             locations.Clear();
             itemGroups.Clear();
             standardEquipment.Clear();
-            foreach (CTItem calItem in database.GetAllItems())
+            foreach (CTItem calItem in database.GetAll<CTItem>())
             {
                 if (!manufacturers.Contains(calItem.Manufacturer)) { manufacturers.Add(calItem.Manufacturer); }
                 if (!locations.Contains(calItem.Location)) { locations.Add(calItem.Location); }
                 if (!itemGroups.Contains(calItem.ItemGroup)) { itemGroups.Add(calItem.ItemGroup); }
-                if (calItem.StandardEquipment & !standardEquipment.Contains(calItem.SerialNumber)) { standardEquipment.Add(calItem.SerialNumber); }
+                if (calItem.IsStandardEquipment & !standardEquipment.Contains(calItem.SerialNumber)) { standardEquipment.Add(calItem.SerialNumber); }
             }
-            foreach (CTTask task in database.GetAllTasks())
+            foreach (CTTask task in database.GetAll<CTTask>())
             { if (!serviceVendors.Contains(task.ServiceVendor)) { serviceVendors.Add(task.ServiceVendor); } }
             manufacturers.Sort();
             serviceVendors.Sort();
@@ -548,7 +544,7 @@ namespace CalTools_WPF
         private void HighlightNonExistent()
         {
             List<string> nonExistent = new();
-            foreach (CTItem calItem in database.GetAllItems())
+            foreach (CTItem calItem in database.GetAll<CTItem>())
             {
                 if (!Directory.Exists(calItem.Directory))
                 {
@@ -567,9 +563,9 @@ namespace CalTools_WPF
         private List<CTItem> ItemListFilter(string mode, string searchText) //Filters items when search is used
         {
             List<CTItem> filteredItems = new();
-            List<CTTask> allTasks = database.GetAllTasks();
+            List<CTTask> allTasks = database.GetAll<CTTask>();
             var property = typeof(CTItem).GetProperty(mode);
-            foreach (CTItem item in database.GetAllItems())
+            foreach (CTItem item in database.GetAll<CTItem>())
             {
                 if (mode == "ActionType")
                 {
@@ -582,13 +578,13 @@ namespace CalTools_WPF
                         }
                     }
                 }
-                else if (mode == "Comment") { if (property.GetValue(item).ToString().Length > 0) { filteredItems.Add(item); } }
-                else if (mode == "StandardEquipment") { if ((bool)property.GetValue(item) == true) { filteredItems.Add(item); } }
+                else if (mode == "Remarks") { if (property.GetValue(item).ToString().Length > 0) { filteredItems.Add(item); } }
+                else if (mode == "IsStandardEquipment") { if ((bool)property.GetValue(item)) { filteredItems.Add(item); } }
                 else if (mode == "Due")
                 {
                     foreach (CTTask task in allTasks)
                     {
-                        if (task.SerialNumber == item.SerialNumber & task.IsTaskDue(config.MarkDueDays, DateTime.UtcNow)) { filteredItems.Add(item); break; }
+                        if (task.SerialNumber == item.SerialNumber & task.IsTaskDueWithinDays(config.MarkDueDays, DateTime.UtcNow)) { filteredItems.Add(item); break; }
                     }
                 }
                 else if (mode == "Vendor")
@@ -609,7 +605,7 @@ namespace CalTools_WPF
             }
             return filteredItems;
         }
-        private bool IsItemSelected()
+        private bool ItemIsSelected()
         {
             TreeViewItem selectedItem = (TreeViewItem)CalibrationItemTree.SelectedItem;
             if (selectedItem != null)
@@ -623,18 +619,18 @@ namespace CalTools_WPF
         {
             SearchBox.Clear();
             string selection = SearchOptions.SelectedItem.ToString();
-            if (selection == "Calibration Due" | selection == "Has Comment" | selection == "Standard Equipment" | selection == "Action Due")
+            if (selection == "Action Due" | selection == "Has Remarks" | selection == "Standard Equipment")
             {
                 AddItemsToList(ItemListFilter(searchModes[selection], ""));
                 SearchBox.IsEnabled = false;
                 ExpandTreeItems();
             }
-            else { SearchBox.IsEnabled = true; AddItemsToList(database.GetAllItems()); }
+            else { SearchBox.IsEnabled = true; AddItemsToList(database.GetAll<CTItem>()); }
         }
         private string SelectedSN()
         {
             TreeViewItem selectedItem = (TreeViewItem)CalibrationItemTree.SelectedItem;
-            if (!IsItemSelected()) { return ""; }
+            if (!ItemIsSelected()) { return ""; }
             string sn = selectedItem.Header.ToString();
             return sn;
         }
@@ -654,27 +650,28 @@ namespace CalTools_WPF
         }
         private void UpdateItemList(bool single = false)
         {
-            if (!database.tablesExist) { return; }
+            if (!database.DatabaseReady()) { return; }
             CheckReceiving();
             string currentItem = SelectedSN();
-            if (single) { ScanFoldersSingle(database.GetItem("SerialNumber", currentItem)); }
+            if (single) { ScanFoldersSingle(database.GetFromWhere<CTItem>(new() { { "serial_number", currentItem } })[0]); }
             else { ScanFolders(); }
+
             if (SearchBox.Text.Length != 0)
             {
                 AddItemsToList(ItemListFilter(searchModes[SearchOptions.SelectedItem.ToString()], SearchBox.Text));
                 ExpandTreeItems();
             }
-            else { AddItemsToList(database.GetAllItems()); }
+            else { AddItemsToList(database.GetAll<CTItem>()); }
             UpdateLists();
             GoToItem(currentItem);
         }
-        private void UpdateListsSingle(CTItem calItem)
+        private void UpdateListsSingle(CTItem item)
         {
-            if (!manufacturers.Contains(calItem.Manufacturer)) { manufacturers.Add(calItem.Manufacturer); }
-            if (!locations.Contains(calItem.Location)) { locations.Add(calItem.Location); }
-            if (!itemGroups.Contains(calItem.ItemGroup)) { itemGroups.Add(calItem.ItemGroup); }
-            if (calItem.StandardEquipment & !standardEquipment.Contains(calItem.SerialNumber)) { standardEquipment.Add(calItem.SerialNumber); }
-            foreach (CTTask task in database.GetTasks("SerialNumber", calItem.SerialNumber))
+            if (!manufacturers.Contains(item.Manufacturer)) { manufacturers.Add(item.Manufacturer); }
+            if (!locations.Contains(item.Location)) { locations.Add(item.Location); }
+            if (!itemGroups.Contains(item.ItemGroup)) { itemGroups.Add(item.ItemGroup); }
+            if (item.IsStandardEquipment & !standardEquipment.Contains(item.SerialNumber)) { standardEquipment.Add(item.SerialNumber); }
+            foreach (CTTask task in database.GetFromWhere<CTTask>(new() { { "serial_number", item.SerialNumber } }))
             { if (!serviceVendors.Contains(task.ServiceVendor)) { serviceVendors.Add(task.ServiceVendor); } }
             manufacturers.Sort();
             serviceVendors.Sort();
@@ -713,19 +710,18 @@ namespace CalTools_WPF
                 DetailsDescription.Text = item.Description;
                 DetailsLocation.Text = item.Location;
                 DetailsManufacturer.Text = item.Manufacturer;
-                if (item.InServiceDate != null) { DetailsOperationDate.Text = item.InServiceDate.Value.ToString("yyyy-MM-dd"); } else { DetailsOperationDate.Clear(); }
                 DetailsInOperation.IsChecked = item.InService;
                 DetailsItemGroup.Text = item.ItemGroup;
-                DetailsComments.Text = item.Comment;
-                DetailsStandardBox.IsChecked = item.StandardEquipment;
+                DetailsComments.Text = item.Remarks;
+                DetailsStandardBox.IsChecked = item.IsStandardEquipment;
                 DetailsCertificateNum.Text = item.CertificateNumber;
             }
         }
         private void UpdateTasksTable(bool keepChanges = false)
         {
-            if (IsItemSelected())
+            if (ItemIsSelected())
             {
-                List<CTTask> detailsTasks = database.GetTasks("SerialNumber", SelectedSN());
+                List<CTTask> detailsTasks = database.GetFromWhere<CTTask>(new() { { "serial_number", SelectedSN() } });
                 if (keepChanges)
                 {
                     //Add new items to table without reverting changes made to existing items.
@@ -739,19 +735,19 @@ namespace CalTools_WPF
                         bool found = false;
                         foreach (CTTask currentTask in currentTaskList)
                         {
-                            if (task.TaskID == currentTask.TaskID) { found = true; break; }
+                            if (task.TaskId == currentTask.TaskId) { found = true; break; }
                         }
                         if (!found) { currentTaskList.Add(task); }
                     }
                     foreach (CTTask task in currentTaskList)
                     {
                         task.ServiceVendorList = serviceVendors;
-                        task.IsTaskDue(config.MarkDueDays, DateTime.UtcNow);
+                        task.SetDueWithinDays(config.MarkDueDays, DateTime.UtcNow);
                     }
                     DetailsTasksTable.ItemsSource = currentTaskList;
                     return;
                 }
-                foreach (CTTask task in detailsTasks) { task.ServiceVendorList = serviceVendors; task.IsTaskDue(config.MarkDueDays, DateTime.UtcNow); }
+                foreach (CTTask task in detailsTasks) { task.ServiceVendorList = serviceVendors; task.SetDueWithinDays(config.MarkDueDays, DateTime.UtcNow); }
                 DetailsTasksTable.ItemsSource = detailsTasks;
             }
         }
@@ -762,8 +758,8 @@ namespace CalTools_WPF
         private List<Dictionary<string, string>> CreateCalendarList(bool mandatoryOnly, bool inOperationOnly, DateTime calendarDate)
         {
             List<Dictionary<string, string>> compositeList = new();
-            List<CTTask> allTasks = database.GetAllTasks();
-            List<CTItem> allItems = database.GetAllItems();
+            List<CTTask> allTasks = database.GetAll<CTTask>();
+            List<CTItem> allItems = database.GetAll<CTItem>();
             CheckReplacements(ref allItems);
             foreach (CTTask task in allTasks)
             {
@@ -771,7 +767,7 @@ namespace CalTools_WPF
                 {
                     if (mandatoryOnly)
                     {
-                        if (!task.Mandatory) { continue; }
+                        if (!task.IsMandatory) { continue; }
                     }
                     if (inOperationOnly)
                     {
@@ -781,14 +777,14 @@ namespace CalTools_WPF
                     {
                         if (item.SerialNumber == task.SerialNumber)
                         {
-                            if (task.IsTaskDue(config.MarkDueDays, calendarDate))
+                            if (task.IsTaskDueWithinDays(config.MarkDueDays, calendarDate))
                             {
                                 Dictionary<string, string> compositeItem = new()
                                 {
                                     {"SerialNumber",item.SerialNumber},
                                     {"Model", item.Model},
-                                    {"TaskID", task.TaskID.ToString()},
-                                    {"TaskTitle",$"({task.TaskID}) {task.TaskTitle}" },
+                                    {"TaskID", task.TaskId.ToString()},
+                                    {"TaskTitle",$"({task.TaskId}) {task.TaskTitle}" },
                                     {"Description",item.Description},
                                     {"Location",item.Location},
                                     {"ServiceVendor",task.ServiceVendor},
@@ -822,50 +818,42 @@ namespace CalTools_WPF
         #region WindowsAndDialogs
         private void NewReport(CTTask task)
         {
-            CalDataEntry dataEntry = new();
-            if (database.GetItemFromTask(task).StandardEquipment)
+            try
             {
-                dataEntry.ItemIsStandard = true;
-            }
-            dataEntry.SerialNumberBox.Text = task.SerialNumber;
-            dataEntry.MaintenanceSerialNumberBox.Text = task.SerialNumber;
-            dataEntry.DateBox.Text = DateTime.UtcNow.ToString(database.dateFormat);
-            dataEntry.MaintenanceDateBox.Text = DateTime.UtcNow.ToString(database.dateFormat);
-            dataEntry.ProcedureBox.ItemsSource = config.Procedures;
-            dataEntry.MaintenanceProcedureBox.ItemsSource = config.Procedures;
-            dataEntry.EquipmentBox.ItemsSource = standardEquipment;
-            dataEntry.MaintenanceEquipmentBox.ItemsSource = standardEquipment;
-            dataEntry.TaskBox.Text = $"({task.TaskID}) {task.TaskTitle}";
-            dataEntry.MaintenanceTaskBox.Text = dataEntry.TaskBox.Text;
-            dataEntry.data.TaskID = task.TaskID;
-            if (task.ActionType == "MAINTENANCE")
-            { dataEntry.MaintenanceSelection.IsSelected = true; }
-            if (config.Procedures.Count > 0) { dataEntry.ProcedureBox.SelectedIndex = 0; }
-            if (standardEquipment.Count > 0) { dataEntry.EquipmentBox.SelectedIndex = 0; }
-            dataEntry.findings.parameters.Add(new Param($"Parameter {dataEntry.findings.parameters.Count + 1}"));
-            if (dataEntry.ShowDialog() == true)
-            {
-                try
+                CalDataEntry dataEntry = new();
+                dataEntry.SerialNumberBox.Text = task.SerialNumber;
+                dataEntry.DateBox.Text = DateTime.UtcNow.ToString(database.dateFormat);
+                dataEntry.ProcedureBox.ItemsSource = config.Procedures;
+                dataEntry.EquipmentDataGrid.ItemsSource = GetCurrentStandardEquipment();
+                dataEntry.TaskBox.Text = $"({task.TaskId}) {task.TaskTitle}";
+                dataEntry.data.TaskId = task.TaskId;
+                if (task.ActionType == "MAINTENANCE")
+                { dataEntry.MaintenanceSelection.IsSelected = true; }
+                if (config.Procedures.Count > 0) { dataEntry.ProcedureBox.SelectedIndex = 0; }
+                if (dataEntry.ShowDialog() == true)
                 {
-                    dataEntry.data.StandardEquipment = JsonConvert.SerializeObject(database.GetItem("SerialNumber", dataEntry.EquipmentBox.Text));
+                    database.SaveTaskData(dataEntry.data);
                 }
-                catch
-                { MessageBox.Show($"Invalid \"Standard Equipment\" entry.", "Invalid Entry", MessageBoxButton.OK, MessageBoxImage.Error); return; }
-                database.SaveTaskData(dataEntry.data);
+                SaveTasksTable();
+                CTItem item = database.GetFromWhere<CTItem>(new() { { "serial_number", task.SerialNumber } })[0];
+                List<CTTask> tasks = database.GetFromWhere<CTTask>(new() { { "serial_number", item.SerialNumber } });
+                List<TaskData> taskData = database.GetAll<TaskData>();
+                CheckTasks(item.Directory, ref tasks, ref taskData);
+                UpdateTasksTable();
             }
-            SaveTasksTable();
-            CTItem item = database.GetItemFromTask(task);
-            List<CTTask> tasks = database.GetTasks("SerialNumber", item.SerialNumber);
-            List<TaskData> taskData = database.GetAllTaskData();
-            CheckTasks(item.Directory, ref tasks, ref taskData);
-            UpdateTasksTable();
+            catch (Exception ex)
+            {
+                MessageBox.Show($"{ex.Message}",
+                    "MainWindowCTLogic.xaml.cs.NewReport",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
         }
         private void SwapItems()
         {
-            string selectedSN = ((TreeViewItem)CalibrationItemTree.SelectedItem).Header.ToString();
             List<string> itemsInGroup = new();
-            CTItem selectedItem = database.GetItem("SerialNumber", selectedSN);
-            foreach (CTItem item in database.GetAllItems())
+            CTItem selectedItem = database.GetFromWhere<CTItem>(new() { { "serial_number", SelectedSN() } })[0];
+            foreach (CTItem item in database.GetAll<CTItem>())
             {
                 if (item.ItemGroup == selectedItem.ItemGroup)
                 {
@@ -876,8 +864,10 @@ namespace CalTools_WPF
             selectionDialog.ReplaceSelectComboBox.ItemsSource = itemsInGroup;
             if (selectionDialog.ShowDialog() == true)
             {
-                CTItem newItem1 = database.GetItem("SerialNumber", selectedItem.SerialNumber);
-                CTItem newItem2 = database.GetItem("SerialNumber", selectionDialog.ReplaceSelectComboBox.SelectedItem.ToString());
+                CTItem newItem1 = database.GetFromWhere<CTItem>(
+                    new() { { "serial_number", selectedItem.SerialNumber } })[0];
+                CTItem newItem2 = database.GetFromWhere<CTItem>(
+                    new() { { "serial_number", selectionDialog.ReplaceSelectComboBox.SelectedItem.ToString() } })[0];
 
                 newItem1.Location = newItem2.Location;
                 newItem1.InService = newItem2.InService;

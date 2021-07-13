@@ -5,7 +5,7 @@ VisualStudioVersion = 16.0.29201.188
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CalToolsWPF", "CalTools WPF\CalToolsWPF.csproj", "{09B24D32-169F-4BF6-9132-2F486A815C2F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CalToolsTests", "CalToolsTests\CalToolsTests.csproj", "{96DB05B7-3320-4DA1-A3C5-E8771202C9F2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CalToolsTests", "CalToolsTests\CalToolsTests.csproj", "{96DB05B7-3320-4DA1-A3C5-E8771202C9F2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

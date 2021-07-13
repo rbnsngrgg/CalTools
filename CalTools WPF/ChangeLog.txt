@@ -1,4 +1,20 @@
 [Changes]
+--6.0.0
+	--Database normalization, schema changes.
+		--Added feature for association of files for database task data.
+			--These files and their folders can be opened from the CalDataViewer.
+		--Added ability to associate multiple standard equipment items to one task data entry.
+		--Removed the use of JSON in the database.
+		--Historical records of standard equipment are kept in a separate table.
+		--There is a check for standard equipment that does not allow an entry with a certificate number
+			that is identical to another record while having 
+	--Export functionality revised to represent new database tables.
+	--Increased code coverage of unit tests.
+	--Refactored methods.
+	--Updated handling of due dates in the database. Items are only marked due when on or past the due date, rather than by the config window.
+	--Removed in-operation date.
+	--Updated data entry and viewing.
+
 --5.3.1
 	--Fixed configuration issue that prevented e_sqlite3.dll from being packaged in the executable.
 

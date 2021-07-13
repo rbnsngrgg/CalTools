@@ -113,8 +113,6 @@
                             <ComboBox x:Name="DetailsLocation" IsEnabled="False" IsEditable="True" Grid.Row="3" Grid.Column="1" Height="22" Width="Auto"/>
                         <Label Content="Manufacturer:" HorizontalAlignment="Left" Grid.Row="4" Grid.Column="0"/>
                             <ComboBox x:Name="DetailsManufacturer" IsEnabled="False" IsEditable ="True" Grid.Row="4" Grid.Column="1" Height="22" Width="Auto"/>
-                        <Label Content="In Operation Date:" HorizontalAlignment="Center" Grid.Row="6" Grid.Column="1"/>
-                            <TextBox x:Name="DetailsOperationDate" HorizontalAlignment="Right" IsEnabled="False" Grid.Row="6" Grid.Column="1" Height="22" Width="150"/>
                         <Label Content="Standard Equipment:" HorizontalAlignment="Left" Grid.Row="5" Grid.Column="0"/>
                         <CheckBox x:Name="DetailsStandardBox" IsEnabled="False" VerticalAlignment="Center" HorizontalAlignment="Left" Grid.Row="5" Grid.Column="1" Checked="DetailsStandardBox_Checked" Unchecked="DetailsStandardBox_Checked"/>
                         <Label x:Name="DetailsCertificateLabel" Content="Certificate Number:" HorizontalAlignment="Center" Grid.Row="5" Grid.Column="1" Visibility="Collapsed"/>
@@ -123,12 +121,12 @@
                             <CheckBox x:Name="DetailsInOperation" IsEnabled="False" VerticalAlignment="Center" HorizontalAlignment="Left" Grid.Row="6" Grid.Column="1"/>
                         <Label Content="Item Group:" HorizontalAlignment="Left" Grid.Row="7" Grid.Column="0"/>
                             <ComboBox x:Name="DetailsItemGroup" IsEnabled="False" IsEditable ="True" Grid.Row="7" Grid.Column="1" Height="22" Width="Auto"/>
-                        <Label Content="Comments:" HorizontalAlignment="Left" Grid.Row="8" Grid.Column="0"/>
+                        <Label Content="Remarks:" HorizontalAlignment="Left" Grid.Row="8" Grid.Column="0"/>
                             <TextBox x:Name="DetailsComments" Background="#FFFBFBFB" IsEnabled="False" Grid.Row="8" Grid.Column="1" Margin="0,0,0,5"/>
                         <DataGrid x:Name="DetailsTasksTable" CanUserAddRows="False" CanUserDeleteRows="False" AutoGenerateColumns="False"
                                   Grid.Row="9" Grid.Column="0" MinHeight="100" Height="Auto" Visibility="Visible" Grid.ColumnSpan="2" IsReadOnly="True">
                             <DataGrid.Columns>
-                                <DataGridTextColumn Header="Task ID" MinWidth="20" Binding="{Binding TaskID}" IsReadOnly="True"/>
+                                <DataGridTextColumn Header="Task ID" MinWidth="20" Binding="{Binding TaskId}" IsReadOnly="True"/>
                                 <DataGridTextColumn Header="Title" MinWidth="100" Binding="{Binding TaskTitle, Mode=TwoWay}"/>
                                 <DataGridComboBoxColumn Header="Vendor">
                                     <DataGridComboBoxColumn.ElementStyle>
@@ -146,12 +144,12 @@
                                         </Style>
                                     </DataGridComboBoxColumn.EditingElementStyle>
                                 </DataGridComboBoxColumn>
-                                <DataGridCheckBoxColumn Header="Mandatory" MinWidth="20" Binding="{Binding Mandatory, Mode=TwoWay}"/>
+                                <DataGridCheckBoxColumn Header="Mandatory" MinWidth="20" Binding="{Binding IsMandatory, Mode=TwoWay}"/>
                                 <DataGridTextColumn Header="Interval" MinWidth="20" Binding="{Binding Interval, Mode=TwoWay}"/>
                                 <DataGridTextColumn Header="Date" MinWidth="50" Binding="{Binding CompleteDateString, Mode=OneWay}" IsReadOnly="True"/>
                                 <DataGridTextColumn Header="Due Date" MinWidth="50" Binding="{Binding DueDateString, Mode=OneWay}" IsReadOnly="True"/>
-                                <DataGridCheckBoxColumn Header="Due" MinWidth="20" Binding="{Binding Due, Mode=OneWay}" IsReadOnly="True"/>
-                                <DataGridTextColumn Header="Manual Due Date" MinWidth="50" Binding="{Binding ManualFlagString}" IsReadOnly="True"/>
+                                <DataGridCheckBoxColumn Header="Due" MinWidth="20" Binding="{Binding IsDue, Mode=OneWay}" IsReadOnly="True"/>
+                                <DataGridTextColumn Header="Date Override" MinWidth="50" Binding="{Binding DateOverrideString}" IsReadOnly="True"/>
                                 <DataGridComboBoxColumn Header="Action" SelectedItemBinding="{Binding ActionType, Mode=TwoWay}">
                                     <DataGridComboBoxColumn.ElementStyle>
                                         <Style TargetType="ComboBox">
@@ -166,11 +164,11 @@
                                         </Style>
                                     </DataGridComboBoxColumn.EditingElementStyle>
                                 </DataGridComboBoxColumn>
-                                <DataGridTextColumn Header="Comment" MinWidth="165" Binding="{Binding Comment, Mode=TwoWay}"/>
+                                <DataGridTextColumn Header="Remarks" MinWidth="165" Binding="{Binding Remarks, Mode=TwoWay}"/>
                             </DataGrid.Columns>
                             <DataGrid.ContextMenu>
                                 <ContextMenu x:Name="TaskDataGridContextMenu" Opened="TaskDataGridContextMenu_Opened">
-                                    <MenuItem x:Name="ContextMarkDue" Header="Manually Mark Due" Click="ContextMarkDue_Click"/>
+                                    <MenuItem x:Name="ContextDateOverride" Header="Apply Date Override" Click="ContextDateOverride_Click"/>
                                     <MenuItem x:Name="ContextOpenLocation" Header="Open File Location" Click="ContextOpenLocation_Click"/>
                                     <MenuItem x:Name="ContextViewData" Header="View Data" Click="ContextViewData_Click"/>
                                 </ContextMenu>
@@ -229,7 +227,7 @@
             </StackPanel>
         </Grid>
         <StatusBar x:Name="MainStatusBar" Grid.Row="3" Background="#f0f0f0">
-            <StatusBarItem x:Name="StatusBarMainLabel" VerticalAlignment="Center" Content="Ready"/>
+            <StatusBarItem x:Name="StatusBarMainLabel" VerticalAlignment="Center" Content=""/>
             <ProgressBar x:Name="StatusProgressBar" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="100,0,0,0" Width="150" Height="20" Value="0" Visibility="Hidden"/>
         </StatusBar>
     </Grid>
