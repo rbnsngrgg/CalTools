@@ -2,12 +2,14 @@
 using CalTools_WPF.Windows;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Media;
 
 namespace CalTools_WPF
@@ -16,7 +18,7 @@ namespace CalTools_WPF
     //TODO: Create separate class. Decouple from MainWindow, which isn't unit tested
     public partial class MainWindow : Window
     {
-        public readonly string version = "6.0.0";
+        public readonly string version = "6.0.1";
         private readonly CTDatabase database;
         private readonly CTConfig config = new();
         private readonly Dictionary<string, string> searchModes = new() {
@@ -30,7 +32,8 @@ namespace CalTools_WPF
             { "Has Remarks", "Remarks" },
             { "Item Group", "ItemGroup" },
             { "Action", "ActionType" },
-            { "Standard Equipment", "IsStandardEquipment"} };
+            { "Standard Equipment", "IsStandardEquipment" }
+        };
         private readonly List<string> manufacturers = new();
         private readonly List<string> locations = new();
         private readonly List<string> serviceVendors = new();
@@ -802,15 +805,14 @@ namespace CalTools_WPF
         private void UpdateItemsTable()
         {
             weekTodoItems.Clear();
-            todoTable.Items.Refresh();
-
             if (ItemCalendar.SelectedDate != null)
             {
                 DateTime calendarDate = (DateTime)ItemCalendar.SelectedDate;
                 weekTodoItems.AddRange(CreateCalendarList((bool)MandatoryOnlyBox.IsChecked, (bool)InOperationOnlyBox.IsChecked, calendarDate));
+                todoTable.ItemsSource = null;
                 todoTable.ItemsSource = weekTodoItems;
-                todoTable.Items.Refresh();
             }
+            todoTable.Items.Refresh();
         }
         #endregion
 
