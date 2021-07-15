@@ -1,11 +1,13 @@
 ﻿using CalTools_WPF.ObjectClasses;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
+
 namespace CalTools_WPF
 {
     /// <summary>
@@ -165,13 +167,26 @@ namespace CalTools_WPF
         private void AddFile_Click(object sender, RoutedEventArgs e)
         {
             Microsoft.Win32.OpenFileDialog dlg = new();
+            dlg.CheckFileExists = false;
+            string defaultFileName = "Select this folder";
+            dlg.FileName = defaultFileName;
             if(dlg.ShowDialog().Value)
             {
-                string fileName = dlg.FileName;
-                data.DataFiles.Add(new TaskDataFile() { Location = fileName });
+                if(System.IO.Path.GetFileName(dlg.FileName) == defaultFileName)
+                {
+                    string folder = System.IO.Directory.GetParent(dlg.FileName).FullName;
+                    if(System.IO.Directory.Exists(folder))
+                    {
+                        data.DataFiles.Add(new TaskDataFile() { Location = folder });
+                    }
+                }
+                else if (System.IO.File.Exists(dlg.FileName))
+                {
+                    data.DataFiles.Add(new TaskDataFile() { Location = dlg.FileName });
+                }
                 FilesDataGrid.Items.Refresh();
             }
-            
+
         }
         private void RemoveFile_Click(object sender, RoutedEventArgs e)
         {

@@ -189,8 +189,8 @@
                             </DataGrid.Columns>
                             <DataGrid.ContextMenu>
                                 <ContextMenu x:Name="FileGridContextMenu" Opened="FileGridContextMenu_Opened">
-                                    <MenuItem x:Name="ContextOpenFile" Header="Open File" Click="ContextOpenFile_Click"/>
-                                    <MenuItem x:Name="ContextOpenFolder" Header="Open Folder" Click="ContextOpenFolder_Click"/>
+                                    <MenuItem x:Name="ContextOpenFile" Header="Open" Click="ContextOpenFile_Click"/>
+                                    <MenuItem x:Name="ContextOpenFolder" Header="Open Containing Folder" Click="ContextOpenFolder_Click"/>
                                     <MenuItem x:Name="ContextCopyPath" Header="Copy Path" Click="ContextCopyPath_Click"/>
                                 </ContextMenu>
                             </DataGrid.ContextMenu>
