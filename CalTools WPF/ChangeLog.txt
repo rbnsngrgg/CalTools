@@ -2,6 +2,7 @@
 --6.0.1
 	--TaskData file select now also allows selecting folders.
 	--Fixed bug that caused the calendar task table to not refresh after the table was sorted by one of the columns.
+
 --6.0.0
 	--Database normalization, schema changes.
 		--Added feature for association of files for database task data.
@@ -99,7 +100,7 @@
 
 --3.2.1 (2020-07-09)
 	--Bug Fixes:
-		Fixed bug that caused an item to not be selectd when "Go To Item" was selected from calendar mode while text was in the search bar (Issue 41).
+		Fixed bug that caused an item to not be selected when "Go To Item" was selected from calendar mode while text was in the search bar (Issue 41).
 
 --3.2.0 (2020-01-31)
 	--Bug Fixes:

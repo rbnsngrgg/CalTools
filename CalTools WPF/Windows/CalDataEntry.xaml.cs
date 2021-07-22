@@ -317,19 +317,5 @@ namespace CalTools_WPF
                 }
             }
         }
-        //private void RemarksBox_TextChanged(object sender, TextChangedEventArgs e)
-        //{
-        //    //Testing recognizing which standard equipment items are selected.
-        //    for(int i = 0; i < EquipmentDataGrid.Items.Count; i++)
-        //    {
-        //        CTStandardEquipment item = (CTStandardEquipment)EquipmentDataGrid.Items[i];
-        //        CheckBox checkBox = EquipmentDataGrid.Columns[0].GetCellContent(item) as CheckBox;
-        //        if((bool) checkBox.IsChecked)
-        //        {
-        //            Debug.WriteLine(item.SerialNumber);
-        //        }
-        //    }
-        //}
-
     }
 }
