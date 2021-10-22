@@ -2,6 +2,7 @@
 --6.0.1
 	--TaskData file select now also allows selecting folders.
 	--Fixed bug that caused the calendar task table to not refresh after the table was sorted by one of the columns.
+	--.NET 5 Framework-dependent, Portable.
 
 --6.0.0
 	--Database normalization, schema changes.

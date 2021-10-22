@@ -4,7 +4,7 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net5.0-windows</TargetFramework>
     <PublishSingleFile>true</PublishSingleFile>
-    <SelfContained>true</SelfContained>
+    <SelfContained>false</SelfContained>
     <IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <RootNamespace>CalTools_WPF</RootNamespace>
@@ -12,15 +12,15 @@
     <AssemblyName>CalTools</AssemblyName>
     <ApplicationIcon>images\CalToolsIcon.ico</ApplicationIcon>
     <Authors>Gregg Robinson</Authors>
-    <Version>6.0.1</Version>
+    <Version>6.0.2</Version>
     <Company>Perceptron, Inc.</Company>
     <Description>A tool for managing calibrated equipment at Perceptron HQ.</Description>
     <PackageProjectUrl></PackageProjectUrl>
     <PackageIcon>CalToolsIcon.png</PackageIcon>
-    <AssemblyVersion>6.0.1.0</AssemblyVersion>
+    <AssemblyVersion>6.0.2.0</AssemblyVersion>
     <FileVersion>6.0.0.0</FileVersion>
     <NeutralLanguage></NeutralLanguage>
-    <Platforms>AnyCPU;x64</Platforms>
+    <Platforms>AnyCPU;x64;x86</Platforms>
   </PropertyGroup>
 
   <ItemGroup>
