@@ -23,6 +23,10 @@
     <Platforms>AnyCPU;x64;x86</Platforms>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="IronXL.Excel" Version="2020.6.0" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="3.1.6" />
