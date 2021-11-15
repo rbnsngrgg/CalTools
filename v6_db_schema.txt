@@ -1,0 +1,89 @@
+
+items
+-
+serial_number PK text
+location text
+manufacturer text
+directory text
+description text
+in_service bool
+model text
+item_group text
+remarks text
+is_standard_equipment bool
+certificate_number text
+timestamp datetime
+
+tasks
+-
+id PK autoincrement
+serial_number text FK >- items.serial_number
+task_title text
+service_vendor text
+is_mandatory bool
+interval int
+complete_date date
+due_date date
+is_due bool
+action_type text
+directory text
+remarks text
+date_override date
+
+standard_equipment
+-
+id PK autoincrement
+serial_number text
+manufacturer text
+model text
+description text
+remarks text
+item_group text
+certificate_number text
+action_due_date date
+timestamp datetime
+
+task_data
+-
+id PK autoincrement
+task_id int FK >- tasks.id
+serial_number FK >- items.serial_number
+in_tolerance_before bool
+operational_before bool
+in_tolerance_after bool
+operational_after bool
+calibrated bool
+verified bool
+adjusted bool
+repaired bool
+maintenance bool
+complete_date date
+procedure text
+remarks text
+technician text
+timestamp datetime
+
+data_standard_equipment
+-
+id int PK autoincrement
+task_data_id int FK >- task_data.id
+standard_equipment_id int FK >- standard_equipment.id
+
+findings
+-
+id PK autoincrement
+task_data_id int FK >- task_data.id
+name text
+tolerance double
+tolerance_is_percent bool
+unit_of_measure text
+measurement_before double
+measurement_after double
+setting double
+
+task_data_files
+-
+id PK autoincrement
+task_data_id FK >-< task_data.id
+description text
+location text
