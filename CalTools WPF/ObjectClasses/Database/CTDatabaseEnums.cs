@@ -91,7 +91,6 @@
             description,
             location
         }
-
         public enum ItemsColumnsV5
         {
             SerialNumber = 0,

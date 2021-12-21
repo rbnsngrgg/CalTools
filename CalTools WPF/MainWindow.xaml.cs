@@ -23,9 +23,9 @@ namespace CalTools_WPF
             database = new(config.DbPath);
             database.Folders = config.Folders;
             InitializeComponent();
-            LogicInit();
+            Init();
         }
-        private void LogicInit()
+        private void Init()
         {
             CalToolsMainWindow.Title = $"CalTools {version}";
             if (database.DatabaseReady())
