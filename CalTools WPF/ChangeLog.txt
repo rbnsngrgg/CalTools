@@ -1,4 +1,6 @@
 [Changes]
+--6.0.3
+	--Added exception handling to initialization sequence to help diagnose issues when starting the program.
 --6.0.2
 	--.NET 5 Framework-dependent, Portable.
 

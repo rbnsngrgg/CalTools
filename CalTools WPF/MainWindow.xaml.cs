@@ -19,11 +19,18 @@ namespace CalTools_WPF
         #region Main
         public MainWindow()
         {
-            config.LoadConfig(Directory.GetCurrentDirectory());
-            database = new(config.DbPath);
-            database.Folders = config.Folders;
-            InitializeComponent();
-            Init();
+            try
+            {
+                config.LoadConfig(Directory.GetCurrentDirectory());
+                database = new(config.DbPath);
+                database.Folders = config.Folders;
+                InitializeComponent();
+                Init();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Initialization Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
         private void Init()
         {

@@ -18,7 +18,7 @@ namespace CalTools_WPF
     //TODO: Create separate class. Decouple from MainWindow, which isn't unit tested
     public partial class MainWindow : Window
     {
-        public readonly string version = "6.0.2";
+        public readonly string version = "6.0.3";
         private readonly CTDatabase database;
         private readonly CTConfig config = new();
         private readonly Dictionary<string, string> searchModes = new() {
