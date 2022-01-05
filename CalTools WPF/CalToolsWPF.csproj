@@ -12,12 +12,12 @@
     <AssemblyName>CalTools</AssemblyName>
     <ApplicationIcon>images\CalToolsIcon.ico</ApplicationIcon>
     <Authors>Gregg Robinson</Authors>
-    <Version>6.0.2</Version>
+    <Version>6.0.3</Version>
     <Company>Perceptron, Inc.</Company>
     <Description>A tool for managing calibrated equipment at Perceptron HQ.</Description>
     <PackageProjectUrl></PackageProjectUrl>
     <PackageIcon>CalToolsIcon.png</PackageIcon>
-    <AssemblyVersion>6.0.2.0</AssemblyVersion>
+    <AssemblyVersion>6.0.3.0</AssemblyVersion>
     <FileVersion>6.0.0.0</FileVersion>
     <NeutralLanguage></NeutralLanguage>
     <Platforms>AnyCPU;x64;x86</Platforms>
