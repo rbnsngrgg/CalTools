@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         Title="CalTools" Height="780" Width="1100" MinHeight="640" MinWidth="1000"
         x:Name="CalToolsMainWindow" WindowStyle="SingleBorderWindow" Background="WhiteSmoke"
-        Icon="C:\Users\grobinson\source\repos\CalTools\CalTools WPF\images\CalToolsIcon.ico" AllowDrop="True" Drop="MainWindow_Drop" Closing="CalToolsMainWindow_Closing">
+        Icon="images/CalToolsIcon.ico" AllowDrop="True" Drop="MainWindow_Drop" Closing="CalToolsMainWindow_Closing">
     <Window.Resources>
         <Style TargetType="Image">
             <Setter Property="RenderOptions.BitmapScalingMode" Value="HighQuality"/>
@@ -36,7 +36,7 @@
         <!--Top row buttons-->
         <DockPanel Grid.Row="1">
             <Button x:Name="CalendarButton" Width="35" Height="35" HorizontalAlignment="Left" Margin="10,0,0,0" ToolTip="Toggle Calendar View" Click="CalendarButton_Click">
-                <Image Source="C:\Users\grobinson\source\repos\CalTools\CalTools WPF\images\LightTheme\calendar.png"/>
+                <Image Source="images\calendar.png" Width="30" Height="30"/>
             </Button>
             <Button x:Name="ReceivingFolderButton"  MinWidth="150" MaxWidth="500" Height="20" HorizontalAlignment="Stretch" Margin="15,0,0,0" Content="Receiving Folder" Click="ReceivingFolderButton_Click"/>
             <Button x:Name="CalReportButton"  MinWidth="150" MaxWidth="500" Height="20" HorizontalAlignment="Stretch" Margin="10,0,0,0" Content="Out of Cal Report" Visibility="Collapsed"/>
@@ -56,22 +56,22 @@
                 <!--Side buttons-->
                 <StackPanel Width="55" HorizontalAlignment="Left">
                     <Button x:Name="EditItemButton" Width="35" Height="35" HorizontalAlignment="Left" Margin="10,0,0,0" ToolTip="Edit Item" Click="EditItemButton_Click" Visibility="Visible">
-                        <Image x:Name="EditButtonImage" Source="C:\Users\grobinson\source\repos\CalTools\CalTools WPF\images\LightTheme\edit.png" Width="30" Height="30"/>
+                        <Image x:Name="EditButtonImage" Source="images\edit.png" Width="30" Height="30"/>
                     </Button>
                     <Button x:Name="SaveItemButton" Width="35" Height="35" HorizontalAlignment="Left" Margin="10,0,0,0" ToolTip="Save Item" Click="SaveItemButton_Click" Visibility="Collapsed">
-                        <Image x:Name="SaveButtonImage"  Source="C:\Users\grobinson\source\repos\CalTools\CalTools WPF\images\LightTheme\save.png" Width="30" Height="30"/>
+                        <Image x:Name="SaveButtonImage"  Source="images\save.png" Width="30" Height="30"/>
                     </Button>
                     <Button x:Name="OpenFolderButton" Width="35" Height="35" HorizontalAlignment="Left" Margin="10,10,0,0" ToolTip="Open Item Folder" Click="OpenFolderButton_Click">
-                        <Image Source="C:\Users\grobinson\source\repos\CalTools\CalTools WPF\images\LightTheme\folder.png"/>
+                        <Image Source="images\folder.png"/>
                     </Button>
                     <Button x:Name="NewReportButton" Width="35" Height="35" HorizontalAlignment="Left" Margin="10,10,0,0" ToolTip="Add Data" Click="NewReportButton_Click">
-                        <Image Source="C:\Users\grobinson\source\repos\CalTools\CalTools WPF\images\LightTheme\report.png"/>
+                        <Image Source="images\report.png"/>
                     </Button>
                     <Button x:Name="DeleteItemButton" Width="35" Height="35" HorizontalAlignment="Left" Margin="10,10,0,0" ToolTip="Delete Item" Click="DeleteItemButton_Click">
-                        <Image Source="C:\Users\grobinson\source\repos\CalTools\CalTools WPF\images\LightTheme\delete.png"/>
+                        <Image Source="images\delete.png"/>
                     </Button>
                     <Button x:Name="MoveItemButton" Width="35" Height="35" HorizontalAlignment="Left" Margin="10,10,0,0" ToolTip="Move Item" Click="MoveItemButton_Click">
-                        <Image Source="C:\Users\grobinson\source\repos\CalTools\CalTools WPF\images\LightTheme\move.png"/>
+                        <Image Source="images\move.png"/>
                     </Button>
                 </StackPanel>
                 <GroupBox Header="Items">

@@ -30,6 +30,10 @@ namespace CalTools_WPF
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message, "Initialization Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                if (ex.InnerException != null)
+                {
+                    MessageBox.Show(ex.InnerException.Message, "Initialization Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
             }
         }
         private void Init()
